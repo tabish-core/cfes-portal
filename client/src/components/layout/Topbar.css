@@ -1,0 +1,125 @@
+/* ── Topbar ──────────────────────────────────────────────── */
+.topbar {
+  height: 64px;
+  background: #fff;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 2rem;
+  flex-shrink: 0;
+}
+
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.topbar-menu-btn {
+  display: none;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #fff;
+  width: 34px;
+  height: 34px;
+  font-size: 1rem;
+  line-height: 1;
+  color: #111827;
+  cursor: pointer;
+  padding: 0;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.topbar-menu-btn span {
+  width: 14px;
+  height: 1.8px;
+  border-radius: 999px;
+  background: #111827;
+}
+
+.topbar-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1a237e;
+}
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.topbar-user {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.topbar-avatar {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #1a237e, #3949ab);
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.topbar-user-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.topbar-name {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #111827;
+  line-height: 1.2;
+}
+
+.topbar-role {
+  font-size: 0.75rem;
+  color: #6b7280;
+  text-transform: capitalize;
+}
+
+@media (max-width: 992px) {
+  .topbar-menu-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .topbar {
+    height: auto;
+    min-height: 56px;
+    padding: 0.6rem 1rem;
+  }
+
+  .topbar-title {
+    font-size: 0.92rem;
+  }
+
+  .topbar-user {
+    gap: 0.5rem;
+  }
+
+  .topbar-avatar {
+    width: 32px;
+    height: 32px;
+    font-size: 0.82rem;
+  }
+
+  .topbar-name {
+    font-size: 0.8rem;
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}

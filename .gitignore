@@ -1,0 +1,82 @@
+node_modules/
+dist/
+.DS_Store
+.antigravity/
+server/scripts/
+.env
+.tmp/
+credentials.json
+token.json
+__pycache__/
+*.pyc
+
+
+# Generated .gitignore file for: Node, JavaScript, React, Vue, Express, VSCode, Windows, npm, Vite, MongoDB, JSON
+# Created with FOSSA's DevOps Tools
+
+# Node
+node_modules/
+npm-debug.log
+yarn-error.log
+.env
+.DS_Store
+dist/
+.cache/
+coverage/
+
+# JavaScript
+# Add JavaScript-specific ignores here
+
+# React
+node_modules/
+build/
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Vue
+# Add Vue-specific ignores here
+
+# Express
+# Add Express-specific ignores here
+
+# VSCode
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# Windows
+# Add Windows-specific ignores here
+
+# npm
+# Add npm-specific ignores here
+
+# Vite
+# Add Vite-specific ignores here
+
+# MongoDB
+# Add MongoDB-specific ignores here
+
+# JSON
+# Add JSON-specific ignores here
+
+# Common
+.DS_Store
+Thumbs.db
+*.log
+*.bak
+*.tmp
+*.swp
+*~
+
+# IDE and editor generated files
+.idea/
+*.sublime-*
+
+# Local environment files
+.env
+.env.local
+.env.*.local
