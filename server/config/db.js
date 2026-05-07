@@ -1,6 +1,9 @@
 /**
  * db.js — Mongoose connection with logging and graceful exit on failure.
  */
+const dns = require('node:dns');
+dns.setServers(['1.1.1.1', '8.8.8.8']);
+
 const mongoose = require('mongoose');
 const logger = require('../utils/logger');
 
