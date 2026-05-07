@@ -46,6 +46,11 @@ app.use(morgan('dev'));                    // HTTP request logger
 app.use(express.json());                   // Parse JSON bodies
 app.use(express.urlencoded({ extended: false })); // Parse URL-encoded bodies
 
+/* ── Root route ─────────────────────────────────────────── */
+app.get('/', (_req, res) => {
+  res.send('CFES Portal API is running...');
+});
+
 /* ── Health check ───────────────────────────────────────── */
 app.get('/api/health', (_req, res) => {
   res.json({
