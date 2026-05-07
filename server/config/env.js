@@ -2,6 +2,9 @@
  * env.js — Load and validate environment variables.
  * Must be required first in server.js before anything else.
  */
+const dns = require('node:dns');
+dns.setServers(['1.1.1.1', '8.8.8.8']);
+
 require('dotenv').config();
 
 const REQUIRED_VARS = ['MONGO_URI', 'JWT_SECRET'];
