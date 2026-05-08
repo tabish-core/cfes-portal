@@ -1,6 +1,7 @@
 import { useParams, Link } from 'react-router-dom';
 import '../admin/Dashboard.css';
 import CourseControlReportPage from '../../components/forms/CCR/CourseControlReportPage';
+import CourseInformationSheetPage from '../../components/forms/CIS/CourseInformationSheetPage';
 
 
 const CourseForm = () => {
@@ -19,6 +20,8 @@ const CourseForm = () => {
       <div className="dashboard-panel">
         {formType === 'CCR' ? (
           <CourseControlReportPage courseId={courseId} />
+        ) : formType === 'CIS' ? (
+          <CourseInformationSheetPage courseId={courseId} />
         ) : (
           <>
             <p>Multi-step form will be implemented in Phase 2.</p>
