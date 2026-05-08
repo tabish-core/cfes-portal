@@ -8,4 +8,7 @@ const router = express.Router();
 router.get('/ccr/:courseId', verifyToken, formController.getCCRForm);
 router.post('/ccr', verifyToken, formController.saveCCRForm);
 
+router.get('/cis/:courseId', verifyToken, formController.getCISForm);
+router.post('/cis', verifyToken, formController.saveCISForm);
+
 module.exports = router;

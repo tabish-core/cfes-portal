@@ -17,44 +17,44 @@ const mongoose = require('mongoose');
 const courseSchema = new mongoose.Schema(
   {
     courseCode: {
-      type:      String,
-      required:  [true, 'Course code is required'],
-      unique:    true,
-      trim:      true,
+      type: String,
+      required: [true, 'Course code is required'],
+      unique: true,
+      trim: true,
       uppercase: true,
       match: [
         // /^[A-Z]{2,10}-\d{3,4}$/,
         // 'Course code must follow the pattern XX-000 (e.g. CS-301)',
-        /^(CSC|HUM|HMT|BUS|SSC|CS|CE|SE|TE|MT)\d{3}(-L)?$/,
-        'Course code must follow the pattern (CSC|HUM|HMT|BUS|SSC|CS|CE|SE|TE|MT)000(-L)? (e.g. CSC101 or CSC101-L)',
+        /^(CSC|HUM|HMT|BUS|SSC|CS|CE|SE|TE|MT|MS)\d{3}(-L)?$/,
+        'Course code must follow the pattern (CSC|HUM|HMT|BUS|SSC|CS|CE|SE|TE|MT|MS)000(-L)? (e.g. CSC101 or CSC101-L)',
       ],
     },
 
     courseName: {
-      type:      String,
-      required:  [true, 'Course name is required'],
-      trim:      true,
-      minlength: [3,   'Course name must be at least 3 characters'],
+      type: String,
+      required: [true, 'Course name is required'],
+      trim: true,
+      minlength: [3, 'Course name must be at least 3 characters'],
       maxlength: [120, 'Course name cannot exceed 120 characters'],
     },
 
     type: {
-      type:     String,
+      type: String,
       required: [true, 'Course type is required'],
       enum: {
-        values:  ['Core', 'Elective'],
+        values: ['Core', 'Elective'],
         message: "Type must be 'Core' or 'Elective'",
       },
     },
 
     isLab: {
-      type:    Boolean,
+      type: Boolean,
       default: false,
     },
 
     assignedFaculty: {
-      type:    mongoose.Schema.Types.ObjectId,
-      ref:     'User',
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
       default: null,
       // Nullable — a course may exist before faculty is assigned.
     },
@@ -63,10 +63,10 @@ const courseSchema = new mongoose.Schema(
     // These fields are included now so the schema can grow without migrations.
 
     creditHours: {
-      type:    Number,
+      type: Number,
       default: 3,
-      min:     [1, 'Credit hours must be at least 1'],
-      max:     [6, 'Credit hours cannot exceed 6'],
+      min: [1, 'Credit hours must be at least 1'],
+      max: [6, 'Credit hours cannot exceed 6'],
     },
 
     department: {
@@ -75,7 +75,7 @@ const courseSchema = new mongoose.Schema(
     },
 
     isActive: {
-      type:    Boolean,
+      type: Boolean,
       default: true,
     },
   },
@@ -98,7 +98,7 @@ courseSchema.virtual('fullTitle').get(function () {
 });
 
 // Ensure virtuals appear in JSON / Object serialisation
-courseSchema.set('toJSON',   { virtuals: true });
+courseSchema.set('toJSON', { virtuals: true });
 courseSchema.set('toObject', { virtuals: true });
 
 module.exports = mongoose.model('Course', courseSchema);
