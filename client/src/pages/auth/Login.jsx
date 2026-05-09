@@ -59,8 +59,6 @@ const Login = () => {
             <br />
             <br />
             Under Supervision of Dr. Israr Ali (HoD)
-            <br />
-            Snake Gang 🐍
           </p>
         </div>
       </div>
