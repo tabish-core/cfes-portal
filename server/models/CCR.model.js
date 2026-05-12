@@ -6,18 +6,20 @@ const commonRowFields = {
   timeOut: { type: String, default: '' },
   topicCovered: { type: String, default: '' },
   activityType: { type: String, default: '' },
-  hoursCompleted: { type: String, default: '' },
+  duration: { type: String, default: '' }, // Updated from hoursCompleted to match template
   signature: { type: String, default: '' },
-  remarks: { type: String, default: '' }
+  remarks: { type: String, default: '' },
+  isSpecialRow: { type: Boolean, default: false },
+  specialRowText: { type: String, default: '' }
 };
 
 const weeklyRowSchema = new mongoose.Schema({
-  weekNo: { type: Number, required: true },
+  weekNo: { type: String, default: '' }, // String to allow flexibility or empty for merged rows
   ...commonRowFields
 }, { _id: false });
 
 const alternateRowSchema = new mongoose.Schema({
-  rowNo: { type: Number, required: true },
+  rowNo: { type: Number },
   ...commonRowFields
 }, { _id: false });
 
@@ -53,14 +55,8 @@ const ccrSchema = new mongoose.Schema({
     timeSlot: { type: String, default: '' },
     location: { type: String, default: '' }
   },
-  weeklyData: {
-    type: [weeklyRowSchema],
-    default: () => Array.from({ length: 15 }, (_, i) => ({ weekNo: i + 1 }))
-  },
-  alternateData: {
-    type: [alternateRowSchema],
-    default: () => Array.from({ length: 4 }, (_, i) => ({ rowNo: i + 1 }))
-  }
+  weeklyData: [weeklyRowSchema],
+  alternateData: [alternateRowSchema]
 }, { timestamps: true });
 
 // Ensure one form per course per faculty per formType

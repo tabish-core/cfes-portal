@@ -14,17 +14,25 @@ const INITIAL_COURSE_INFO = {
   location: '',
 };
 
-const INITIAL_WEEKLY_DATA = Array.from({ length: 15 }, (_, i) => ({
-  weekNo: i + 1,
-  scheduleDate: '',
-  timeIn: '',
-  timeOut: '',
-  topicCovered: '',
-  activityType: '',
-  hoursCompleted: '',
-  signature: '',
-  remarks: '',
-}));
+const createWeekRows = (weekNum) => [
+  { weekNo: weekNum.toString(), scheduleDate: '', timeIn: '', timeOut: '', topicCovered: '', activityType: '', duration: '', signature: '', remarks: '', isSpecialRow: false },
+  { weekNo: weekNum.toString(), scheduleDate: '', timeIn: '', timeOut: '', topicCovered: '', activityType: '', duration: '', signature: '', remarks: '', isSpecialRow: false },
+  { weekNo: weekNum.toString(), scheduleDate: '', timeIn: '', timeOut: '', topicCovered: '', activityType: '', duration: '', signature: '', remarks: '', isSpecialRow: false },
+];
+
+const INITIAL_WEEKLY_DATA = (() => {
+  const data = [];
+  for (let i = 1; i <= 16; i++) {
+    if (i === 8) {
+      data.push({ weekNo: '8', isSpecialRow: true, specialRowText: 'Midterm', scheduleDate: '', activityType: 'MT' });
+    } else if (i === 16) {
+      data.push({ weekNo: '16', isSpecialRow: true, specialRowText: 'Final Exams', scheduleDate: '', activityType: 'FE' });
+    } else {
+      data.push(...createWeekRows(i));
+    }
+  }
+  return data;
+})();
 
 const INITIAL_ALTERNATE_DATA = Array.from({ length: 4 }, (_, i) => ({
   rowNo: i + 1,
@@ -33,7 +41,7 @@ const INITIAL_ALTERNATE_DATA = Array.from({ length: 4 }, (_, i) => ({
   timeOut: '',
   topicCovered: '',
   activityType: '',
-  hoursCompleted: '',
+  duration: '',
   signature: '',
   remarks: '',
 }));
@@ -45,6 +53,7 @@ const CourseControlReportPage = ({ courseId }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
+  const [isExporting, setIsExporting] = useState('');
 
   useEffect(() => {
     if (!courseId) return;
@@ -60,7 +69,7 @@ const CourseControlReportPage = ({ courseId }) => {
           if (form.alternateData && form.alternateData.length > 0) setAlternateData(form.alternateData);
         }
       } catch (err) {
-        setError('Failed to fetch existing course form.');
+        console.error('Failed to fetch CCR:', err);
       } finally {
         setLoading(false);
       }
@@ -86,6 +95,20 @@ const CourseControlReportPage = ({ courseId }) => {
     });
   };
 
+  const handleAddTopicToWeek = (weekNo) => {
+    setWeeklyData((prev) => {
+      const lastIndex = prev.map(r => r.weekNo).lastIndexOf(weekNo);
+      const newRow = { weekNo, scheduleDate: '', timeIn: '', timeOut: '', topicCovered: '', activityType: '', duration: '', signature: '', remarks: '', isSpecialRow: false };
+      const updated = [...prev];
+      updated.splice(lastIndex + 1, 0, newRow);
+      return updated;
+    });
+  };
+
+  const handleRemoveTopic = (index) => {
+    setWeeklyData((prev) => prev.filter((_, i) => i !== index));
+  };
+
   const handleAlternateDataChange = (index, field, value) => {
     setAlternateData((prev) => {
       const newData = [...prev];
@@ -95,6 +118,17 @@ const CourseControlReportPage = ({ courseId }) => {
       };
       return newData;
     });
+  };
+
+  const handleAddAlternateRow = () => {
+    setAlternateData((prev) => [
+      ...prev,
+      { rowNo: prev.length + 1, scheduleDate: '', timeIn: '', timeOut: '', topicCovered: '', activityType: '', duration: '', signature: '', remarks: '' }
+    ]);
+  };
+
+  const handleRemoveAlternateRow = (index) => {
+    setAlternateData((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async (e) => {
@@ -110,10 +144,39 @@ const CourseControlReportPage = ({ courseId }) => {
         alternateData
       });
       setSuccess('Course Control Report saved successfully!');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to save form.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDownload = async (format) => {
+    try {
+      setIsExporting(format);
+      setError(null);
+      setSuccess(null);
+      
+      const { data } = await api.get(`/forms/ccr/${courseId}/export?format=${format}`, {
+        responseType: 'blob',
+      });
+
+      const url = window.URL.createObjectURL(new Blob([data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `CCR_${courseInfo?.courseCode || 'Course'}.${format}`);
+      document.body.appendChild(link);
+      link.click();
+      
+      link.parentNode.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error(`Failed to export ${format}:`, err);
+      setError(`Failed to export ${format.toUpperCase()}. Please save the form first.`);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } finally {
+      setIsExporting('');
     }
   };
 
@@ -151,6 +214,8 @@ const CourseControlReportPage = ({ courseId }) => {
         <ReportTable
           data={weeklyData}
           onChange={handleWeeklyDataChange}
+          onAddTopic={handleAddTopicToWeek}
+          onRemoveTopic={handleRemoveTopic}
           title="Section 2: Weekly Report"
           rowLabelPrefix="Week"
           rowLabelField="weekNo"
@@ -160,27 +225,68 @@ const CourseControlReportPage = ({ courseId }) => {
         <ReportTable
           data={alternateData}
           onChange={handleAlternateDataChange}
+          onAddTopic={handleAddAlternateRow}
+          onRemoveTopic={handleRemoveAlternateRow}
           title="Section 3: Alternate Teacher / Makeup Class"
           rowLabelPrefix="Row"
           rowLabelField="rowNo"
           showSpecialRows={false}
         />
 
-        <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'flex-end' }}>
+        <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+          <button
+            type="button"
+            onClick={() => handleDownload('docx')}
+            disabled={isExporting === 'docx' || loading}
+            style={{
+              padding: '0.75rem 1.5rem',
+              backgroundColor: '#f8fafc',
+              color: '#334155',
+              border: '1px solid #cbd5e1',
+              borderRadius: '4px',
+              fontSize: '0.95rem',
+              cursor: isExporting === 'docx' ? 'wait' : 'pointer',
+              fontWeight: '600',
+              transition: 'all 0.2s'
+            }}
+          >
+            {isExporting === 'docx' ? 'Generating...' : 'Download Word (.docx)'}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleDownload('pdf')}
+            disabled={isExporting === 'pdf' || loading}
+            style={{
+              padding: '0.75rem 1.5rem',
+              backgroundColor: '#fef2f2',
+              color: '#991b1b',
+              border: '1px solid #fecaca',
+              borderRadius: '4px',
+              fontSize: '0.95rem',
+              cursor: isExporting === 'pdf' ? 'wait' : 'pointer',
+              fontWeight: '600',
+              transition: 'all 0.2s'
+            }}
+          >
+            {isExporting === 'pdf' ? 'Generating...' : 'Download PDF'}
+          </button>
+
           <button
             type="submit"
+            disabled={loading || isExporting}
             style={{
               padding: '0.75rem 2rem',
-              backgroundColor: '#3949ab',
+              backgroundColor: loading ? '#94a3b8' : '#3949ab',
               color: 'white',
               border: 'none',
               borderRadius: '4px',
               fontSize: '1rem',
-              cursor: 'pointer',
+              cursor: loading ? 'wait' : 'pointer',
               fontWeight: 'bold'
             }}
           >
-            Save Report
+            {loading ? 'Saving...' : 'Save Report'}
           </button>
         </div>
       </form>
