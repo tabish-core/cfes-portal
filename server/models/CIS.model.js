@@ -75,6 +75,8 @@ const CISSchema = new mongoose.Schema({
     topicCovered: { type: String, default: '' },
     clo: { type: String, default: '' },
     assessmentTool: { type: String, default: '' },
+    isSpecialRow: { type: Boolean, default: false },
+    specialRowText: { type: String, default: '' },
   }],
 
   gradingPolicy: {
@@ -83,7 +85,6 @@ const CISSchema = new mongoose.Schema({
     project: { type: Number },
     midterm: { type: Number },
     finalExam: { type: Number },
-    instructorGradingPolicy: { type: String, default: '' },
   }
 }, {
   timestamps: true

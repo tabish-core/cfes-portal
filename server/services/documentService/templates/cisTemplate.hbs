@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Course Information Sheet</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
+    @page {
+      size: Letter;
+      margin: 0.75in;
+    }
+    body {
+      font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
+      font-size: 10.5pt;
+      line-height: 1.4;
+      color: #000;
+      margin: 0;
+      padding: 0;
+    }
+    .header-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .logo {
+      color: #1a56db;
+      font-size: 24px;
+      font-weight: bold;
+      text-align: center;
+      flex-grow: 1;
+    }
+    .version {
+      color: #64748b;
+      font-size: 10px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 28px;
+      page-break-inside: auto;
+    }
+    tr {
+      page-break-inside: avoid;
+      page-break-after: auto;
+    }
+    table td, table th {
+      border: 1px solid #000;
+      padding: 4px 6px;
+      vertical-align: middle;
+    }
+    th {
+      background-color: #f1f5f9;
+      font-weight: bold;
+    }
+    .text-center { text-align: center; }
+    .bg-gray-200 { background-color: #e2e8f0; }
+    .bg-gray-100 { background-color: #f1f5f9; }
+    .bg-gray-50 { background-color: #f8fafc; }
+    .section-title {
+      font-size: 12px;
+      font-weight: bold;
+      margin-bottom: 5px;
+      margin-top: 15px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Course Info Table -->
+  <table>
+    <tr>
+      <td colspan="3" class="text-center bg-gray-200"><strong>IQRA University (IU)</strong></td>
+    </tr>
+    <tr>
+      <td colspan="3" class="text-center bg-gray-200"><strong>Faculty of Engineering Sciences and Technology (FEST)</strong></td>
+    </tr>
+    <tr>
+      <td colspan="3" class="text-center bg-gray-200"><strong>Computer Science Department (CS)</strong></td>
+    </tr>
+    <tr class="bg-gray-200">
+      <th style="width: 20%;" class="text-center">Course Code</th>
+      <th style="width: 60%;" class="text-center">Course Name</th>
+      <th style="width: 20%;" class="text-center">Credit Hr</th>
+    </tr>
+    <tr>
+      <td class="text-center">{{courseInfo.courseCode}}</td>
+      <td class="text-center">{{courseInfo.courseName}}</td>
+      <td class="text-center">{{courseInfo.creditHours}}</td>
+    </tr>
+  </table>
+
+  <!-- Basic Info -->
+  <table>
+    <tr>
+      <td colspan="4" class="bg-gray-200"><strong>1. Basic Information</strong></td>
+    </tr>
+    <tr>
+      <td style="width: 20%;"><strong>Instructor</strong></td>
+      <td style="width: 30%;" class="text-center">{{courseInfo.instructor}}</td>
+      <td style="width: 20%;"><strong>Designation</strong></td>
+      <td style="width: 30%;" class="text-center">{{courseInfo.designation}}</td>
+    </tr>
+    <tr>
+      <td><strong>Prerequisite(s)</strong></td>
+      <td class="text-center">{{courseInfo.prerequisites}}</td>
+      <td><strong>Semester</strong></td>
+      <td class="text-center">{{courseInfo.semester}}</td>
+    </tr>
+    <tr>
+      <td><strong>Email</strong></td>
+      <td class="text-center">{{courseInfo.email}}</td>
+      <td><strong>Phone</strong></td>
+      <td class="text-center">{{courseInfo.phone}}</td>
+    </tr>
+    <tr>
+      <td><strong>Consulting Hours</strong></td>
+      <td class="text-center">{{courseInfo.consultingHours}}</td>
+      <td><strong>Office Location</strong></td>
+      <td class="text-center">{{courseInfo.officeLocation}}</td>
+    </tr>
+  </table>
+
+  <!-- Objectives -->
+  <table>
+    <tr>
+      <td class="bg-gray-200"><strong>2. Course Objective(s)</strong></td>
+    </tr>
+    <tr>
+      <td>{{courseInfo.courseObjectives}}</td>
+    </tr>
+  </table>
+
+  <!-- Contents -->
+  <table>
+    <tr>
+      <td class="bg-gray-200"><strong>3. Course Contents</strong></td>
+    </tr>
+    <tr>
+      <td>{{courseInfo.courseContents}}</td>
+    </tr>
+  </table>
+
+  <!-- CLO Table -->
+  <table>
+    <tr>
+      <td colspan="7" class="bg-gray-200"><strong>4. Course Learning Outcomes</strong></td>
+    </tr>
+    <tr>
+      <th rowspan="2" class="text-center">CLOs</th>
+      <th rowspan="2" class="text-center">CLO Statement</th>
+      <th rowspan="2" class="text-center">BT Level</th>
+      <th colspan="3" class="text-center">Mapping</th>
+      <th rowspan="2" class="text-center">% Weight</th>
+    </tr>
+    <tr>
+      <th class="text-center">GAs</th>
+      <th class="text-center">ACM KA</th>
+      <th class="text-center">SGDs</th>
+    </tr>
+    {{#each alternateData.cloTable}}
+      <tr>
+        <td>{{this.cloNumber}}</td>
+        <td>{{this.cloStatement}}</td>
+        <td class="text-center">{{this.btLevel}}</td>
+        <td class="text-center">{{this.gaMapping}}</td>
+        {{#if @first}}
+          <td rowspan="{{../alternateData.cloCount}}" class="text-center">{{this.acmKaMapping}}</td>
+          <td rowspan="{{../alternateData.cloCount}}" class="text-center">{{this.sgdMapping}}</td>
+        {{/if}}
+        <td class="text-center">{{this.weightPercentage}}%</td>
+      </tr>
+    {{/each}}
+    <tr>
+      <td colspan="7" class="bg-gray-50" style="font-style: italic;">Note: On successful completion of course GA1 (Academic Education) will automatically attain.</td>
+    </tr>
+  </table>
+
+  <!-- Textbooks -->
+  <table>
+    <tr>
+      <td colspan="4" class="bg-gray-200"><strong>5. Course Textbook / Reference Books and Supplementary Reading Material</strong></td>
+    </tr>
+    <tr>
+      <th class="text-center">#</th>
+      <th>Book Title</th>
+      <th>Author(s)</th>
+      <th>Edition/ publication year/publisher</th>
+    </tr>
+    {{#each alternateData.textbooks}}
+    <tr>
+      <td class="text-center">{{this.serialNo}}</td>
+      <td>{{this.bookTitle}}</td>
+      <td>{{this.authors}}</td>
+      <td>{{this.editionPublicationPublisher}}</td>
+    </tr>
+    {{/each}}
+  </table>
+
+  <!-- OBA Table -->
+  <table>
+    <tr>
+      <td colspan="7" class="bg-gray-200"><strong>6. CLO Outcome Based Assessment (OBA) Tentative</strong></td>
+    </tr>
+    <tr>
+      <th style="width: 12%;" class="text-center">Assessment Tool</th>
+      <th style="width: 13%;" class="text-center"></th>
+      <th style="width: 15%;" class="text-center">CLO Mapped</th>
+      <th style="width: 10%;" class="text-center">CLO Marks</th>
+      <th style="width: 10%;" class="text-center">% Weight</th>
+      <th style="width: 10%;" class="text-center">Total Marks</th>
+      <th style="width: 30%;" class="text-center">Assessment Date</th>
+    </tr>
+    {{#each alternateData.obaTableGrouped}}
+      {{#each this.items}}
+        <tr>
+          {{#if @first}}
+            <td rowspan="{{../itemsCount}}" class="text-center">
+              <strong>{{../categoryName}}</strong><br/>
+              <strong>{{../overallWeight}}</strong>
+            </td>
+          {{/if}}
+          <td class="text-center">{{this.subTool}}</td>
+          <td class="text-center">{{this.cloMapped}}</td>
+          <td class="text-center">{{this.cloMarks}}</td>
+          <td class="text-center">{{this.weightPercentage}}%</td>
+          <td class="text-center">{{this.totalMarks}}</td>
+          {{#if @first}}
+            <td rowspan="{{../itemsCount}}" class="text-center">{{../assessmentDate}}</td>
+          {{/if}}
+        </tr>
+      {{/each}}
+      <!-- Total Row -->
+      <tr>
+        <td class="bg-gray-50"></td>
+        <td colspan="3" class="text-center bg-gray-50"><strong>Total {{this.categoryName}} %</strong></td>
+        <td class="text-center bg-gray-50"><strong>100%</strong></td>
+        <td class="text-center bg-gray-50"><strong>{{this.overallWeight}}</strong></td>
+        <td class="bg-gray-50"></td>
+      </tr>
+      <!-- Blank Spacing Row -->
+      <tr>
+        <td colspan="7" style="height: 10px; border-left: 1px solid #000; border-right: 1px solid #000; border-top: none; border-bottom: none;"></td>
+      </tr>
+    {{/each}}
+    <!-- Grand Total Row -->
+    <tr>
+      <td class="text-center bg-gray-100"><strong>100</strong></td>
+      <td colspan="4" class="text-center bg-gray-100"><strong>Total Marks</strong></td>
+      <td class="text-center bg-gray-100"><strong>100</strong></td>
+      <td class="bg-gray-100"></td>
+    </tr>
+    <tr>
+      <td colspan="7" class="bg-gray-50 text-center" style="font-style: italic;">Note: Please make sure every CLO must be assessed at least 3 time.</td>
+    </tr>
+  </table>
+
+  <!-- Weekly Plan -->
+  <table>
+    <tr>
+      <td colspan="5" class="bg-gray-200"><strong>7. Weekly Plan</strong></td>
+    </tr>
+    <tr>
+      <th class="text-center">Week</th>
+      <th class="text-center">Lecture No</th>
+      <th>Topic Covered</th>
+      <th class="text-center">CLO</th>
+      <th class="text-center">Assessment Tool</th>
+    </tr>
+    {{#each weeklyData}}
+      {{#if this.isSpecialRow}}
+        <tr>
+          <td class="text-center bg-gray-200">{{this.week}}</td>
+          <td colspan="4" class="text-center bg-gray-200"><strong>{{this.specialRowText}}</strong></td>
+        </tr>
+      {{else}}
+        <tr>
+          {{#if this.showWeek}}
+            <td rowspan="{{this.weekSpan}}" class="text-center">{{this.week}}</td>
+          {{/if}}
+          <td class="text-center">{{this.lectureNo}}</td>
+          <td>{{this.topicCovered}}</td>
+          <td class="text-center">{{this.clo}}</td>
+          <td class="text-center">{{this.assessmentTool}}</td>
+        </tr>
+      {{/if}}
+    {{/each}}
+  </table>
+
+  <!-- Grading Policy -->
+  <table>
+    <tr>
+      <th class="bg-gray-200" style="width: 50%;">8. IU Assessment / grading Policy</th>
+      <th class="bg-gray-200" style="width: 50%;">Instructor grading for course *</th>
+    </tr>
+    <tr>
+      <td style="width: 50%; padding-right: 15px;">
+        {{#each alternateData.gradingPolicyItems}}
+          <div style="margin-bottom: 2px;">
+            {{this.label}} <span style="float:right;">{{this.range}}</span>
+          </div>
+        {{/each}}
+      </td>
+      <td style="width: 50%; padding-left: 15px;">
+        {{#each alternateData.gradingPolicyItems}}
+          <div style="margin-bottom: 2px;">
+            {{this.value}}%
+          </div>
+        {{/each}}
+      </td>
+    </tr>
+  </table>
+
+</body>
+</html>

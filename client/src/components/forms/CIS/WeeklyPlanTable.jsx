@@ -42,7 +42,9 @@ const EMPTY_ROW = {
   lectureNo: '',
   topicCovered: '',
   clo: '',
-  assessmentTool: ''
+  assessmentTool: '',
+  isSpecialRow: false,
+  specialRowText: ''
 };
 
 /**
@@ -61,13 +63,24 @@ const WeeklyPlanTable = ({ data, onChange, onAddRow, onRemoveRow }) => (
       <h3 style={{ fontSize: '1rem', fontWeight: '700', color: '#1e293b', margin: 0 }}>
         Weekly Teaching Plan
       </h3>
-      <button
-        type="button"
-        onClick={onAddRow}
-        style={{ ...btnStyle, backgroundColor: '#3949ab', color: '#fff' }}
-      >
-        + Add Row
-      </button>
+      <div style={{ display: 'flex', gap: '0.5rem' }}>
+        <button
+          type="button"
+          onClick={() => onAddRow('lecture')}
+          style={{ ...btnStyle, backgroundColor: '#f1f5f9', color: '#334155', border: '1px solid #cbd5e1' }}
+          title="Add another lecture to the current week"
+        >
+          + Add Lecture
+        </button>
+        <button
+          type="button"
+          onClick={() => onAddRow('next-week')}
+          style={{ ...btnStyle, backgroundColor: '#3949ab', color: '#fff' }}
+          title="Start a new week"
+        >
+          + Add Next Week
+        </button>
+      </div>
     </div>
 
     <div style={{ overflowX: 'auto' }}>
@@ -85,52 +98,65 @@ const WeeklyPlanTable = ({ data, onChange, onAddRow, onRemoveRow }) => (
         <tbody>
           {data.map((row, index) => (
             <tr key={index}>
-              <td style={cellStyle}>
+              <td style={{ ...cellStyle, backgroundColor: row.isSpecialRow ? '#f1f5f9' : 'transparent' }}>
                 <input
                   type="text"
                   value={row.week}
                   onChange={(e) => onChange(index, 'week', e.target.value)}
                   placeholder={`${index + 1}`}
-                  style={{ ...inputStyle, textAlign: 'center' }}
+                  style={{ ...inputStyle, textAlign: 'center', backgroundColor: row.isSpecialRow ? '#f1f5f9' : '#fff' }}
                 />
               </td>
-              <td style={cellStyle}>
-                <input
-                  type="text"
-                  value={row.lectureNo}
-                  onChange={(e) => onChange(index, 'lectureNo', e.target.value)}
-                  placeholder="L1, L2..."
-                  style={{ ...inputStyle, textAlign: 'center' }}
-                />
-              </td>
-              <td style={cellStyle}>
-                <input
-                  type="text"
-                  value={row.topicCovered}
-                  onChange={(e) => onChange(index, 'topicCovered', e.target.value)}
-                  placeholder="Enter topic covered"
-                  style={inputStyle}
-                />
-              </td>
-              <td style={cellStyle}>
-                <input
-                  type="text"
-                  value={row.clo}
-                  onChange={(e) => onChange(index, 'clo', e.target.value)}
-                  placeholder="CLO-1"
-                  style={inputStyle}
-                />
-              </td>
-              <td style={cellStyle}>
-                <input
-                  type="text"
-                  value={row.assessmentTool}
-                  onChange={(e) => onChange(index, 'assessmentTool', e.target.value)}
-                  placeholder="Quiz, Assignment..."
-                  style={inputStyle}
-                />
-              </td>
-              <td style={{ ...cellStyle, textAlign: 'center' }}>
+              {row.isSpecialRow ? (
+                <td colSpan="4" style={{ ...cellStyle, backgroundColor: '#f1f5f9', fontWeight: 'bold', textAlign: 'center' }}>
+                  <input
+                    type="text"
+                    value={row.specialRowText}
+                    onChange={(e) => onChange(index, 'specialRowText', e.target.value)}
+                    style={{ ...inputStyle, textAlign: 'center', backgroundColor: '#f1f5f9', fontWeight: 'bold', border: 'none' }}
+                  />
+                </td>
+              ) : (
+                <>
+                  <td style={cellStyle}>
+                    <input
+                      type="text"
+                      value={row.lectureNo}
+                      onChange={(e) => onChange(index, 'lectureNo', e.target.value)}
+                      placeholder="L1, L2..."
+                      style={inputStyle}
+                    />
+                  </td>
+                  <td style={cellStyle}>
+                    <input
+                      type="text"
+                      value={row.topicCovered}
+                      onChange={(e) => onChange(index, 'topicCovered', e.target.value)}
+                      placeholder="Enter topic covered"
+                      style={inputStyle}
+                    />
+                  </td>
+                  <td style={cellStyle}>
+                    <input
+                      type="text"
+                      value={row.clo}
+                      onChange={(e) => onChange(index, 'clo', e.target.value)}
+                      placeholder="CLO-1"
+                      style={inputStyle}
+                    />
+                  </td>
+                  <td style={cellStyle}>
+                    <input
+                      type="text"
+                      value={row.assessmentTool}
+                      onChange={(e) => onChange(index, 'assessmentTool', e.target.value)}
+                      placeholder="Quiz, Assignment..."
+                      style={inputStyle}
+                    />
+                  </td>
+                </>
+              )}
+              <td style={{ ...cellStyle, textAlign: 'center', backgroundColor: row.isSpecialRow ? '#f1f5f9' : 'transparent' }}>
                 {data.length > 1 && (
                   <button
                     type="button"

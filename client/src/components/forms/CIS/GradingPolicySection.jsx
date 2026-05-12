@@ -14,22 +14,6 @@ const inputStyle = {
   textAlign: 'center'
 };
 
-const textareaStyle = {
-  width: '100%',
-  padding: '0.6rem 0.8rem',
-  border: '1px solid #cbd5e1',
-  backgroundColor: '#ffffff',
-  color: '#1e293b',
-  borderRadius: '6px',
-  fontSize: '0.9rem',
-  outline: 'none',
-  colorScheme: 'light',
-  boxSizing: 'border-box',
-  minHeight: '80px',
-  resize: 'vertical',
-  fontFamily: 'inherit'
-};
-
 const labelStyle = {
   fontSize: '0.85rem',
   fontWeight: '500',
@@ -71,18 +55,6 @@ const GradingPolicySection = ({ data, onChange }) => {
             <span style={{ fontSize: '0.85rem', color: '#64748b' }}>%</span>
           </div>
         ))}
-      </div>
-
-      <div>
-        <label style={{ ...labelStyle, display: 'block', marginBottom: '0.3rem' }}>
-          Instructor's Grading Policy
-        </label>
-        <textarea
-          value={data.instructorGradingPolicy || ''}
-          onChange={(e) => onChange('instructorGradingPolicy', e.target.value)}
-          placeholder="Enter grading policy details, curve descriptions, or passing criteria..."
-          style={textareaStyle}
-        />
       </div>
     </div>
   );

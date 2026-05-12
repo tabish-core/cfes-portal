@@ -49,13 +49,24 @@ const INITIAL_OBA_DATA = [
   { category: '', assessmentTool: '', cloMapped: '', cloMarks: '', weightPercentage: '', totalMarks: '', assessmentDate: '' },
 ];
 
-const INITIAL_WEEKLY_PLAN = Array.from({ length: 16 }, (_, i) => ({
-  week: `${i + 1}`,
-  lectureNo: '',
-  topicCovered: '',
-  clo: '',
-  assessmentTool: '',
-}));
+const INITIAL_WEEKLY_PLAN = Array.from({ length: 17 }, (_, i) => {
+  const weekNum = i + 1;
+  if (weekNum === 8) {
+    return { week: '8', isSpecialRow: true, specialRowText: 'Midterm Exam', lectureNo: '', topicCovered: '', clo: '', assessmentTool: '' };
+  }
+  if (weekNum === 17) {
+    return { week: '17', isSpecialRow: true, specialRowText: 'Final Exam', lectureNo: '', topicCovered: '', clo: '', assessmentTool: '' };
+  }
+  return {
+    week: `${weekNum}`,
+    lectureNo: '',
+    topicCovered: '',
+    clo: '',
+    assessmentTool: '',
+    isSpecialRow: false,
+    specialRowText: ''
+  };
+});
 
 const INITIAL_GRADING = {
   quizzes: '',
@@ -81,6 +92,7 @@ const CourseInformationSheetPage = ({ courseId }) => {
 
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isExporting, setIsExporting] = useState(''); // 'pdf', 'docx', or ''
   const [message, setMessage] = useState({ type: '', text: '' });
 
   useEffect(() => {
@@ -158,11 +170,53 @@ const CourseInformationSheetPage = ({ courseId }) => {
     setObaData((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const handleAddWeeklyRow = () => {
-    setWeeklyPlan((prev) => [
-      ...prev,
-      { ...EMPTY_WEEKLY_ROW, week: `${prev.length + 1}` }
-    ]);
+  const handleAddWeeklyRow = (type = 'lecture') => {
+    setWeeklyPlan((prev) => {
+      const lastRow = prev.length > 0 ? prev[prev.length - 1] : null;
+      let newWeek = '1';
+      let newLectureNo = '1';
+      let isSpecialRow = false;
+      let specialRowText = '';
+
+      if (lastRow) {
+        if (type === 'next-week') {
+          const lastWeekNum = parseInt(lastRow.week) || 0;
+          const nextWeekNum = lastWeekNum + 1;
+          newWeek = `${nextWeekNum}`;
+          
+          if (nextWeekNum === 8) {
+            isSpecialRow = true;
+            specialRowText = 'Midterm Exam';
+            newLectureNo = '';
+          } else if (nextWeekNum === 17) {
+            isSpecialRow = true;
+            specialRowText = 'Final Exam';
+            newLectureNo = '';
+          } else {
+            // Check if last row was special to continue numbering
+            const lastLecNum = parseInt(lastRow.lectureNo?.replace(/\D/g, '') || '0') || 0;
+            newLectureNo = `${lastLecNum + 1}`;
+          }
+        } else {
+          // Same week - only allow if not a special row
+          if (lastRow.isSpecialRow) return prev;
+          newWeek = lastRow.week;
+          const lastLecNum = parseInt(lastRow.lectureNo?.replace(/\D/g, '') || '0') || 0;
+          newLectureNo = `${lastLecNum + 1}`;
+        }
+      }
+
+      return [
+        ...prev,
+        { 
+          ...EMPTY_WEEKLY_ROW, 
+          week: newWeek, 
+          lectureNo: newLectureNo,
+          isSpecialRow,
+          specialRowText
+        }
+      ];
+    });
   };
 
   const handleRemoveWeeklyRow = (index) => {
@@ -200,6 +254,36 @@ const CourseInformationSheetPage = ({ courseId }) => {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleDownload = async (format) => {
+    try {
+      setIsExporting(format);
+      setMessage({ type: '', text: '' });
+      const token = localStorage.getItem('token');
+      const res = await axios.get(`/api/forms/cis/${courseId}/export?format=${format}`, {
+        headers: { Authorization: `Bearer ${token}` },
+        responseType: 'blob', // Important for handling binary data
+      });
+
+      // Create a URL for the blob
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `CIS_${courseSummary?.courseCode || 'Course'}.${format}`);
+      document.body.appendChild(link);
+      link.click();
+      
+      // Cleanup
+      link.parentNode.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error(`Failed to export ${format}:`, err);
+      setMessage({ type: 'error', text: `Failed to export ${format.toUpperCase()}. Please save the form first.` });
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } finally {
+      setIsExporting('');
     }
   };
 
@@ -290,10 +374,52 @@ const CourseInformationSheetPage = ({ courseId }) => {
           onChange={handleSectionChange(setGrading)}
         />
 
-        <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'flex-end' }}>
+        <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+          <button
+            type="button"
+            onClick={() => handleDownload('docx')}
+            disabled={isExporting === 'docx' || isSaving}
+            style={{
+              padding: '0.75rem 1.5rem',
+              backgroundColor: '#f8fafc',
+              color: '#334155',
+              border: '1px solid #cbd5e1',
+              borderRadius: '6px',
+              fontSize: '0.95rem',
+              cursor: isExporting === 'docx' ? 'wait' : 'pointer',
+              fontWeight: '600',
+              transition: 'all 0.2s'
+            }}
+            onMouseOver={(e) => { if (isExporting !== 'docx') e.currentTarget.style.backgroundColor = '#e2e8f0'; }}
+            onMouseOut={(e) => { if (isExporting !== 'docx') e.currentTarget.style.backgroundColor = '#f8fafc'; }}
+          >
+            {isExporting === 'docx' ? 'Generating...' : 'Download Word (.docx)'}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleDownload('pdf')}
+            disabled={isExporting === 'pdf' || isSaving}
+            style={{
+              padding: '0.75rem 1.5rem',
+              backgroundColor: '#fef2f2',
+              color: '#991b1b',
+              border: '1px solid #fecaca',
+              borderRadius: '6px',
+              fontSize: '0.95rem',
+              cursor: isExporting === 'pdf' ? 'wait' : 'pointer',
+              fontWeight: '600',
+              transition: 'all 0.2s'
+            }}
+            onMouseOver={(e) => { if (isExporting !== 'pdf') e.currentTarget.style.backgroundColor = '#fee2e2'; }}
+            onMouseOut={(e) => { if (isExporting !== 'pdf') e.currentTarget.style.backgroundColor = '#fef2f2'; }}
+          >
+            {isExporting === 'pdf' ? 'Generating...' : 'Download PDF'}
+          </button>
+
           <button
             type="submit"
-            disabled={isSaving}
+            disabled={isSaving || isExporting}
             style={{
               padding: '0.75rem 2rem',
               backgroundColor: isSaving ? '#94a3b8' : '#3949ab',
@@ -301,9 +427,12 @@ const CourseInformationSheetPage = ({ courseId }) => {
               border: 'none',
               borderRadius: '6px',
               fontSize: '1rem',
-              cursor: isSaving ? 'not-allowed' : 'pointer',
-              fontWeight: '600'
+              cursor: isSaving ? 'wait' : 'pointer',
+              fontWeight: '600',
+              transition: 'all 0.2s'
             }}
+            onMouseOver={(e) => { if (!isSaving) e.currentTarget.style.backgroundColor = '#303f9f'; }}
+            onMouseOut={(e) => { if (!isSaving) e.currentTarget.style.backgroundColor = '#3949ab'; }}
           >
             {isSaving ? 'Saving...' : 'Save Course Information Sheet'}
           </button>

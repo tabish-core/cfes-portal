@@ -7,8 +7,10 @@ const router = express.Router();
 // Apply verifyToken middleware so req.user is dynamically populated
 router.get('/ccr/:courseId', verifyToken, formController.getCCRForm);
 router.post('/ccr', verifyToken, formController.saveCCRForm);
+router.get('/ccr/:courseId/export', verifyToken, formController.exportCCRForm);
 
 router.get('/cis/:courseId', verifyToken, formController.getCISForm);
 router.post('/cis', verifyToken, formController.saveCISForm);
+router.get('/cis/:courseId/export', verifyToken, formController.exportCISForm);
 
 module.exports = router;

@@ -125,24 +125,41 @@ const CLOTable = ({ data, onChange, onAddRow, onRemoveRow }) => (
                   style={inputStyle}
                 />
               </td>
-              <td style={cellStyle}>
-                <input
-                  type="text"
-                  value={row.acmKaMapping}
-                  onChange={(e) => onChange(index, 'acmKaMapping', e.target.value)}
-                  placeholder="ACM KA"
-                  style={inputStyle}
-                />
-              </td>
-              <td style={cellStyle}>
-                <input
-                  type="text"
-                  value={row.sgdMapping}
-                  onChange={(e) => onChange(index, 'sgdMapping', e.target.value)}
-                  placeholder="SGD"
-                  style={inputStyle}
-                />
-              </td>
+              
+              {/* MERGED ACM KA COLUMN */}
+              {index === 0 && (
+                <td style={cellStyle} rowSpan={data.length}>
+                  <textarea
+                    value={row.acmKaMapping}
+                    onChange={(e) => {
+                      // Update all rows to keep them in sync
+                      for(let i=0; i<data.length; i++) {
+                        onChange(i, 'acmKaMapping', e.target.value);
+                      }
+                    }}
+                    placeholder="ACM KA"
+                    style={{ ...inputStyle, height: '100px', resize: 'vertical' }}
+                  />
+                </td>
+              )}
+
+              {/* MERGED SGD COLUMN */}
+              {index === 0 && (
+                <td style={cellStyle} rowSpan={data.length}>
+                  <textarea
+                    value={row.sgdMapping}
+                    onChange={(e) => {
+                      // Update all rows to keep them in sync
+                      for(let i=0; i<data.length; i++) {
+                        onChange(i, 'sgdMapping', e.target.value);
+                      }
+                    }}
+                    placeholder="SGD"
+                    style={{ ...inputStyle, height: '100px', resize: 'vertical' }}
+                  />
+                </td>
+              )}
+
               <td style={cellStyle}>
                 <input
                   type="number"
