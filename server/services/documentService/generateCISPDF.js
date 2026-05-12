@@ -94,6 +94,7 @@ const generateCISPDF = async (formData) => {
     // --no-sandbox is often required for environments like Render/Docker
     const browser = await puppeteer.launch({
       headless: 'new',
+      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || null,
       args: ['--no-sandbox', '--disable-setuid-sandbox']
     });
     
