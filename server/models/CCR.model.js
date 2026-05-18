@@ -34,6 +34,11 @@ const ccrSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
+  semester: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Semester',
+    default: null,
+  },
   formType: {
     type: String,
     enum: ['CCR'],
@@ -59,7 +64,7 @@ const ccrSchema = new mongoose.Schema({
   alternateData: [alternateRowSchema]
 }, { timestamps: true });
 
-// Ensure one form per course per faculty per formType
-ccrSchema.index({ course: 1, faculty: 1, formType: 1 }, { unique: true });
+// Ensure one form per course per faculty per semester per formType
+ccrSchema.index({ course: 1, faculty: 1, semester: 1, formType: 1 }, { unique: true });
 
 module.exports = mongoose.model('CCR', ccrSchema);

@@ -9,21 +9,29 @@ const { generateCCRPDF } = require('../services/documentService/generateCCRPDF')
 /**
  * @route   GET /api/forms/ccr/:courseId
  * @access  Private (Faculty mostly, though auth ensures valid JWT)
+ *
+ * Query params:
+ *   semester — Semester ObjectId (optional for backward compat; recommended)
  */
 const getCCRForm = async (req, res, next) => {
   try {
     const { courseId } = req.params;
     const facultyId = req.user._id;
+    const { semester: semesterId } = req.query;
 
     if (!courseId) {
       return sendError(res, 'Course ID is required', 400);
     }
 
-    const form = await CCR.findOne({
+    const query = {
       course: courseId,
       faculty: facultyId,
       formType: 'CCR'
-    });
+    };
+    // Include semester in query if provided
+    if (semesterId) query.semester = semesterId;
+
+    const form = await CCR.findOne(query);
 
     // Valid constraint: Should return form data if it exists, or null if not.
     return sendSuccess(res, { form: form || null }, 'CCR form fetched successfully');
@@ -35,27 +43,36 @@ const getCCRForm = async (req, res, next) => {
 /**
  * @route   POST /api/forms/ccr
  * @access  Private (Faculty mostly)
+ *
+ * Body:
+ *   courseId, semesterId (optional), courseInfo, weeklyData, alternateData
  */
 const saveCCRForm = async (req, res, next) => {
   try {
     const facultyId = req.user._id;
-    const { courseId, courseInfo, weeklyData, alternateData } = req.body;
+    const { courseId, semesterId, courseInfo, weeklyData, alternateData } = req.body;
 
     if (!courseId) {
       return sendError(res, 'Course ID is required', 400);
     }
 
+    const filter = { course: courseId, faculty: facultyId, formType: 'CCR' };
+    if (semesterId) filter.semester = semesterId;
+
+    const updateData = {
+      course: courseId,
+      faculty: facultyId,
+      formType: 'CCR',
+      courseInfo,
+      weeklyData,
+      alternateData,
+      status: 'draft'
+    };
+    if (semesterId) updateData.semester = semesterId;
+
     const form = await CCR.findOneAndUpdate(
-      { course: courseId, faculty: facultyId, formType: 'CCR' },
-      {
-        course: courseId,
-        faculty: facultyId,
-        formType: 'CCR',
-        courseInfo,
-        weeklyData,
-        alternateData,
-        status: 'draft'
-      },
+      filter,
+      updateData,
       { new: true, upsert: true, setDefaultsOnInsert: true }
     );
 
@@ -68,22 +85,29 @@ const saveCCRForm = async (req, res, next) => {
 /**
  * @route   GET /api/forms/ccr/:courseId/export
  * @access  Private
+ *
+ * Query params:
+ *   format   — 'docx' | 'pdf'
+ *   semester — Semester ObjectId (optional)
  */
 const exportCCRForm = async (req, res, next) => {
   try {
     const { courseId } = req.params;
     const facultyId = req.user._id;
-    const { format } = req.query; // e.g. ?format=docx
+    const { format, semester: semesterId } = req.query;
 
     if (!courseId) {
       return sendError(res, 'Course ID is required', 400);
     }
 
-    const form = await CCR.findOne({
+    const query = {
       course: courseId,
       faculty: facultyId,
       formType: 'CCR'
-    }).lean();
+    };
+    if (semesterId) query.semester = semesterId;
+
+    const form = await CCR.findOne(query).lean();
 
     if (!form) {
       return sendError(res, 'CCR form not found. Please save it first.', 404);
@@ -120,21 +144,28 @@ const exportCCRForm = async (req, res, next) => {
 /**
  * @route   GET /api/forms/cis/:courseId
  * @access  Private
+ *
+ * Query params:
+ *   semester — Semester ObjectId (optional for backward compat; recommended)
  */
 const getCISForm = async (req, res, next) => {
   try {
     const { courseId } = req.params;
     const facultyId = req.user._id;
+    const { semester: semesterId } = req.query;
 
     if (!courseId) {
       return sendError(res, 'Course ID is required', 400);
     }
 
-    const form = await CIS.findOne({
+    const query = {
       course: courseId,
       faculty: facultyId,
       formType: 'CIS'
-    });
+    };
+    if (semesterId) query.semester = semesterId;
+
+    const form = await CIS.findOne(query);
 
     return sendSuccess(res, { form: form || null }, 'CIS form fetched successfully');
   } catch (err) {
@@ -145,12 +176,16 @@ const getCISForm = async (req, res, next) => {
 /**
  * @route   POST /api/forms/cis
  * @access  Private
+ *
+ * Body:
+ *   courseId, semesterId (optional), courseSummary, basicInfo, etc.
  */
 const saveCISForm = async (req, res, next) => {
   try {
     const facultyId = req.user._id;
     const {
       courseId,
+      semesterId,
       courseSummary,
       basicInfo,
       objectives,
@@ -166,23 +201,29 @@ const saveCISForm = async (req, res, next) => {
       return sendError(res, 'Course ID is required', 400);
     }
 
+    const filter = { course: courseId, faculty: facultyId, formType: 'CIS' };
+    if (semesterId) filter.semester = semesterId;
+
+    const updateData = {
+      course: courseId,
+      faculty: facultyId,
+      formType: 'CIS',
+      courseSummary,
+      basicInfo,
+      courseObjectives: objectives,
+      courseContents: contents,
+      cloTable,
+      textbooks,
+      obaTable,
+      weeklyPlan,
+      gradingPolicy,
+      status: 'draft'
+    };
+    if (semesterId) updateData.semester = semesterId;
+
     const form = await CIS.findOneAndUpdate(
-      { course: courseId, faculty: facultyId, formType: 'CIS' },
-      {
-        course: courseId,
-        faculty: facultyId,
-        formType: 'CIS',
-        courseSummary,
-        basicInfo,
-        courseObjectives: objectives,
-        courseContents: contents,
-        cloTable,
-        textbooks,
-        obaTable,
-        weeklyPlan,
-        gradingPolicy,
-        status: 'draft'
-      },
+      filter,
+      updateData,
       { new: true, upsert: true, setDefaultsOnInsert: true }
     );
 
@@ -195,22 +236,29 @@ const saveCISForm = async (req, res, next) => {
 /**
  * @route   GET /api/forms/cis/:courseId/export
  * @access  Private
+ *
+ * Query params:
+ *   format   — 'docx' | 'pdf'
+ *   semester — Semester ObjectId (optional)
  */
 const exportCISForm = async (req, res, next) => {
   try {
     const { courseId } = req.params;
     const facultyId = req.user._id;
-    const { format } = req.query; // e.g. ?format=docx
+    const { format, semester: semesterId } = req.query;
 
     if (!courseId) {
       return sendError(res, 'Course ID is required', 400);
     }
 
-    const form = await CIS.findOne({
+    const query = {
       course: courseId,
       faculty: facultyId,
       formType: 'CIS'
-    }).lean();
+    };
+    if (semesterId) query.semester = semesterId;
+
+    const form = await CIS.findOne(query).lean();
 
     if (!form) {
       return sendError(res, 'CIS form not found. Please save it first.', 404);

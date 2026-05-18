@@ -17,6 +17,11 @@ const courseChecklistSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
+  semester: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Semester',
+    default: null,
+  },
   courseTitle: { type: String, default: '' },
   courseCode: { type: String, default: '' },
   batch: { type: String, default: '' },
@@ -46,7 +51,7 @@ const courseChecklistSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
-// One checklist per course per faculty
-courseChecklistSchema.index({ course: 1, faculty: 1 }, { unique: true });
+// One checklist per course per faculty per semester
+courseChecklistSchema.index({ course: 1, faculty: 1, semester: 1 }, { unique: true });
 
 module.exports = mongoose.model('CourseChecklist', courseChecklistSchema);

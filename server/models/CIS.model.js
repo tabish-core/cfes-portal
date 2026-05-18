@@ -11,6 +11,11 @@ const CISSchema = new mongoose.Schema({
     ref: 'User',
     required: true,
   },
+  semester: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Semester',
+    default: null,
+  },
   formType: {
     type: String,
     default: 'CIS',
@@ -90,7 +95,7 @@ const CISSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Ensure only one CIS document per course + faculty pair
-CISSchema.index({ course: 1, faculty: 1 }, { unique: true });
+// Ensure only one CIS document per course + faculty + semester triple
+CISSchema.index({ course: 1, faculty: 1, semester: 1 }, { unique: true });
 
 module.exports = mongoose.model('CIS', CISSchema);
