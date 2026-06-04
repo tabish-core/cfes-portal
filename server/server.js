@@ -30,6 +30,7 @@ const formRoutes = require('./routes/form.routes');
 const checklistRoutes = require('./routes/checklist.routes');
 const semesterRoutes = require('./routes/semester.routes');
 const offeringRoutes = require('./routes/courseOffering.routes');
+const departmentRoutes = require('./routes/department.routes');
 // Future: const courseFileRoutes = require('./routes/courseFile.routes');
 
 /* ── App setup ─────────────────────────────────────────── */
@@ -71,6 +72,7 @@ app.use('/api/forms', formRoutes);
 app.use('/api/checklist', checklistRoutes);
 app.use('/api/semesters', semesterRoutes);
 app.use('/api/offerings', offeringRoutes);
+app.use('/api/departments', departmentRoutes);
 // app.use('/api/course-files', courseFileRoutes);
 
 /* ── Step 5: 404 Handler ────────────────────────────────── */
@@ -79,6 +81,10 @@ app.use((req, res) => {
     success: false,
     message: `Route not found: ${req.method} ${req.originalUrl}`,
   });
+});
+
+app.get('ping', (req, res) => {
+  res.status(200).send('pong');
 });
 
 /* ── Step 6: Centralised Error Handler (MUST be last) ───── */
