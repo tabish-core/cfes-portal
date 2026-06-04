@@ -170,17 +170,20 @@ const CourseInformationSheetPage = ({ courseId }) => {
     setObaData((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const handleAddWeeklyRow = (type = 'lecture') => {
+  const handleAddWeeklyRow = (type = 'lecture', insertIndex = -1) => {
     setWeeklyPlan((prev) => {
-      const lastRow = prev.length > 0 ? prev[prev.length - 1] : null;
+      const isAppend = insertIndex === -1;
+      const targetIndex = isAppend ? prev.length - 1 : insertIndex;
+      const targetRow = prev[targetIndex];
+
       let newWeek = '1';
       let newLectureNo = '1';
       let isSpecialRow = false;
       let specialRowText = '';
 
-      if (lastRow) {
+      if (targetRow) {
         if (type === 'next-week') {
-          const lastWeekNum = parseInt(lastRow.week) || 0;
+          const lastWeekNum = parseInt(targetRow.week) || 0;
           const nextWeekNum = lastWeekNum + 1;
           newWeek = `${nextWeekNum}`;
           
@@ -193,29 +196,36 @@ const CourseInformationSheetPage = ({ courseId }) => {
             specialRowText = 'Final Exam';
             newLectureNo = '';
           } else {
-            // Check if last row was special to continue numbering
-            const lastLecNum = parseInt(lastRow.lectureNo?.replace(/\D/g, '') || '0') || 0;
+            // Find the last lecture number across all weeks just to increment
+            const lastLecRow = [...prev].reverse().find(r => !r.isSpecialRow);
+            const lastLecNum = parseInt(lastLecRow?.lectureNo?.replace(/\D/g, '') || '0') || 0;
             newLectureNo = `${lastLecNum + 1}`;
           }
         } else {
-          // Same week - only allow if not a special row
-          if (lastRow.isSpecialRow) return prev;
-          newWeek = lastRow.week;
-          const lastLecNum = parseInt(lastRow.lectureNo?.replace(/\D/g, '') || '0') || 0;
+          // Add lecture to current week
+          newWeek = targetRow.week;
+          // Find the last lecture number globally to increment it
+          const lastLecRow = [...prev].reverse().find(r => !r.isSpecialRow);
+          const lastLecNum = parseInt(lastLecRow?.lectureNo?.replace(/\D/g, '') || '0') || 0;
           newLectureNo = `${lastLecNum + 1}`;
         }
       }
 
-      return [
-        ...prev,
-        { 
-          ...EMPTY_WEEKLY_ROW, 
-          week: newWeek, 
-          lectureNo: newLectureNo,
-          isSpecialRow,
-          specialRowText
-        }
-      ];
+      const newRow = { 
+        ...EMPTY_WEEKLY_ROW, 
+        week: newWeek, 
+        lectureNo: newLectureNo,
+        isSpecialRow,
+        specialRowText
+      };
+
+      if (isAppend) {
+        return [...prev, newRow];
+      } else {
+        const updated = [...prev];
+        updated.splice(insertIndex + 1, 0, newRow);
+        return updated;
+      }
     });
   };
 

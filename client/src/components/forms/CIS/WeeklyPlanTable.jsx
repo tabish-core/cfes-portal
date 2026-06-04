@@ -156,7 +156,25 @@ const WeeklyPlanTable = ({ data, onChange, onAddRow, onRemoveRow }) => (
                   </td>
                 </>
               )}
-              <td style={{ ...cellStyle, textAlign: 'center', backgroundColor: row.isSpecialRow ? '#f1f5f9' : 'transparent' }}>
+              <td style={{ ...cellStyle, textAlign: 'center', backgroundColor: row.isSpecialRow ? '#f1f5f9' : 'transparent', whiteSpace: 'nowrap' }}>
+                {!row.isSpecialRow && (
+                  <button
+                    type="button"
+                    onClick={() => onAddRow('lecture', index)}
+                    title="Add a lecture to this week"
+                    style={{
+                      ...btnStyle,
+                      backgroundColor: '#f1f5f9',
+                      color: '#334155',
+                      border: '1px solid #cbd5e1',
+                      padding: '0.3rem 0.6rem',
+                      fontSize: '0.85rem',
+                      marginRight: '0.5rem'
+                    }}
+                  >
+                    + row
+                  </button>
+                )}
                 {data.length > 1 && (
                   <button
                     type="button"

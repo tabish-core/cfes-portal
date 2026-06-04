@@ -26,13 +26,13 @@ const CISSchema = new mongoose.Schema({
     enum: ['draft', 'submitted'],
     default: 'draft',
   },
-  
+
   courseSummary: {
     courseCode: { type: String, default: '' },
     courseName: { type: String, default: '' },
     creditHours: { type: String, default: '' },
   },
-  
+
   basicInfo: {
     instructor: { type: String, default: '' },
     designation: { type: String, default: '' },

@@ -1,74 +1,97 @@
 const { Table, TableRow, TableCell, Paragraph, TextRun, WidthType, AlignmentType, VerticalAlign } = require('docx');
 
 const buildOBATable = (obaTable) => {
+  const createCell = (text, bold = false, widthPercent = null, colSpan = 1, rowSpan = 1, shading = null, alignment = AlignmentType.CENTER) => {
+    const options = {
+      children: [new Paragraph({ children: [new TextRun({ text, bold })], alignment })],
+      columnSpan: colSpan,
+      rowSpan: rowSpan,
+      verticalAlign: VerticalAlign.CENTER,
+    };
+    if (widthPercent) {
+      options.width = { size: widthPercent, type: WidthType.PERCENTAGE };
+    }
+    if (shading) {
+      options.shading = { fill: shading };
+    }
+    return new TableCell(options);
+  };
+
   const titleRow = new TableRow({
     children: [
-      new TableCell({
-        children: [new Paragraph({ children: [new TextRun({ text: "6. CLO Outcome Based Assessment (OBA) Tentative", bold: true })] })],
-        columnSpan: 7,
-        shading: { fill: "e2e8f0" }
-      })
+      createCell("6. CLO Outcome Based Assessment (OBA) Tentative", true, 100, 7, 1, "e2e8f0", AlignmentType.LEFT)
     ]
   });
 
   const headerRow = new TableRow({
     children: [
-      new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Assessment Tool", bold: true })], alignment: AlignmentType.CENTER })], columnSpan: 2, verticalAlign: VerticalAlign.CENTER, shading: { fill: "f1f5f9" } }),
-      new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "CLO Mapped", bold: true })], alignment: AlignmentType.CENTER })], shading: { fill: "f1f5f9" } }),
-      new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "CLO Marks", bold: true })], alignment: AlignmentType.CENTER })], shading: { fill: "f1f5f9" } }),
-      new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "% Weight", bold: true })], alignment: AlignmentType.CENTER })], shading: { fill: "f1f5f9" } }),
-      new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Total Marks", bold: true })], alignment: AlignmentType.CENTER })], shading: { fill: "f1f5f9" } }),
-      new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Assessment Date", bold: true })], alignment: AlignmentType.CENTER })], shading: { fill: "f1f5f9" } }),
+      createCell("Assessment Tool", true, 25, 2, 1, "f1f5f9"),
+      createCell("CLO Mapped", true, 15, 1, 1, "f1f5f9"),
+      createCell("CLO Marks", true, 10, 1, 1, "f1f5f9"),
+      createCell("% Weight", true, 10, 1, 1, "f1f5f9"),
+      createCell("Total Marks", true, 10, 1, 1, "f1f5f9"),
+      createCell("Assessment Date", true, 30, 1, 1, "f1f5f9"),
     ]
   });
 
   const dataRows = [];
   
-  const categories = ["quizzes", "assignments", "midterm", "project/ccp", "final exam"];
   const groupedData = {};
-  categories.forEach(c => groupedData[c] = { overallWeight: 0, items: [], assessmentDate: "" });
+  const categoriesInOrder = []; // To keep track of the order categories appear
 
   if (Array.isArray(obaTable)) {
     obaTable.forEach(row => {
-      const cat = (row.category || "").toLowerCase();
-      if (groupedData[cat]) {
-        groupedData[cat].items.push(row);
-        groupedData[cat].assessmentDate = row.assessmentDate || groupedData[cat].assessmentDate;
-        groupedData[cat].overallWeight = row.overallWeight || groupedData[cat].overallWeight;
+      if (!row.category) return;
+      const cat = row.category.toLowerCase();
+      if (!groupedData[cat]) {
+        groupedData[cat] = { 
+          categoryName: row.category.charAt(0).toUpperCase() + row.category.slice(1),
+          overallWeight: 0, 
+          items: [], 
+          assessmentDate: "" 
+        };
+        categoriesInOrder.push(cat);
       }
+      groupedData[cat].items.push(row);
+      groupedData[cat].assessmentDate = row.assessmentDate || groupedData[cat].assessmentDate;
+      groupedData[cat].overallWeight += (Number(row.weightPercentage) || 0);
     });
   }
 
-  categories.forEach((category, catIndex) => {
-    const data = groupedData[category];
+  categoriesInOrder.forEach((catKey, catIndex) => {
+    const data = groupedData[catKey];
     const items = data.items || [];
     if (items.length === 0) return;
+
+    const catLower = data.categoryName.toLowerCase();
+    const mergeDate = !(catLower.includes('quiz') || catLower.includes('assignment'));
 
     items.forEach((item, index) => {
       const cells = [];
       if (index === 0) {
         cells.push(new TableCell({
           children: [
-            new Paragraph({ children: [new TextRun({ text: category.toUpperCase(), bold: true })], alignment: AlignmentType.CENTER }),
+            new Paragraph({ children: [new TextRun({ text: data.categoryName, bold: true })], alignment: AlignmentType.CENTER }),
             new Paragraph({ children: [new TextRun({ text: `${data.overallWeight || ""}`, bold: true })], alignment: AlignmentType.CENTER })
           ],
           rowSpan: items.length,
+          width: { size: 12, type: WidthType.PERCENTAGE },
           verticalAlign: VerticalAlign.CENTER
         }));
       }
 
-      cells.push(new TableCell({ children: [new Paragraph({ text: item.assessmentTool || "", alignment: AlignmentType.CENTER })] }));
-      cells.push(new TableCell({ children: [new Paragraph({ text: item.cloMapped || "", alignment: AlignmentType.CENTER })] }));
-      cells.push(new TableCell({ children: [new Paragraph({ text: item.cloMarks ? `${item.cloMarks}` : "", alignment: AlignmentType.CENTER })] }));
-      cells.push(new TableCell({ children: [new Paragraph({ text: item.weightPercentage ? `${item.weightPercentage}%` : "", alignment: AlignmentType.CENTER })] }));
-      cells.push(new TableCell({ children: [new Paragraph({ text: item.totalMarks ? `${item.totalMarks}` : "", alignment: AlignmentType.CENTER })] }));
-
-      if (index === 0) {
-        cells.push(new TableCell({
-          children: [new Paragraph({ text: data.assessmentDate || "", alignment: AlignmentType.CENTER })],
-          rowSpan: items.length,
-          verticalAlign: VerticalAlign.CENTER
-        }));
+      cells.push(createCell(item.assessmentTool || "", false, index === 0 ? 13 : 13));
+      cells.push(createCell(item.cloMapped || "", false, 15));
+      cells.push(createCell(item.cloMarks ? `${item.cloMarks}` : "", false, 10));
+      cells.push(createCell(item.weightPercentage ? `${item.weightPercentage}%` : "", false, 10));
+      cells.push(createCell(item.totalMarks ? `${item.totalMarks}` : "", false, 10));
+      
+      if (mergeDate) {
+        if (index === 0) {
+          cells.push(createCell(data.assessmentDate || "", true, 30, 1, items.length)); // Bold merged date
+        }
+      } else {
+        cells.push(createCell(item.assessmentDate || "", false, 30));
       }
 
       dataRows.push(new TableRow({ children: cells }));
@@ -77,22 +100,19 @@ const buildOBATable = (obaTable) => {
     // Total Row
     dataRows.push(new TableRow({
       children: [
-        new TableCell({ children: [new Paragraph({ text: "" })] }),
-        new TableCell({ 
-          children: [new Paragraph({ children: [new TextRun({ text: `Total ${category.charAt(0).toUpperCase() + category.slice(1)} %`, bold: true })], alignment: AlignmentType.CENTER })],
-          columnSpan: 3 
-        }),
-        new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "100%", bold: true })], alignment: AlignmentType.CENTER })] }),
-        new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: `${data.overallWeight || ""}`, bold: true })], alignment: AlignmentType.CENTER })] }),
-        new TableCell({ children: [new Paragraph({ text: "" })] })
+        createCell("", false, 12, 1, 1, "f8fafc"),
+        createCell(`Total ${data.categoryName} %`, true, 38, 3, 1, "f8fafc"),
+        createCell("100%", true, 10, 1, 1, "f8fafc"),
+        createCell(`${data.overallWeight || ""}`, true, 10, 1, 1, "f8fafc"),
+        createCell("", false, 30, 1, 1, "f8fafc")
       ]
     }));
 
     // Blank Spacing Row (except for the last category)
-    if (catIndex < categories.length - 1) {
+    if (catIndex < categoriesInOrder.length - 1) {
       dataRows.push(new TableRow({
         children: [
-          new TableCell({ children: [new Paragraph({ text: "" })], columnSpan: 7 })
+          createCell("", false, 100, 7)
         ]
       }));
     }
@@ -101,10 +121,10 @@ const buildOBATable = (obaTable) => {
   // Grand Total
   dataRows.push(new TableRow({
     children: [
-      new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "100", bold: true })], alignment: AlignmentType.CENTER })] }),
-      new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Total Marks", bold: true })], alignment: AlignmentType.CENTER })], columnSpan: 4 }),
-      new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "100", bold: true })], alignment: AlignmentType.CENTER })] }),
-      new TableCell({ children: [new Paragraph({ text: "" })] })
+      createCell("100", true, 12, 1, 1, "f1f5f9"),
+      createCell("Total Marks", true, 48, 4, 1, "f1f5f9"),
+      createCell("100", true, 10, 1, 1, "f1f5f9"),
+      createCell("", false, 30, 1, 1, "f1f5f9")
     ]
   }));
 

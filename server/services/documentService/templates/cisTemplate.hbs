@@ -225,8 +225,12 @@
           <td class="text-center">{{this.cloMarks}}</td>
           <td class="text-center">{{this.weightPercentage}}%</td>
           <td class="text-center">{{this.totalMarks}}</td>
-          {{#if @first}}
-            <td rowspan="{{../itemsCount}}" class="text-center">{{../assessmentDate}}</td>
+          {{#if ../mergeDate}}
+            {{#if @first}}
+              <td rowspan="{{../itemsCount}}" class="text-center"><strong>{{../assessmentDate}}</strong></td>
+            {{/if}}
+          {{else}}
+            <td class="text-center">{{this.assessmentDate}}</td>
           {{/if}}
         </tr>
       {{/each}}

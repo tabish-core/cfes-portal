@@ -50,7 +50,8 @@ const generateCISPDF = async (formData) => {
           cloMapped: row.cloMapped,
           cloMarks: row.cloMarks,
           weightPercentage: row.weightPercentage,
-          totalMarks: row.totalMarks
+          totalMarks: row.totalMarks,
+          assessmentDate: row.assessmentDate || ""
         });
         grouped[cat].overallWeight += (Number(row.weightPercentage) || 0);
       });
@@ -58,6 +59,10 @@ const generateCISPDF = async (formData) => {
       for (const key in grouped) {
         grouped[key].rowSpan = grouped[key].items.length + 1; // +1 for the total row
         grouped[key].itemsCount = grouped[key].items.length;
+        
+        const catLower = grouped[key].categoryName.toLowerCase();
+        grouped[key].mergeDate = !(catLower.includes('quiz') || catLower.includes('assignment'));
+        
         obaTableGrouped.push(grouped[key]);
       }
     }
