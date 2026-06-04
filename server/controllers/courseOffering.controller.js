@@ -22,7 +22,8 @@ const createOffering = async (req, res, next) => {
       facultyId,
       courseId,
       semesterId,
-      section
+      section,
+      req.user
     );
 
     return sendSuccess(res, { offering }, 'Course offering created successfully', 201);
@@ -37,7 +38,7 @@ const createOffering = async (req, res, next) => {
  */
 const removeOffering = async (req, res, next) => {
   try {
-    const offering = await offeringService.removeOffering(req.params.id);
+    const offering = await offeringService.removeOffering(req.params.id, req.user);
     return sendSuccess(res, { offering }, 'Course offering removed');
   } catch (err) {
     next(err);
@@ -56,7 +57,7 @@ const listBySemester = async (req, res, next) => {
       return sendError(res, 'semester query parameter is required', 400);
     }
 
-    const offerings = await offeringService.listOfferingsBySemester(semester);
+    const offerings = await offeringService.listOfferingsBySemester(semester, req.departmentFilter || {});
     return sendSuccess(res, { offerings }, 'Offerings fetched');
   } catch (err) {
     next(err);

@@ -8,8 +8,8 @@ const User = require('../models/User.model');
 /* ── Token helpers ──────────────────────────────────────── */
 
 /**
- * Sign a JWT with the user's id and role.
- * @param {{ id: string, role: string }} payload
+ * Sign a JWT with the user's id and designation.
+ * @param {{ id: string, designation: string }} payload
  * @returns {string} signed JWT
  */
 const generateToken = (payload) => {
@@ -31,10 +31,10 @@ const decodeToken = (token) => {
 
 /**
  * Register a new user (called by Admin only — enforced at route level).
- * @param {{ name, email, password, role, department }} data
+ * @param {{ name, email, password, designation, department }} data
  * @returns {{ user: User, token: string }}
  */
-const register = async ({ name, email, password, role, department }) => {
+const register = async ({ name, email, password, designation, department }) => {
   const existing = await User.findOne({ email });
   if (existing) {
     const err = new Error('A user with this email already exists');
@@ -43,8 +43,14 @@ const register = async ({ name, email, password, role, department }) => {
   }
 
   // Password is hashed by the pre-save hook on User model
-  const user  = await User.create({ name, email, password, role, department });
-  const token = generateToken({ id: user._id, role: user.role });
+  const user  = await User.create({ name, email, password, designation, department });
+  const token = generateToken({ id: user._id, designation: user.designation });
+
+  // Automatically link HoD to Department if applicable
+  if (user.designation === 'hod' && user.department) {
+    const Department = require('../models/Department.model');
+    await Department.findByIdAndUpdate(user.department, { hod: user._id });
+  }
 
   return { user, token };
 };
@@ -85,7 +91,7 @@ const login = async ({ email, password }) => {
     throw err;
   }
 
-  const token = generateToken({ id: user._id, role: user.role });
+  const token = generateToken({ id: user._id, designation: user.designation });
   return { user, token };
 };
 

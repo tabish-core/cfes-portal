@@ -1,13 +1,13 @@
 const User = require('../models/User.model');
 
-const listFaculties = async () => {
-  return User.find({ role: 'faculty' })
+const listFaculties = async (departmentFilter = {}) => {
+  return User.find({ designation: { $in: ['faculty', 'hod'] }, ...departmentFilter })
     .select('-__v')
     .sort({ createdAt: -1 });
 };
 
 const updateFaculty = async (id, { name, email, password, department, isActive }) => {
-  const faculty = await User.findOne({ _id: id, role: 'faculty' }).select('+password');
+  const faculty = await User.findOne({ _id: id, designation: { $in: ['faculty', 'hod'] } }).select('+password');
   if (!faculty) {
     const err = new Error('Faculty user not found');
     err.statusCode = 404;

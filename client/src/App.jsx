@@ -1,20 +1,26 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './routes/ProtectedRoute';
-import RoleRoute from './routes/RoleRoute';
+import DesignationRoute from './routes/DesignationRoute';
 
 // Layouts
-import AdminLayout from './layouts/AdminLayout';
+import DeanLayout from './layouts/DeanLayout';
+import HodLayout from './layouts/HodLayout';
 import FacultyLayout from './layouts/FacultyLayout';
 
 // Auth pages
 import Login from './pages/auth/Login';
 
-// Admin pages
-import AdminDashboard from './pages/admin/Dashboard';
-import Submissions from './pages/admin/Submissions';
-import Users from './pages/admin/Users';
-import Courses from './pages/admin/Courses';
+// Dean pages
+import DeanDashboard from './pages/dean/Dashboard';
+import DeanSubmissions from './pages/dean/Submissions';
+import DeanUsers from './pages/dean/Users';
+import DeanCourses from './pages/dean/Courses';
+import DeanDepartments from './pages/dean/Departments';
+
+// HoD pages
+import HodDashboard from './pages/hod/Dashboard';
+import HodFaculty from './pages/hod/Faculty';
 
 // Faculty pages
 import FacultyDashboard from './pages/faculty/Dashboard';
@@ -31,21 +37,34 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/" element={<Navigate to="/login" replace />} />
 
-          {/* Admin routes */}
+          {/* Dean routes */}
           <Route element={<ProtectedRoute />}>
-            <Route element={<RoleRoute allowedRoles={['admin']} />}>
-              <Route element={<AdminLayout />}>
-                <Route path="/admin/dashboard" element={<AdminDashboard />} />
-                <Route path="/admin/submissions" element={<Submissions />} />
-                <Route path="/admin/users" element={<Users />} />
-                <Route path="/admin/courses" element={<Courses />} />
+            <Route element={<DesignationRoute allowedDesignations={['dean']} />}>
+              <Route element={<DeanLayout />}>
+                <Route path="/dean/dashboard" element={<DeanDashboard />} />
+                <Route path="/dean/submissions" element={<DeanSubmissions />} />
+                <Route path="/dean/users" element={<DeanUsers />} />
+                <Route path="/dean/courses" element={<DeanCourses />} />
+                <Route path="/dean/departments" element={<DeanDepartments />} />
               </Route>
             </Route>
           </Route>
 
-          {/* Faculty routes */}
+          {/* HoD routes */}
           <Route element={<ProtectedRoute />}>
-            <Route element={<RoleRoute allowedRoles={['faculty']} />}>
+            <Route element={<DesignationRoute allowedDesignations={['hod']} />}>
+              <Route element={<HodLayout />}>
+                <Route path="/hod/dashboard" element={<HodDashboard />} />
+                <Route path="/hod/submissions" element={<DeanSubmissions />} />
+                <Route path="/hod/faculty" element={<HodFaculty />} />
+                <Route path="/hod/courses" element={<DeanCourses />} />
+              </Route>
+            </Route>
+          </Route>
+
+          {/* Faculty routes (Faculty and HoD can access their own forms) */}
+          <Route element={<ProtectedRoute />}>
+            <Route element={<DesignationRoute allowedDesignations={['faculty', 'hod']} />}>
               <Route element={<FacultyLayout />}>
                 <Route path="/faculty/dashboard" element={<FacultyDashboard />} />
                 <Route path="/faculty/course/:courseId" element={<CourseFileChecklist />} />

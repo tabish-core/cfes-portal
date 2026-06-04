@@ -70,8 +70,9 @@ const courseSchema = new mongoose.Schema(
     },
 
     department: {
-      type: String,
-      trim: true,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Department',
+      default: null,
     },
 
     isActive: {

@@ -1,9 +1,9 @@
 const userService = require('../services/user.service');
 const { sendSuccess, sendError } = require('../utils/response');
 
-const getFaculties = async (_req, res, next) => {
+const getFaculties = async (req, res, next) => {
   try {
-    const faculties = await userService.listFaculties();
+    const faculties = await userService.listFaculties(req.departmentFilter);
     return sendSuccess(res, { faculties }, 'Faculty users fetched');
   } catch (err) {
     next(err);

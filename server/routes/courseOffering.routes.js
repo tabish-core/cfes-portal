@@ -10,7 +10,7 @@
 const express               = require('express');
 const offeringController    = require('../controllers/courseOffering.controller');
 const { verifyToken }       = require('../middlewares/auth.middleware');
-const { requireRole }       = require('../middlewares/role.middleware');
+const { requireDesignation, requireDepartmentScope }       = require('../middlewares/designation.middleware');
 
 const router = express.Router();
 
@@ -18,7 +18,7 @@ const router = express.Router();
 router.post(
   '/',
   verifyToken,
-  requireRole('admin'),
+  requireDesignation('dean', 'hod'),
   offeringController.createOffering
 );
 
@@ -27,7 +27,7 @@ router.post(
 router.get(
   '/my-courses',
   verifyToken,
-  requireRole('faculty'),
+  requireDesignation('faculty', 'hod'),
   offeringController.getMyOfferings
 );
 
@@ -35,7 +35,8 @@ router.get(
 router.get(
   '/',
   verifyToken,
-  requireRole('admin'),
+  requireDesignation('dean', 'hod'),
+  requireDepartmentScope,
   offeringController.listBySemester
 );
 
@@ -43,7 +44,7 @@ router.get(
 router.delete(
   '/:id',
   verifyToken,
-  requireRole('admin'),
+  requireDesignation('dean', 'hod'),
   offeringController.removeOffering
 );
 

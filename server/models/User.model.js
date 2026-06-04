@@ -34,14 +34,15 @@ const userSchema = new mongoose.Schema(
       minlength: [6, 'Password must be at least 6 characters'],
       select:    false, // never returned by default queries
     },
-    role: {
+    designation: {
       type:    String,
-      enum:    { values: ['admin', 'faculty'], message: 'Role must be admin or faculty' },
+      enum:    { values: ['dean', 'hod', 'faculty'], message: 'Designation must be dean, hod, or faculty' },
       default: 'faculty',
     },
     department: {
-      type: String,
-      trim: true,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Department',
+      default: null,
     },
     isActive: {
       type:    Boolean,

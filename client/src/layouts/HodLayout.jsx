@@ -1,5 +1,5 @@
 /**
- * FacultyLayout.jsx — Shell for all faculty pages.
+ * HodLayout.jsx — Shell for all HoD pages.
  */
 import { Outlet } from 'react-router-dom';
 import { useState } from 'react';
@@ -7,13 +7,13 @@ import Sidebar from '../components/layout/Sidebar';
 import Topbar  from '../components/layout/Topbar';
 import './Layout.css';
 
-const FacultyLayout = () => {
+const HodLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
     <div className={`app-shell ${sidebarOpen ? 'app-shell--menu-open' : ''}`}>
       <Sidebar
-        designation="faculty"
+        designation="hod"
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
       />
@@ -30,4 +30,4 @@ const FacultyLayout = () => {
   );
 };
 
-export default FacultyLayout;
+export default HodLayout;

@@ -5,21 +5,32 @@ import { NavLink } from 'react-router-dom';
 import useAuth from '../../hooks/useAuth';
 import './Sidebar.css';
 
-const ADMIN_LINKS = [
-  { to: '/admin/dashboard',   label: 'Dashboard'},
-  { to: '/admin/submissions', label: 'Submissions'},
-  { to: '/admin/users',       label: 'Users'},
-  { to: '/admin/courses',     label: 'Courses'},
+const DEAN_LINKS = [
+  { to: '/dean/dashboard',   label: 'Dashboard'},
+  { to: '/dean/submissions', label: 'Submissions'},
+  { to: '/dean/users',       label: 'Users'},
+  { to: '/dean/courses',     label: 'Courses'},
+  { to: '/dean/departments', label: 'Departments'},
+];
+
+const HOD_LINKS = [
+  { to: '/hod/dashboard',    label: 'Dashboard (HoD)'},
+  { to: '/hod/submissions',  label: 'Submissions'},
+  { to: '/hod/faculty',      label: 'Department Faculty'},
+  { to: '/hod/courses',      label: 'Course Allocation'},
+  { to: '/faculty/dashboard',label: 'My Faculty View'},
 ];
 
 const FACULTY_LINKS = [
   { to: '/faculty/dashboard', label: 'Dashboard'},
-  { to: '/faculty/submit',    label: 'New File'},
 ];
 
-const Sidebar = ({ role, isOpen = false, onClose }) => {
-  const { logout } = useAuth();
-  const links = role === 'admin' ? ADMIN_LINKS : FACULTY_LINKS;
+const Sidebar = ({ isOpen = false, onClose }) => {
+  const { user, logout } = useAuth();
+  
+  let links = FACULTY_LINKS;
+  if (user?.designation === 'dean') links = DEAN_LINKS;
+  if (user?.designation === 'hod') links = HOD_LINKS;
 
   return (
     <>

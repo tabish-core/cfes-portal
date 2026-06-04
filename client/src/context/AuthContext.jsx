@@ -56,8 +56,8 @@ export const AuthProvider = ({ children }) => {
 
   /* ── login() ─────────────────────────────────────────── */
   const login = useCallback(({ user, token }) => {
-    if (!['admin', 'faculty'].includes(user?.role)) {
-      throw new Error('Unsupported user role.');
+    if (!['dean', 'hod', 'faculty'].includes(user?.designation)) {
+      throw new Error('Unsupported user designation.');
     }
 
     localStorage.setItem('token', token);
@@ -65,9 +65,11 @@ export const AuthProvider = ({ children }) => {
     setToken(token);
     setUser(user);
 
-    // Redirect based on role
-    if (user.role === 'admin') {
-      navigate('/admin/dashboard', { replace: true });
+    // Redirect based on designation
+    if (user.designation === 'dean') {
+      navigate('/dean/dashboard', { replace: true });
+    } else if (user.designation === 'hod') {
+      navigate('/hod/dashboard', { replace: true });
     } else {
       navigate('/faculty/dashboard', { replace: true });
     }

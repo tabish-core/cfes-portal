@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import api from '../../api/axios';
-import '../admin/Dashboard.css';
+import '../dean/Dashboard.css';
 
 /**
  * Checklist data structure.

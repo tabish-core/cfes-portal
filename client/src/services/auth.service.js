@@ -29,8 +29,8 @@ export const getMe = async () => {
  */
 export const registerFaculty = async (payload) => {
   const { data } = await api.post('/auth/register', {
+    designation: 'faculty', // default
     ...payload,
-    role: 'faculty',
   });
   return data.data; // { user, token }
 };

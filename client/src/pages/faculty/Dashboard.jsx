@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import useAuth from '../../hooks/useAuth';
 import { getSemesters } from '../../services/semester.service';
 import { getMyOfferings } from '../../services/courseOffering.service';
-import '../admin/Dashboard.css';
+import '../dean/Dashboard.css';
 
 const FacultyDashboard = () => {
   const { user } = useAuth();

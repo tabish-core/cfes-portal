@@ -35,13 +35,13 @@ const login = async (req, res, next) => {
  * ───────────────────────────────────────────────────────── */
 const register = async (req, res, next) => {
   try {
-    const { name, email, password, role, department } = req.body;
+    const { name, email, password, designation, department } = req.body;
 
     if (!name || !email || !password) {
       return sendError(res, 'Name, email and password are required', 400);
     }
 
-    const { user, token } = await authService.register({ name, email, password, role, department });
+    const { user, token } = await authService.register({ name, email, password, designation, department });
     return sendSuccess(res, { user, token }, 'User registered successfully', 201);
   } catch (err) {
     next(err);

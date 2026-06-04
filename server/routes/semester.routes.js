@@ -10,7 +10,7 @@
 const express              = require('express');
 const semesterController   = require('../controllers/semester.controller');
 const { verifyToken }      = require('../middlewares/auth.middleware');
-const { requireRole }      = require('../middlewares/role.middleware');
+const { requireDesignation }      = require('../middlewares/designation.middleware');
 
 const router = express.Router();
 
@@ -18,7 +18,7 @@ const router = express.Router();
 router.post(
   '/',
   verifyToken,
-  requireRole('admin'),
+  requireDesignation('dean'),
   semesterController.createSemester
 );
 
@@ -26,7 +26,7 @@ router.post(
 router.get(
   '/',
   verifyToken,
-  requireRole('admin', 'faculty'),
+  requireDesignation('dean', 'hod', 'faculty'),
   semesterController.listSemesters
 );
 
@@ -35,7 +35,7 @@ router.get(
 router.get(
   '/active',
   verifyToken,
-  requireRole('admin', 'faculty'),
+  requireDesignation('dean', 'hod', 'faculty'),
   semesterController.getActiveSemester
 );
 
@@ -43,7 +43,7 @@ router.get(
 router.patch(
   '/:id/toggle',
   verifyToken,
-  requireRole('admin'),
+  requireDesignation('dean'),
   semesterController.toggleStatus
 );
 

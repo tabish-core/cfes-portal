@@ -1,5 +1,5 @@
 /**
- * AdminLayout.jsx — Shell for all admin pages.
+ * DeanLayout.jsx — Shell for all dean pages.
  * Renders Sidebar + Topbar + page content via <Outlet />.
  */
 import { Outlet } from 'react-router-dom';
@@ -8,13 +8,13 @@ import Sidebar from '../components/layout/Sidebar';
 import Topbar  from '../components/layout/Topbar';
 import './Layout.css';
 
-const AdminLayout = () => {
+const DeanLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
     <div className={`app-shell ${sidebarOpen ? 'app-shell--menu-open' : ''}`}>
       <Sidebar
-        role="admin"
+        designation="dean"
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
       />
@@ -31,4 +31,4 @@ const AdminLayout = () => {
   );
 };
 
-export default AdminLayout;
+export default DeanLayout;

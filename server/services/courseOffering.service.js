@@ -32,7 +32,7 @@ const fail = (message, statusCode = 400) => {
  * @param {string} semesterId
  * @param {string} [section='A']
  */
-const createOffering = async (facultyId, courseId, semesterId, section = 'A') => {
+const createOffering = async (facultyId, courseId, semesterId, section = 'A', user) => {
   // ── Validate IDs ────────────────────────────────────────────────────────
   if (!mongoose.Types.ObjectId.isValid(facultyId))  fail('Invalid faculty ID',  400);
   if (!mongoose.Types.ObjectId.isValid(courseId))    fail('Invalid course ID',   400);
@@ -49,6 +49,13 @@ const createOffering = async (facultyId, courseId, semesterId, section = 'A') =>
   if (!faculty.isActive) fail('Cannot assign course to a deactivated faculty account', 403);
   if (!course)           fail('Course not found', 404);
   if (!semester)         fail('Semester not found', 404);
+
+  // If HoD, restrict to their department
+  if (user && user.designation === 'hod') {
+    if (course.department.toString() !== user.department.toString()) {
+      fail('You are only allowed to assign courses belonging to your department.', 403);
+    }
+  }
 
   // ── Check for duplicate ─────────────────────────────────────────────────
   const duplicate = await CourseOffering.findOne({
@@ -81,11 +88,17 @@ const createOffering = async (facultyId, courseId, semesterId, section = 'A') =>
 /**
  * Remove (unassign) a course offering by its _id.
  */
-const removeOffering = async (offeringId) => {
+const removeOffering = async (offeringId, user) => {
   if (!mongoose.Types.ObjectId.isValid(offeringId)) fail('Invalid offering ID', 400);
 
-  const offering = await CourseOffering.findById(offeringId);
+  const offering = await CourseOffering.findById(offeringId).populate('course');
   if (!offering) fail('Course offering not found', 404);
+
+  if (user && user.designation === 'hod') {
+    if (offering.course.department.toString() !== user.department.toString()) {
+      fail('You are only allowed to remove offerings belonging to your department.', 403);
+    }
+  }
 
   await offering.deleteOne();
   return offering;
@@ -94,12 +107,22 @@ const removeOffering = async (offeringId) => {
 /**
  * List all offerings for a given semester, populated with faculty + course info.
  */
-const listOfferingsBySemester = async (semesterId) => {
+const listOfferingsBySemester = async (semesterId, departmentFilter = {}) => {
   if (!mongoose.Types.ObjectId.isValid(semesterId)) fail('Invalid semester ID', 400);
 
-  return CourseOffering.find({ semester: semesterId })
+  let courseFilter = {};
+  if (departmentFilter.department) {
+    const courses = await Course.find({ department: departmentFilter.department }, '_id');
+    const courseIds = courses.map(c => c._id);
+    courseFilter = { course: { $in: courseIds } };
+  } else if (departmentFilter._id === null) {
+    // If blocked
+    return [];
+  }
+
+  return CourseOffering.find({ semester: semesterId, ...courseFilter })
     .populate('faculty', 'name email department')
-    .populate('course', 'courseCode courseName type creditHours')
+    .populate('course', 'courseCode courseName type creditHours department')
     .populate('semester', 'name status')
     .sort({ 'course.courseCode': 1 });
 };

@@ -1,5 +1,5 @@
 import { useParams, Link } from 'react-router-dom';
-import '../admin/Dashboard.css';
+import '../dean/Dashboard.css';
 import CourseControlReportPage from '../../components/forms/CCR/CourseControlReportPage';
 import CourseInformationSheetPage from '../../components/forms/CIS/CourseInformationSheetPage';
 

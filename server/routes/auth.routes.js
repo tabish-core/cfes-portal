@@ -15,13 +15,13 @@ const express        = require('express');
 const router         = express.Router();
 const authController = require('../controllers/auth.controller');
 const { verifyToken }  = require('../middlewares/auth.middleware');
-const { requireRole }  = require('../middlewares/role.middleware');
+const { requireDesignation }  = require('../middlewares/designation.middleware');
 
 // Public
 router.post('/login', authController.login);
 
 // Admin only — must be logged in as admin to create new users
-router.post('/register', verifyToken, requireRole('admin'), authController.register);
+router.post('/register', verifyToken, requireDesignation('dean'), authController.register);
 
 // Any authenticated user — returns their own profile
 router.get('/me', verifyToken, authController.getMe);

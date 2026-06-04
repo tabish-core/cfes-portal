@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { getFaculties, registerFaculty, updateFacultyUser } from '../../services/auth.service';
+import api from '../../api/axios';
 import './Users.css';
 
 const initialForm = {
@@ -7,6 +8,7 @@ const initialForm = {
   email: '',
   password: '',
   confirmPassword: '',
+  designation: 'faculty',
   department: '',
 };
 
@@ -16,9 +18,11 @@ const Users = () => {
   const [createdCredentials, setCreatedCredentials] = useState(null);
   const [faculties, setFaculties] = useState([]);
   const [selectedFacultyId, setSelectedFacultyId] = useState('');
+  const [departments, setDepartments] = useState([]);
   const [editForm, setEditForm] = useState({
     name: '',
     email: '',
+    designation: 'faculty',
     department: '',
     password: '',
     confirmPassword: '',
@@ -42,8 +46,18 @@ const Users = () => {
     }
   };
 
+  const fetchDepartments = async () => {
+    try {
+      const { data } = await api.get('/departments');
+      setDepartments(data.data.departments || []);
+    } catch (err) {
+      console.error('Failed to load departments', err);
+    }
+  };
+
   useEffect(() => {
     fetchFaculties();
+    fetchDepartments();
   }, []);
 
   useEffect(() => {
@@ -52,7 +66,8 @@ const Users = () => {
     setEditForm({
       name: selected.name || '',
       email: selected.email || '',
-      department: selected.department || '',
+      designation: selected.designation || 'faculty',
+      department: selected.department?._id || selected.department || '',
       password: '',
       confirmPassword: '',
       isActive: !!selected.isActive,
@@ -76,7 +91,8 @@ const Users = () => {
     const email = form.email.trim().toLowerCase();
     const password = form.password;
     const confirmPassword = form.confirmPassword;
-    const department = form.department.trim();
+    const designation = form.designation;
+    const department = form.department;
 
     if (!name || !email || !password) {
       setError('Name, email, and password are required.');
@@ -99,6 +115,7 @@ const Users = () => {
         name,
         email,
         password,
+        designation,
         department: department || undefined,
       });
       setSuccess(`Faculty account created for ${user.name} (${user.email}).`);
@@ -131,7 +148,8 @@ const Users = () => {
 
     const name = editForm.name.trim();
     const email = editForm.email.trim().toLowerCase();
-    const department = editForm.department.trim();
+    const designation = editForm.designation;
+    const department = editForm.department;
     const password = editForm.password;
     const confirmPassword = editForm.confirmPassword;
 
@@ -153,7 +171,8 @@ const Users = () => {
     const payload = {
       name,
       email,
-      department,
+      designation,
+      department: department || undefined,
       isActive: editForm.isActive,
     };
 
@@ -180,7 +199,7 @@ const Users = () => {
 
       <div className="users-card">
         <h2 className="users-card-title">Create Faculty Account</h2>
-        <form onSubmit={handleSubmit} className="users-form" noValidate>
+        <form onSubmit={handleSubmit} className="users-form" noValidate autoComplete="off">
           <label className="users-label" htmlFor="faculty-name">Full name</label>
           <input
             id="faculty-name"
@@ -203,6 +222,7 @@ const Users = () => {
             className="users-input"
             placeholder="aisha@iqra.edu.pk"
             disabled={loading}
+            autoComplete="new-password" // Using new-password on email sometimes helps trick aggressive password managers
           />
 
           <label className="users-label" htmlFor="faculty-password">Temporary password</label>
@@ -215,6 +235,7 @@ const Users = () => {
             className="users-input"
             placeholder="At least 6 characters"
             disabled={loading}
+            autoComplete="new-password"
           />
 
           <label className="users-label" htmlFor="faculty-confirm-password">Confirm temporary password</label>
@@ -227,19 +248,36 @@ const Users = () => {
             className="users-input"
             placeholder="Retype password"
             disabled={loading}
+            autoComplete="new-password"
           />
 
+          <label className="users-label" htmlFor="faculty-designation">Designation</label>
+          <select
+            id="faculty-designation"
+            name="designation"
+            value={form.designation}
+            onChange={handleChange}
+            className="users-input"
+            disabled={loading}
+          >
+            <option value="faculty">Faculty</option>
+            <option value="hod">Head of Department (HoD)</option>
+          </select>
+
           <label className="users-label" htmlFor="faculty-department">Department (optional)</label>
-          <input
+          <select
             id="faculty-department"
             name="department"
-            type="text"
             value={form.department}
             onChange={handleChange}
             className="users-input"
-            placeholder="Computer Science"
             disabled={loading}
-          />
+          >
+            <option value="">None</option>
+            {departments.map((d) => (
+              <option key={d._id} value={d._id}>{d.name} ({d.code})</option>
+            ))}
+          </select>
 
           {error && <div className="users-alert users-alert-error">{error}</div>}
           {success && <div className="users-alert users-alert-success">{success}</div>}
@@ -272,6 +310,7 @@ const Users = () => {
                 <tr>
                   <th>Name</th>
                   <th>Email</th>
+                  <th>Designation</th>
                   <th>Department</th>
                   <th>Status</th>
                   <th>Action</th>
@@ -282,7 +321,12 @@ const Users = () => {
                   <tr key={faculty._id}>
                     <td>{faculty.name}</td>
                     <td>{faculty.email}</td>
-                    <td>{faculty.department || '—'}</td>
+                    <td>{faculty.designation}</td>
+                    <td>{
+                      departments.find(d => d._id === faculty.department)?.name ||
+                      (faculty.department && faculty.department.name) ||
+                      faculty.department || '—'
+                    }</td>
                     <td>{faculty.isActive ? 'Active' : 'Inactive'}</td>
                     <td>
                       <button
@@ -303,7 +347,7 @@ const Users = () => {
 
       <div className="users-card users-card-section">
         <h2 className="users-card-title">Update Faculty Credentials</h2>
-        <form onSubmit={handleUpdate} className="users-form" noValidate>
+        <form onSubmit={handleUpdate} className="users-form" noValidate autoComplete="off">
           <label className="users-label" htmlFor="faculty-select">Select faculty</label>
           <select
             id="faculty-select"
@@ -343,16 +387,33 @@ const Users = () => {
             disabled={updating || !selectedFacultyId}
           />
 
+          <label className="users-label" htmlFor="edit-designation">Designation</label>
+          <select
+            id="edit-designation"
+            name="designation"
+            value={editForm.designation}
+            onChange={handleEditChange}
+            className="users-input"
+            disabled={updating || !selectedFacultyId}
+          >
+            <option value="faculty">Faculty</option>
+            <option value="hod">Head of Department (HoD)</option>
+          </select>
+
           <label className="users-label" htmlFor="edit-department">Department</label>
-          <input
+          <select
             id="edit-department"
             name="department"
-            type="text"
             value={editForm.department}
             onChange={handleEditChange}
             className="users-input"
             disabled={updating || !selectedFacultyId}
-          />
+          >
+            <option value="">None</option>
+            {departments.map((d) => (
+              <option key={d._id} value={d._id}>{d.name} ({d.code})</option>
+            ))}
+          </select>
 
           <label className="users-label" htmlFor="edit-password">New password (optional)</label>
           <input
@@ -364,6 +425,7 @@ const Users = () => {
             className="users-input"
             placeholder="Leave blank to keep current password"
             disabled={updating || !selectedFacultyId}
+            autoComplete="new-password"
           />
 
           <label className="users-label" htmlFor="edit-confirm-password">Confirm new password</label>
@@ -376,6 +438,7 @@ const Users = () => {
             className="users-input"
             placeholder="Retype new password"
             disabled={updating || !selectedFacultyId}
+            autoComplete="new-password"
           />
 
           <label className="users-checkbox">

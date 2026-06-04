@@ -11,9 +11,9 @@ const { sendSuccess, sendError } = require('../utils/response');
 /**
  * List all courses (catalog view).
  */
-const getAllCourses = async (_req, res, next) => {
+const getAllCourses = async (req, res, next) => {
   try {
-    const courses = await courseService.listCourses();
+    const courses = await courseService.listCourses(req.departmentFilter || {});
     return sendSuccess(res, { courses }, 'Courses fetched');
   } catch (err) {
     next(err);

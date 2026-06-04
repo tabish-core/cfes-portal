@@ -29,8 +29,8 @@ const fail = (message, statusCode = 400) => {
 /**
  * Return all courses (catalog view — no faculty population).
  */
-const listCourses = async () => {
-  return Course.find()
+const listCourses = async (departmentFilter = {}) => {
+  return Course.find(departmentFilter)
     .select('-__v')
     .sort({ courseCode: 1 });
 };

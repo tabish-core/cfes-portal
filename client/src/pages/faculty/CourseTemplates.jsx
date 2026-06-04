@@ -1,5 +1,5 @@
 import { useParams, Link } from 'react-router-dom';
-import '../admin/Dashboard.css';
+import '../dean/Dashboard.css';
 
 const formTemplates = [
   { name: 'Course Information Sheet', formType: 'CIS' },
