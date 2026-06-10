@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { getFaculties, registerFaculty, updateFacultyUser } from '../../services/auth.service';
 import api from '../../api/axios';
+import useToast from '../../hooks/useToast';
 import './Users.css';
 
 const initialForm = {
@@ -14,6 +15,7 @@ const initialForm = {
 
 // Users page — Admin creates faculty accounts.
 const Users = () => {
+  const toast = useToast();
   const [form, setForm] = useState(initialForm);
   const [createdCredentials, setCreatedCredentials] = useState(null);
   const [faculties, setFaculties] = useState([]);
@@ -28,8 +30,6 @@ const Users = () => {
     confirmPassword: '',
     isActive: true,
   });
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const [loadingList, setLoadingList] = useState(true);
   const [updating, setUpdating] = useState(false);
@@ -40,7 +40,7 @@ const Users = () => {
       const { faculties } = await getFaculties();
       setFaculties(faculties);
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to load faculty accounts.');
+      toast.error(err.response?.data?.message || 'Failed to load faculty accounts.');
     } finally {
       setLoadingList(false);
     }
@@ -76,16 +76,12 @@ const Users = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setError('');
-    setSuccess('');
     setCreatedCredentials(null);
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
-    setSuccess('');
 
     const name = form.name.trim();
     const email = form.email.trim().toLowerCase();
@@ -95,17 +91,17 @@ const Users = () => {
     const department = form.department;
 
     if (!name || !email || !password) {
-      setError('Name, email, and password are required.');
+      toast.warning('Name, email, and password are required.');
       return;
     }
 
     if (password.length < 6) {
-      setError('Password must be at least 6 characters.');
+      toast.warning('Password must be at least 6 characters.');
       return;
     }
 
     if (password !== confirmPassword) {
-      setError('Password and confirm password do not match.');
+      toast.warning('Password and confirm password do not match.');
       return;
     }
 
@@ -118,12 +114,12 @@ const Users = () => {
         designation,
         department: department || undefined,
       });
-      setSuccess(`Faculty account created for ${user.name} (${user.email}).`);
+      toast.success(`Faculty account created for ${user.name} (${user.email}).`);
       setCreatedCredentials({ email, password });
       setForm(initialForm);
       await fetchFaculties();
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to create faculty account.');
+      toast.error(err.response?.data?.message || 'Failed to create faculty account.');
     } finally {
       setLoading(false);
     }
@@ -131,8 +127,6 @@ const Users = () => {
 
   const handleEditChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setError('');
-    setSuccess('');
     setEditForm((prev) => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value,
@@ -142,7 +136,7 @@ const Users = () => {
   const handleUpdate = async (e) => {
     e.preventDefault();
     if (!selectedFacultyId) {
-      setError('Select a faculty account first.');
+      toast.warning('Select a faculty account first.');
       return;
     }
 
@@ -154,17 +148,17 @@ const Users = () => {
     const confirmPassword = editForm.confirmPassword;
 
     if (!name || !email) {
-      setError('Name and email are required.');
+      toast.warning('Name and email are required.');
       return;
     }
 
     if (password && password.length < 6) {
-      setError('New password must be at least 6 characters.');
+      toast.warning('New password must be at least 6 characters.');
       return;
     }
 
     if (password && password !== confirmPassword) {
-      setError('New password and confirm password do not match.');
+      toast.warning('New password and confirm password do not match.');
       return;
     }
 
@@ -181,12 +175,12 @@ const Users = () => {
     setUpdating(true);
     try {
       const { faculty } = await updateFacultyUser(selectedFacultyId, payload);
-      setSuccess(`Faculty account updated for ${faculty.name}.`);
+      toast.success(`Faculty account updated for ${faculty.name}.`);
       setCreatedCredentials(password ? { email, password } : null);
       await fetchFaculties();
       setEditForm((prev) => ({ ...prev, password: '', confirmPassword: '' }));
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to update faculty account.');
+      toast.error(err.response?.data?.message || 'Failed to update faculty account.');
     } finally {
       setUpdating(false);
     }
@@ -279,8 +273,6 @@ const Users = () => {
             ))}
           </select>
 
-          {error && <div className="users-alert users-alert-error">{error}</div>}
-          {success && <div className="users-alert users-alert-success">{success}</div>}
           {createdCredentials && (
             <div className="users-hint">
               Share these exact credentials:

@@ -36,6 +36,7 @@
 .stat-card--yellow { border-left-color: #f59e0b; }
 .stat-card--green  { border-left-color: #10b981; }
 .stat-card--red    { border-left-color: #ef4444; }
+.stat-card--purple { border-left-color: #7c3aed; }
 
 .stat-value {
   font-size: 2rem;

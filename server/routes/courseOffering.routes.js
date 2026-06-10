@@ -31,6 +31,14 @@ router.get(
   offeringController.getMyOfferings
 );
 
+/* ── Faculty: dashboard statistics by semester ─────────────────────────── */
+router.get(
+  '/my-stats',
+  verifyToken,
+  requireDesignation('faculty', 'hod'),
+  offeringController.getMyDashboardStats
+);
+
 /* ── List by semester (Admin) ──────────────────────────────────────────── */
 router.get(
   '/',

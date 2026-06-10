@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react';
 import api from '../../api/axios';
+import useToast from '../../hooks/useToast';
 import '../dean/Users.css'; // Reusing Users CSS for similar styling
 
 const Departments = () => {
+  const toast = useToast();
   const [departments, setDepartments] = useState([]);
   const [faculties, setFaculties] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
 
   // Local state to track selected HoD per department before saving
   const [selectedHods, setSelectedHods] = useState({});
@@ -33,7 +33,7 @@ const Departments = () => {
       });
       setSelectedHods(initialHods);
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to load data.');
+      toast.error(err.response?.data?.message || 'Failed to load data.');
     } finally {
       setLoading(false);
     }
@@ -45,22 +45,18 @@ const Departments = () => {
 
   const handleHodChange = (deptId, hodId) => {
     setSelectedHods(prev => ({ ...prev, [deptId]: hodId }));
-    setError('');
-    setSuccess('');
   };
 
   const handleSaveHod = async (deptId) => {
     setSavingId(deptId);
-    setError('');
-    setSuccess('');
     
     try {
       const hodId = selectedHods[deptId];
       await api.put(`/departments/${deptId}/hod`, { hodId: hodId || null });
-      setSuccess('Department HoD updated successfully.');
+      toast.success('Department HoD updated successfully.');
       await fetchData(); // Refresh data to get updated populated fields
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to update HoD.');
+      toast.error(err.response?.data?.message || 'Failed to update HoD.');
     } finally {
       setSavingId(null);
     }
@@ -70,9 +66,6 @@ const Departments = () => {
     <div className="users-page">
       <h1 className="users-heading">Department Management</h1>
       <p className="users-sub">View departments and assign Heads of Department (HoD).</p>
-
-      {error && <div className="users-alert users-alert-error">{error}</div>}
-      {success && <div className="users-alert users-alert-success">{success}</div>}
 
       <div className="users-card users-card-section">
         <h2 className="users-card-title">Departments Overview</h2>

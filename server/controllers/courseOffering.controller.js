@@ -84,4 +84,23 @@ const getMyOfferings = async (req, res, next) => {
   }
 };
 
-module.exports = { createOffering, removeOffering, listBySemester, getMyOfferings };
+/* ── GET /api/offerings/my-stats?semester=<id> ──────────────────────────── */
+/**
+ * Faculty dashboard statistics for a given semester.
+ */
+const getMyDashboardStats = async (req, res, next) => {
+  try {
+    const { semester } = req.query;
+
+    if (!semester) {
+      return sendError(res, 'semester query parameter is required', 400);
+    }
+
+    const stats = await offeringService.getMyDashboardStats(req.user._id, semester);
+    return sendSuccess(res, { stats }, 'Dashboard stats fetched');
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = { createOffering, removeOffering, listBySemester, getMyOfferings, getMyDashboardStats };

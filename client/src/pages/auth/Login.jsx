@@ -19,7 +19,13 @@ const Login = () => {
   // If already logged in, bounce to dashboard.
   useEffect(() => {
     if (!user) return;
-    navigate(user.role === 'admin' ? '/admin/dashboard' : '/faculty/dashboard', { replace: true });
+    if (user.designation === 'dean') {
+      navigate('/dean/dashboard', { replace: true });
+    } else if (user.designation === 'hod') {
+      navigate('/hod/dashboard', { replace: true });
+    } else {
+      navigate('/faculty/dashboard', { replace: true });
+    }
   }, [user, navigate]);
 
   const handleChange = (e) => {

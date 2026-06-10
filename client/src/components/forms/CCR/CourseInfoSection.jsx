@@ -1,6 +1,6 @@
 import React from 'react';
 
-const CourseInfoSection = ({ data, onChange }) => {
+const CourseInfoSection = ({ data, onChange, validationErrors = [] }) => {
   const fields = [
     { label: 'Faculty Name', key: 'facultyName', type: 'text' },
     { label: 'Program', key: 'program', type: 'text' },
@@ -11,6 +11,9 @@ const CourseInfoSection = ({ data, onChange }) => {
     { label: 'Time Slot', key: 'timeSlot', type: 'text' },
     { label: 'Location', key: 'location', type: 'text' },
   ];
+
+  // Check if a field has a validation error
+  const hasError = (key) => validationErrors.some((e) => e.field === `courseInfo.${key}`);
 
   return (
     <div className="course-info-section" style={{ marginBottom: '3rem' }}>
@@ -25,35 +28,44 @@ const CourseInfoSection = ({ data, onChange }) => {
         Section 1: Course Information
       </h3>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem' }}>
-        {fields.map((field) => (
-          <div key={field.key} style={{ display: 'flex', flexDirection: 'column' }}>
-            <label style={{ 
-              marginBottom: '0.35rem', 
-              fontSize: '0.85rem', 
-              fontWeight: '600', 
-              color: '#475569',
-              display: 'block'
-            }}>
-              {field.label}
-            </label>
-            <input
-              type={field.type}
-              value={data[field.key] || ''}
-              onChange={(e) => onChange(field.key, e.target.value)}
-              placeholder={`Enter ${field.label}`}
-              style={{
-                padding: '0.6rem 0.8rem',
-                border: '1px solid #cbd5e1',
-                backgroundColor: '#ffffff',
-                color: '#1e293b',
-                borderRadius: '6px',
-                fontSize: '0.95rem',
-                transition: 'border-color 0.2s ease',
-                outline: 'none'
-              }}
-            />
-          </div>
-        ))}
+        {fields.map((field) => {
+          const isInvalid = hasError(field.key);
+          return (
+            <div key={field.key} style={{ display: 'flex', flexDirection: 'column' }}>
+              <label style={{ 
+                marginBottom: '0.35rem', 
+                fontSize: '0.85rem', 
+                fontWeight: '600', 
+                color: isInvalid ? '#b91c1c' : '#475569',
+                display: 'block'
+              }}>
+                {field.label}
+                {isInvalid && <span style={{ color: '#ef4444', marginLeft: '4px' }}>*</span>}
+              </label>
+              <input
+                type={field.type}
+                value={data[field.key] || ''}
+                onChange={(e) => onChange(field.key, e.target.value)}
+                placeholder={`Enter ${field.label}`}
+                style={{
+                  padding: '0.6rem 0.8rem',
+                  border: `1px solid ${isInvalid ? '#ef4444' : '#cbd5e1'}`,
+                  backgroundColor: isInvalid ? '#fef2f2' : '#ffffff',
+                  color: '#1e293b',
+                  borderRadius: '6px',
+                  fontSize: '0.95rem',
+                  transition: 'border-color 0.2s ease',
+                  outline: 'none'
+                }}
+              />
+              {isInvalid && (
+                <span style={{ fontSize: '0.78rem', color: '#ef4444', marginTop: '0.25rem' }}>
+                  {validationErrors.find((e) => e.field === `courseInfo.${field.key}`)?.message}
+                </span>
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );

@@ -1,6 +1,7 @@
 /**
  * Sidebar.jsx — Navigation sidebar, role-aware menu items.
  */
+import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import useAuth from '../../hooks/useAuth';
 import './Sidebar.css';
@@ -27,6 +28,7 @@ const FACULTY_LINKS = [
 
 const Sidebar = ({ isOpen = false, onClose }) => {
   const { user, logout } = useAuth();
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
   
   let links = FACULTY_LINKS;
   if (user?.designation === 'dean') links = DEAN_LINKS;
@@ -68,14 +70,39 @@ const Sidebar = ({ isOpen = false, onClose }) => {
       <button
         id="sidebar-logout"
         className="sidebar-logout"
-        onClick={() => {
-          logout();
-          if (onClose) onClose();
-        }}
+        onClick={() => setShowLogoutModal(true)}
       >
         Logout
       </button>
       </aside>
+
+      {/* Logout Confirmation Modal */}
+      {showLogoutModal && (
+        <div className="logout-modal-overlay">
+          <div className="logout-modal">
+            <h3 className="logout-modal-title">Confirm Logout</h3>
+            <p className="logout-modal-text">Are you sure you want to logout?</p>
+            <div className="logout-modal-actions">
+              <button 
+                className="logout-modal-btn logout-modal-btn--cancel"
+                onClick={() => setShowLogoutModal(false)}
+              >
+                Cancel
+              </button>
+              <button 
+                className="logout-modal-btn logout-modal-btn--confirm"
+                onClick={() => {
+                  setShowLogoutModal(false);
+                  logout();
+                  if (onClose) onClose();
+                }}
+              >
+                Logout
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };

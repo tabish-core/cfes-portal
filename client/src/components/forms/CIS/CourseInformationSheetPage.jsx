@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import useToast from '../../../hooks/useToast';
 import UniversityHeader from './UniversityHeader';
 import CourseSummarySection from './CourseSummarySection';
 import BasicInfoSection from './BasicInfoSection';
@@ -90,10 +91,21 @@ const CourseInformationSheetPage = ({ courseId }) => {
   const [weeklyPlan, setWeeklyPlan] = useState(INITIAL_WEEKLY_PLAN);
   const [grading, setGrading] = useState(INITIAL_GRADING);
 
+  const toast = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isExporting, setIsExporting] = useState(''); // 'pdf', 'docx', or ''
-  const [message, setMessage] = useState({ type: '', text: '' });
+  const [validationErrors, setValidationErrors] = useState([]);
+
+  /* ── Validation ─────────────────────────────────────────── */
+  const validateForm = () => {
+    const errors = [];
+    if (!courseSummary.courseCode?.trim()) errors.push({ field: 'courseSummary.courseCode', message: 'Course Code is required.' });
+    if (!courseSummary.courseName?.trim()) errors.push({ field: 'courseSummary.courseName', message: 'Course Name is required.' });
+    if (!basicInfo.instructor?.trim())    errors.push({ field: 'basicInfo.instructor', message: 'Instructor name is required.' });
+    if (!courseObjectives?.trim())         errors.push({ field: 'objectives', message: 'Course Objectives are required.' });
+    return errors;
+  };
 
   useEffect(() => {
     const fetchCIS = async () => {
@@ -118,7 +130,7 @@ const CourseInformationSheetPage = ({ courseId }) => {
         }
       } catch (err) {
         console.error('Failed to fetch CIS:', err);
-        setMessage({ type: 'error', text: 'Failed to load CIS data.' });
+        toast.error('Failed to load CIS data.');
       } finally {
         setIsLoading(false);
       }
@@ -128,8 +140,10 @@ const CourseInformationSheetPage = ({ courseId }) => {
 
   /* ── Change Handlers ─────────────────────────────────────── */
 
-  const handleSectionChange = (setter) => (field, value) => {
+  const handleSectionChange = (setter, sectionName) => (field, value) => {
     setter((prev) => ({ ...prev, [field]: value }));
+    // Clear validation error for this field
+    setValidationErrors((prev) => prev.filter((e) => e.field !== `${sectionName}.${field}`));
   };
 
   const handleTableChange = (setter) => (index, field, value) => {
@@ -236,7 +250,16 @@ const CourseInformationSheetPage = ({ courseId }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSaving(true);
-    setMessage({ type: '', text: '' });
+
+    // Frontend validation
+    const errors = validateForm();
+    setValidationErrors(errors);
+    if (errors.length > 0) {
+      setIsSaving(false);
+      toast.warning('Please fix the validation errors before saving.');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
 
     const formData = {
       courseId,
@@ -256,11 +279,17 @@ const CourseInformationSheetPage = ({ courseId }) => {
       await axios.post('/api/forms/cis', formData, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setMessage({ type: 'success', text: 'Course Information Sheet saved successfully!' });
+      toast.success('Course Information Sheet saved successfully!');
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) {
       console.error('Failed to save CIS:', err);
-      setMessage({ type: 'error', text: err.response?.data?.message || 'Failed to save CIS form.' });
+      const serverErrors = err.response?.data?.data?.errors;
+      if (serverErrors?.length) {
+        setValidationErrors(serverErrors);
+        toast.error('Validation failed. Please check the required fields.');
+      } else {
+        toast.error(err.response?.data?.message || 'Failed to save CIS form.');
+      }
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } finally {
       setIsSaving(false);
@@ -270,7 +299,6 @@ const CourseInformationSheetPage = ({ courseId }) => {
   const handleDownload = async (format) => {
     try {
       setIsExporting(format);
-      setMessage({ type: '', text: '' });
       const token = localStorage.getItem('token');
       const res = await axios.get(`/api/forms/cis/${courseId}/export?format=${format}`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -290,7 +318,7 @@ const CourseInformationSheetPage = ({ courseId }) => {
       window.URL.revokeObjectURL(url);
     } catch (err) {
       console.error(`Failed to export ${format}:`, err);
-      setMessage({ type: 'error', text: `Failed to export ${format.toUpperCase()}. Please save the form first.` });
+      toast.error(`Failed to export ${format.toUpperCase()}. Please save the form first.`);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } finally {
       setIsExporting('');
@@ -317,33 +345,36 @@ const CourseInformationSheetPage = ({ courseId }) => {
     }}>
       <UniversityHeader />
 
-      {message.text && (
-        <div style={{
-          padding: '1rem',
-          marginBottom: '2rem',
-          borderRadius: '6px',
-          backgroundColor: message.type === 'success' ? '#dcfce7' : '#fee2e2',
-          color: message.type === 'success' ? '#166534' : '#991b1b',
-          border: `1px solid ${message.type === 'success' ? '#bbf7d0' : '#fecaca'}`
-        }}>
-          {message.text}
+      {validationErrors.length > 0 && (
+        <div style={{ backgroundColor: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', padding: '1rem', marginBottom: '1.5rem' }}>
+          <p style={{ margin: '0 0 0.5rem', fontWeight: '700', color: '#991b1b', fontSize: '0.95rem' }}>Please fix the following errors:</p>
+          <ul style={{ margin: 0, paddingLeft: '1.25rem', color: '#b91c1c', fontSize: '0.88rem', lineHeight: '1.7' }}>
+            {validationErrors.map((e) => <li key={e.field}>{e.message}</li>)}
+          </ul>
         </div>
       )}
 
       <form onSubmit={handleSubmit}>
         <CourseSummarySection
           data={courseSummary}
-          onChange={handleSectionChange(setCourseSummary)}
+          onChange={handleSectionChange(setCourseSummary, 'courseSummary')}
+          validationErrors={validationErrors}
         />
 
         <BasicInfoSection
           data={basicInfo}
-          onChange={handleSectionChange(setBasicInfo)}
+          onChange={handleSectionChange(setBasicInfo, 'basicInfo')}
+          validationErrors={validationErrors}
         />
 
         <CourseObjectivesSection
           value={courseObjectives}
-          onChange={setCourseObjectives}
+          onChange={(val) => {
+            setCourseObjectives(val);
+            setValidationErrors((prev) => prev.filter((e) => e.field !== 'objectives'));
+          }}
+          hasError={validationErrors.some((e) => e.field === 'objectives')}
+          errorMessage={validationErrors.find((e) => e.field === 'objectives')?.message}
         />
 
         <CourseContentsSection
@@ -381,7 +412,7 @@ const CourseInformationSheetPage = ({ courseId }) => {
 
         <GradingPolicySection
           data={grading}
-          onChange={handleSectionChange(setGrading)}
+          onChange={handleSectionChange(setGrading, 'gradingPolicy')}
         />
 
         <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>

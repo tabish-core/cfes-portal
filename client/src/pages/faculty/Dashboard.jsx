@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import useAuth from '../../hooks/useAuth';
 import { getSemesters } from '../../services/semester.service';
-import { getMyOfferings } from '../../services/courseOffering.service';
+import { getMyOfferings, getMyDashboardStats } from '../../services/courseOffering.service';
+import useToast from '../../hooks/useToast';
 import '../dean/Dashboard.css';
 
 const FacultyDashboard = () => {
@@ -12,15 +13,17 @@ const FacultyDashboard = () => {
   const [selectedSemesterId, setSelectedSemesterId] = useState('');
   const [offerings, setOfferings] = useState([]);
 
+  const [stats, setStats] = useState(null);
+  const [loadingStats, setLoadingStats] = useState(false);
+
   const [loadingSemesters, setLoadingSemesters] = useState(true);
   const [loadingCourses, setLoadingCourses] = useState(false);
-  const [error, setError] = useState('');
+  const toast = useToast();
 
   /* ── Load semesters on mount ─────────────────────────────────────────── */
   useEffect(() => {
     const loadSemesters = async () => {
       setLoadingSemesters(true);
-      setError('');
       try {
         const { semesters } = await getSemesters();
         setSemesters(semesters);
@@ -29,7 +32,7 @@ const FacultyDashboard = () => {
         const active = semesters.find((s) => s.status === 'active');
         if (active) setSelectedSemesterId(active._id);
       } catch (err) {
-        setError(err.response?.data?.message || 'Failed to load semesters.');
+        toast.error(err.response?.data?.message || 'Failed to load semesters.');
       } finally {
         setLoadingSemesters(false);
       }
@@ -38,30 +41,47 @@ const FacultyDashboard = () => {
     loadSemesters();
   }, []);
 
-  /* ── Load offerings when semester changes ─────────────────────────────── */
+  /* ── Load offerings + stats when semester changes ─────────────────────── */
   useEffect(() => {
     if (!selectedSemesterId) {
       setOfferings([]);
+      setStats(null);
       return;
     }
 
-    const loadOfferings = async () => {
+    const loadData = async () => {
       setLoadingCourses(true);
-      setError('');
+      setLoadingStats(true);
       try {
-        const { offerings } = await getMyOfferings(selectedSemesterId);
-        setOfferings(offerings);
+        const [offeringsRes, statsRes] = await Promise.all([
+          getMyOfferings(selectedSemesterId),
+          getMyDashboardStats(selectedSemesterId),
+        ]);
+        setOfferings(offeringsRes.offerings);
+        setStats(statsRes.stats);
       } catch (err) {
-        setError(err.response?.data?.message || 'Failed to load assigned courses.');
+        toast.error(err.response?.data?.message || 'Failed to load dashboard data.');
       } finally {
         setLoadingCourses(false);
+        setLoadingStats(false);
       }
     };
 
-    loadOfferings();
+    loadData();
   }, [selectedSemesterId]);
 
   const selectedSemesterName = semesters.find((s) => s._id === selectedSemesterId)?.name || '';
+
+  /* ── Stat card configuration ─────────────────────────────────────────── */
+  const statCards = stats
+    ? [
+        { label: 'Assigned Courses', value: stats.totalCourses, color: 'blue' },
+        { label: 'Total Forms Available', value: stats.totalForms, color: 'purple' },
+        { label: 'Draft Forms', value: stats.draftForms, color: 'yellow' },
+        { label: 'Submitted Forms', value: stats.submittedForms, color: 'green' },
+        { label: 'Pending Forms', value: stats.pendingForms, color: 'red' },
+      ]
+    : [];
 
   return (
     <div className="dashboard">
@@ -105,6 +125,31 @@ const FacultyDashboard = () => {
         )}
       </div>
 
+      {/* ── Stats Cards ──────────────────────────────────────────────────── */}
+      {selectedSemesterId && (
+        <div style={{ marginBottom: '1.5rem' }}>
+          {loadingStats ? (
+            <div className="stats-grid">
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="stat-card" style={{ opacity: 0.5 }}>
+                  <span className="stat-value" style={{ color: '#cbd5e1' }}>—</span>
+                  <span className="stat-label">Loading...</span>
+                </div>
+              ))}
+            </div>
+          ) : stats ? (
+            <div className="stats-grid">
+              {statCards.map((card) => (
+                <div key={card.label} className={`stat-card stat-card--${card.color}`}>
+                  <span className="stat-value">{card.value}</span>
+                  <span className="stat-label">{card.label}</span>
+                </div>
+              ))}
+            </div>
+          ) : null}
+        </div>
+      )}
+
       {/* ── Course List ──────────────────────────────────────────────────── */}
       <div className="dashboard-panel">
         <h2 className="dashboard-section-title">
@@ -119,8 +164,6 @@ const FacultyDashboard = () => {
           <div className="empty-state">
             <p>Loading assigned courses...</p>
           </div>
-        ) : error ? (
-          <div className="dashboard-alert dashboard-alert-error">{error}</div>
         ) : offerings.length === 0 ? (
           <div className="empty-state">
             <p>No courses assigned for this semester.</p>

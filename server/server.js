@@ -31,6 +31,7 @@ const checklistRoutes = require('./routes/checklist.routes');
 const semesterRoutes = require('./routes/semester.routes');
 const offeringRoutes = require('./routes/courseOffering.routes');
 const departmentRoutes = require('./routes/department.routes');
+const dashboardRoutes = require('./routes/dashboard.routes');
 // Future: const courseFileRoutes = require('./routes/courseFile.routes');
 
 /* ── App setup ─────────────────────────────────────────── */
@@ -73,6 +74,7 @@ app.use('/api/checklist', checklistRoutes);
 app.use('/api/semesters', semesterRoutes);
 app.use('/api/offerings', offeringRoutes);
 app.use('/api/departments', departmentRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 // app.use('/api/course-files', courseFileRoutes);
 
 /* ── Step 5: 404 Handler ────────────────────────────────── */

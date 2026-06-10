@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import api from '../../api/axios';
+import useToast from '../../hooks/useToast';
 import '../dean/Users.css'; // Reusing Users CSS
 
 const HodFaculty = () => {
+  const toast = useToast();
   const [faculties, setFaculties] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
 
   const fetchFaculties = async () => {
     setLoading(true);
@@ -13,7 +14,7 @@ const HodFaculty = () => {
       const { data } = await api.get('/users/faculty');
       setFaculties(data.data.faculties || []);
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to load faculty.');
+      toast.error(err.response?.data?.message || 'Failed to load faculty.');
     } finally {
       setLoading(false);
     }
@@ -27,8 +28,6 @@ const HodFaculty = () => {
     <div className="users-page">
       <h1 className="users-heading">Department Faculty</h1>
       <p className="users-sub">View all faculty members within your department.</p>
-
-      {error && <div className="users-alert users-alert-error">{error}</div>}
 
       <div className="users-card users-card-section">
         <h2 className="users-card-title">Faculty List</h2>

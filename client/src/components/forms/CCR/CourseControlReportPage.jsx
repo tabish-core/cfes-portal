@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../../api/axios';
+import useToast from '../../../hooks/useToast';
 import CourseInfoSection from './CourseInfoSection';
 import ReportTable from './ReportTable';
 
@@ -47,13 +48,22 @@ const INITIAL_ALTERNATE_DATA = Array.from({ length: 4 }, (_, i) => ({
 }));
 
 const CourseControlReportPage = ({ courseId }) => {
+  const toast = useToast();
   const [courseInfo, setCourseInfo] = useState(INITIAL_COURSE_INFO);
   const [weeklyData, setWeeklyData] = useState(INITIAL_WEEKLY_DATA);
   const [alternateData, setAlternateData] = useState(INITIAL_ALTERNATE_DATA);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(null);
   const [isExporting, setIsExporting] = useState('');
+  const [validationErrors, setValidationErrors] = useState([]);
+
+  /* ── Validation ─────────────────────────────────────────── */
+  const validateForm = () => {
+    const errors = [];
+    if (!courseInfo.facultyName?.trim()) errors.push({ field: 'courseInfo.facultyName', message: 'Faculty Name is required.' });
+    if (!courseInfo.courseTitle?.trim())  errors.push({ field: 'courseInfo.courseTitle', message: 'Course Title is required.' });
+    if (!courseInfo.courseCode?.trim())   errors.push({ field: 'courseInfo.courseCode', message: 'Course Code is required.' });
+    return errors;
+  };
 
   useEffect(() => {
     if (!courseId) return;
@@ -82,6 +92,8 @@ const CourseControlReportPage = ({ courseId }) => {
       ...prev,
       [field]: value,
     }));
+    // Clear validation error for this field when user types
+    setValidationErrors((prev) => prev.filter((e) => e.field !== `courseInfo.${field}`));
   };
 
   const handleWeeklyDataChange = (index, field, value) => {
@@ -133,8 +145,16 @@ const CourseControlReportPage = ({ courseId }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError(null);
-    setSuccess(null);
+
+    // Frontend validation
+    const errors = validateForm();
+    setValidationErrors(errors);
+    if (errors.length > 0) {
+      toast.warning('Please fix the validation errors before saving.');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
     try {
       setLoading(true);
       await api.post('/forms/ccr', {
@@ -143,10 +163,17 @@ const CourseControlReportPage = ({ courseId }) => {
         weeklyData,
         alternateData
       });
-      setSuccess('Course Control Report saved successfully!');
+      toast.success('Course Control Report saved successfully!');
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to save form.');
+      const serverErrors = err.response?.data?.data?.errors;
+      if (serverErrors?.length) {
+        setValidationErrors(serverErrors);
+        toast.error('Validation failed. Please check the required fields.');
+      } else {
+        toast.error(err.response?.data?.message || 'Failed to save form.');
+      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } finally {
       setLoading(false);
     }
@@ -155,8 +182,6 @@ const CourseControlReportPage = ({ courseId }) => {
   const handleDownload = async (format) => {
     try {
       setIsExporting(format);
-      setError(null);
-      setSuccess(null);
       
       const { data } = await api.get(`/forms/ccr/${courseId}/export?format=${format}`, {
         responseType: 'blob',
@@ -173,7 +198,7 @@ const CourseControlReportPage = ({ courseId }) => {
       window.URL.revokeObjectURL(url);
     } catch (err) {
       console.error(`Failed to export ${format}:`, err);
-      setError(`Failed to export ${format.toUpperCase()}. Please save the form first.`);
+      toast.error(`Failed to export ${format.toUpperCase()}. Please save the form first.`);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } finally {
       setIsExporting('');
@@ -201,14 +226,21 @@ const CourseControlReportPage = ({ courseId }) => {
         Course Control Report (CCR)
       </h2>
 
-      {error && <div style={{ color: 'red', marginBottom: '1rem', textAlign: 'center', fontWeight: 'bold' }}>{error}</div>}
-      {success && <div style={{ color: 'green', marginBottom: '1rem', textAlign: 'center', fontWeight: 'bold' }}>{success}</div>}
+      {validationErrors.length > 0 && (
+        <div style={{ backgroundColor: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', padding: '1rem', marginBottom: '1.5rem' }}>
+          <p style={{ margin: '0 0 0.5rem', fontWeight: '700', color: '#991b1b', fontSize: '0.95rem' }}>Please fix the following errors:</p>
+          <ul style={{ margin: 0, paddingLeft: '1.25rem', color: '#b91c1c', fontSize: '0.88rem', lineHeight: '1.7' }}>
+            {validationErrors.map((e) => <li key={e.field}>{e.message}</li>)}
+          </ul>
+        </div>
+      )}
       {loading && <div style={{ textAlign: 'center', marginBottom: '1rem', fontStyle: 'italic' }}>Processing...</div>}
 
       <form onSubmit={handleSubmit}>
         <CourseInfoSection
           data={courseInfo}
           onChange={handleCourseInfoChange}
+          validationErrors={validationErrors}
         />
 
         <ReportTable

@@ -22,3 +22,8 @@ export const getMyOfferings = async (semesterId) => {
   const { data } = await api.get(`/offerings/my-courses?semester=${semesterId}`);
   return data.data; // { offerings }
 };
+
+export const getMyDashboardStats = async (semesterId) => {
+  const { data } = await api.get(`/offerings/my-stats?semester=${semesterId}`);
+  return data.data; // { stats }
+};

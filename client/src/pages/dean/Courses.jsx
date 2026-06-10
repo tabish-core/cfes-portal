@@ -3,9 +3,11 @@ import { getFaculties } from '../../services/auth.service';
 import { getCourses } from '../../services/course.service';
 import { getSemesters, createSemester, toggleSemesterStatus } from '../../services/semester.service';
 import { createOffering, removeOffering, getOfferingsBySemester } from '../../services/courseOffering.service';
+import useToast from '../../hooks/useToast';
 import './Courses.css';
 
 const Courses = () => {
+  const toast = useToast();
   const [faculties, setFaculties] = useState([]);
   const [courses, setCourses] = useState([]);
   const [semesters, setSemesters] = useState([]);
@@ -28,9 +30,6 @@ const Courses = () => {
   const [assigning, setAssigning] = useState(false);
   const [loadingOfferings, setLoadingOfferings] = useState(false);
 
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-
   /* ── Initial data fetch ───────────────────────────────────────────────── */
   const fetchData = async () => {
     setLoadingList(true);
@@ -51,7 +50,7 @@ const Courses = () => {
         setViewSemesterId(active._id);
       }
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to load initial data.');
+      toast.error(err.response?.data?.message || 'Failed to load initial data.');
     } finally {
       setLoadingList(false);
     }
@@ -73,7 +72,7 @@ const Courses = () => {
         const { offerings } = await getOfferingsBySemester(viewSemesterId);
         setOfferings(offerings);
       } catch (err) {
-        setError(err.response?.data?.message || 'Failed to load offerings.');
+        toast.error(err.response?.data?.message || 'Failed to load offerings.');
       } finally {
         setLoadingOfferings(false);
       }
@@ -84,11 +83,9 @@ const Courses = () => {
   /* ── Semester creation ────────────────────────────────────────────────── */
   const handleCreateSemester = async (e) => {
     e.preventDefault();
-    setError('');
-    setSuccess('');
 
     if (!newSemesterName.trim()) {
-      setError('Please enter a semester name.');
+      toast.warning('Please enter a semester name.');
       return;
     }
 
@@ -97,9 +94,9 @@ const Courses = () => {
       const { semester } = await createSemester(newSemesterName.trim());
       setSemesters((prev) => [semester, ...prev]);
       setNewSemesterName('');
-      setSuccess(`Semester "${semester.name}" created.`);
+      toast.success(`Semester "${semester.name}" created.`);
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to create semester.');
+      toast.error(err.response?.data?.message || 'Failed to create semester.');
     } finally {
       setCreatingSemester(false);
     }
@@ -107,27 +104,22 @@ const Courses = () => {
 
   /* ── Semester toggle ──────────────────────────────────────────────────── */
   const handleToggleSemester = async (id) => {
-    setError('');
-    setSuccess('');
     try {
       const { semester } = await toggleSemesterStatus(id);
-      // Refresh all semesters (toggle may deactivate others)
       const { semesters: updated } = await getSemesters();
       setSemesters(updated);
-      setSuccess(`Semester "${semester.name}" is now ${semester.status}.`);
+      toast.success(`Semester "${semester.name}" is now ${semester.status}.`);
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to toggle semester.');
+      toast.error(err.response?.data?.message || 'Failed to toggle semester.');
     }
   };
 
   /* ── Course offering assignment ───────────────────────────────────────── */
   const handleAssign = async (e) => {
     e.preventDefault();
-    setError('');
-    setSuccess('');
 
     if (!selectedCourseId || !selectedFacultyId || !selectedSemesterId) {
-      setError('Please select a semester, course, and faculty member.');
+      toast.warning('Please select a semester, course, and faculty member.');
       return;
     }
 
@@ -139,7 +131,7 @@ const Courses = () => {
         selectedSemesterId,
         section || 'A'
       );
-      setSuccess(
+      toast.success(
         `Faculty assigned to ${offering.course.courseCode} (Section ${offering.section}) in ${offering.semester.name}.`
       );
 
@@ -153,7 +145,7 @@ const Courses = () => {
       setSelectedFacultyId('');
       setSection('A');
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to assign course.');
+      toast.error(err.response?.data?.message || 'Failed to assign course.');
     } finally {
       setAssigning(false);
     }
@@ -161,14 +153,12 @@ const Courses = () => {
 
   /* ── Unassign (remove offering) ───────────────────────────────────────── */
   const handleUnassign = async (offeringId) => {
-    setError('');
-    setSuccess('');
     try {
       await removeOffering(offeringId);
       setOfferings((prev) => prev.filter((o) => o._id !== offeringId));
-      setSuccess('Course offering removed.');
+      toast.success('Course offering removed.');
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to unassign course.');
+      toast.error(err.response?.data?.message || 'Failed to unassign course.');
     }
   };
 
@@ -176,9 +166,6 @@ const Courses = () => {
     <div className="courses-page">
       <h1 className="courses-heading">Course Allocation</h1>
       <p className="courses-sub">Manage semesters and assign faculty to courses.</p>
-
-      {error && <div className="courses-alert courses-alert-error">{error}</div>}
-      {success && <div className="courses-alert courses-alert-success">{success}</div>}
 
       {/* ── Semester Management ──────────────────────────────────────────── */}
       <div className="courses-card">

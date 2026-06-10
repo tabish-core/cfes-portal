@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import api from '../../api/axios';
+import useToast from '../../hooks/useToast';
 import '../dean/Dashboard.css';
 
 /**
@@ -63,9 +64,8 @@ const CourseFileChecklist = () => {
     }))
   );
 
+  const toast = useToast();
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(null);
 
   // Fetch existing checklist on mount
   useEffect(() => {
@@ -96,7 +96,7 @@ const CourseFileChecklist = () => {
           }
         }
       } catch (err) {
-        setError('Failed to load checklist.');
+        toast.error('Failed to load checklist.');
       } finally {
         setLoading(false);
       }
@@ -117,8 +117,6 @@ const CourseFileChecklist = () => {
   };
 
   const handleSave = async () => {
-    setError(null);
-    setSuccess(null);
     try {
       setLoading(true);
       // Build checklistItems array for the backend (only checkable items)
@@ -137,9 +135,9 @@ const CourseFileChecklist = () => {
         batch: courseInfo.batch,
         checklistItems,
       });
-      setSuccess('Checklist saved successfully!');
+      toast.success('Checklist saved successfully!');
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to save checklist.');
+      toast.error(err.response?.data?.message || 'Failed to save checklist.');
     } finally {
       setLoading(false);
     }
@@ -158,8 +156,6 @@ const CourseFileChecklist = () => {
         <p className="dashboard-sub">Track all required course documents.</p>
       </div>
 
-      {error && <div style={{ color: '#dc2626', backgroundColor: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', padding: '0.75rem 1rem', marginBottom: '1rem', fontWeight: '500', fontSize: '0.9rem' }}>{error}</div>}
-      {success && <div style={{ color: '#15803d', backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '0.75rem 1rem', marginBottom: '1rem', fontWeight: '500', fontSize: '0.9rem' }}>{success}</div>}
       {loading && <div style={{ textAlign: 'center', marginBottom: '1rem', fontStyle: 'italic', color: '#64748b' }}>Processing...</div>}
 
       {/* Course Info Fields */}

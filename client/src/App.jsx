@@ -1,5 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { ToastProvider } from './context/ToastContext';
+import './toast.css';
 import ProtectedRoute from './routes/ProtectedRoute';
 import DesignationRoute from './routes/DesignationRoute';
 
@@ -31,6 +33,7 @@ import CourseForm from './pages/faculty/CourseForm';
 function App() {
   return (
     <BrowserRouter>
+      <ToastProvider>
       <AuthProvider>
         <Routes>
           {/* Public */}
@@ -78,6 +81,7 @@ function App() {
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </AuthProvider>
+      </ToastProvider>
     </BrowserRouter>
   );
 }
