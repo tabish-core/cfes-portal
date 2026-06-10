@@ -4,6 +4,8 @@ import { ToastProvider } from './context/ToastContext';
 import './toast.css';
 import ProtectedRoute from './routes/ProtectedRoute';
 import DesignationRoute from './routes/DesignationRoute';
+import { Analytics } from '@vercel/analytics/react';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 
 // Layouts
 import DeanLayout from './layouts/DeanLayout';
@@ -80,6 +82,8 @@ function App() {
           {/* 404 fallback */}
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
+        <Analytics />
+        <SpeedInsights />
       </AuthProvider>
       </ToastProvider>
     </BrowserRouter>
