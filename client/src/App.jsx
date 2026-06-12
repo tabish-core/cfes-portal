@@ -31,6 +31,7 @@ import FacultyDashboard from './pages/faculty/Dashboard';
 import CourseFileChecklist from './pages/faculty/CourseFileChecklist';
 import CourseTemplates from './pages/faculty/CourseTemplates';
 import CourseForm from './pages/faculty/CourseForm';
+import CISImportTest from './pages/faculty/CISImportTest';
 
 function App() {
   return (
@@ -78,6 +79,9 @@ function App() {
               </Route>
             </Route>
           </Route>
+
+          {/* CIS Import Test (PoC — public, no auth) */}
+          <Route path="/cis/import-test" element={<CISImportTest />} />
 
           {/* 404 fallback */}
           <Route path="*" element={<Navigate to="/login" replace />} />

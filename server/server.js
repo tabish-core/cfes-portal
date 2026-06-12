@@ -32,6 +32,8 @@ const semesterRoutes = require('./routes/semester.routes');
 const offeringRoutes = require('./routes/courseOffering.routes');
 const departmentRoutes = require('./routes/department.routes');
 const dashboardRoutes = require('./routes/dashboard.routes');
+const cisImportRoutes = require('./routes/cisImport.routes'); // PoC: CIS DOCX import
+const ccrImportRoutes = require('./routes/ccrImport.routes'); // CCR DOCX import
 // Future: const courseFileRoutes = require('./routes/courseFile.routes');
 
 /* ── App setup ─────────────────────────────────────────── */
@@ -75,6 +77,8 @@ app.use('/api/semesters', semesterRoutes);
 app.use('/api/offerings', offeringRoutes);
 app.use('/api/departments', departmentRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/cis-import', cisImportRoutes); // PoC: CIS DOCX import
+app.use('/api/ccr-import', ccrImportRoutes); // CCR DOCX import
 // app.use('/api/course-files', courseFileRoutes);
 
 /* ── Step 5: 404 Handler ────────────────────────────────── */

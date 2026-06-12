@@ -1,0 +1,660 @@
+/**
+ * CISImportTest.css — Styles for the CIS DOCX Import proof-of-concept page.
+ *
+ * Design: Dark glass-morphism theme with accent gradients.
+ * Standalone — no dependency on existing app styles.
+ */
+
+/* ── Page Container ─────────────────────────────────────── */
+.cis-import-test {
+  min-height: 100vh;
+  padding: 2rem 1.5rem 4rem;
+  max-width: 960px;
+  margin: 0 auto;
+  font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  color: #e2e8f0;
+  background: linear-gradient(145deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%);
+  position: relative;
+}
+
+/* Full-page dark background behind the centered container */
+.cis-import-test::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(145deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%);
+  z-index: -1;
+}
+
+/* ── Header ─────────────────────────────────────────────── */
+.cis-import-header {
+  text-align: center;
+  margin-bottom: 2.5rem;
+}
+
+.cis-import-header__badge {
+  display: inline-block;
+  padding: 0.25rem 0.85rem;
+  border-radius: 100px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #f0abfc;
+  background: rgba(168, 85, 247, 0.15);
+  border: 1px solid rgba(168, 85, 247, 0.3);
+  margin-bottom: 1rem;
+}
+
+.cis-import-header__title {
+  font-size: 2rem;
+  font-weight: 800;
+  margin: 0 0 0.5rem;
+  background: linear-gradient(135deg, #c084fc, #818cf8, #38bdf8);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.cis-import-header__subtitle {
+  font-size: 0.95rem;
+  color: #94a3b8;
+  max-width: 540px;
+  margin: 0 auto;
+  line-height: 1.6;
+}
+
+/* ── Upload Card ────────────────────────────────────────── */
+.cis-import-upload-card {
+  background: rgba(30, 41, 59, 0.6);
+  border: 1px solid rgba(100, 116, 139, 0.2);
+  border-radius: 16px;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  overflow: hidden;
+  margin-bottom: 1.5rem;
+}
+
+.cis-import-upload-card__inner {
+  padding: 2rem;
+}
+
+/* ── Upload Zone ────────────────────────────────────────── */
+.cis-import-upload-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2.5rem 2rem;
+  border: 2px dashed rgba(100, 116, 139, 0.35);
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.4);
+  transition: border-color 0.25s, background 0.25s;
+  cursor: pointer;
+}
+
+.cis-import-upload-zone:hover {
+  border-color: rgba(168, 85, 247, 0.5);
+  background: rgba(168, 85, 247, 0.05);
+}
+
+.cis-import-upload-zone__icon {
+  color: #64748b;
+  margin-bottom: 1rem;
+  transition: color 0.25s;
+}
+
+.cis-import-upload-zone:hover .cis-import-upload-zone__icon {
+  color: #a78bfa;
+}
+
+.cis-import-upload-zone__label {
+  font-size: 0.9rem;
+  color: #94a3b8;
+  cursor: pointer;
+}
+
+.cis-import-upload-zone__label span {
+  color: #a78bfa;
+  font-weight: 600;
+}
+
+.cis-import-upload-zone__input {
+  display: none;
+}
+
+/* ── File Info ──────────────────────────────────────────── */
+.cis-import-file-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+  padding: 0.85rem 1rem;
+  background: rgba(15, 23, 42, 0.5);
+  border: 1px solid rgba(100, 116, 139, 0.2);
+  border-radius: 10px;
+}
+
+.cis-import-file-info__icon {
+  color: #818cf8;
+  flex-shrink: 0;
+}
+
+.cis-import-file-info__details {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.cis-import-file-info__name {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #e2e8f0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cis-import-file-info__size {
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.cis-import-file-info__remove {
+  background: none;
+  border: none;
+  color: #64748b;
+  font-size: 1.4rem;
+  cursor: pointer;
+  padding: 0 0.25rem;
+  line-height: 1;
+  transition: color 0.2s;
+}
+
+.cis-import-file-info__remove:hover {
+  color: #f87171;
+}
+
+/* ── Upload Actions ─────────────────────────────────────── */
+.cis-import-upload-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+  justify-content: center;
+}
+
+/* ── Buttons ────────────────────────────────────────────── */
+.cis-import-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.7rem 1.5rem;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s;
+  font-family: inherit;
+}
+
+.cis-import-btn--primary {
+  background: linear-gradient(135deg, #7c3aed, #6366f1);
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+}
+
+.cis-import-btn--primary:hover:not(:disabled) {
+  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5);
+  transform: translateY(-1px);
+}
+
+.cis-import-btn--primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.cis-import-btn--ghost {
+  background: rgba(100, 116, 139, 0.15);
+  color: #94a3b8;
+  border: 1px solid rgba(100, 116, 139, 0.2);
+}
+
+.cis-import-btn--ghost:hover {
+  background: rgba(100, 116, 139, 0.25);
+  color: #e2e8f0;
+}
+
+.cis-import-btn--small {
+  padding: 0.4rem 0.85rem;
+  font-size: 0.78rem;
+  border-radius: 8px;
+  background: rgba(100, 116, 139, 0.15);
+  color: #94a3b8;
+  border: 1px solid rgba(100, 116, 139, 0.2);
+}
+
+.cis-import-btn--small:hover {
+  background: rgba(100, 116, 139, 0.25);
+  color: #e2e8f0;
+}
+
+/* ── Spinner ────────────────────────────────────────────── */
+.cis-import-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: cis-spin 0.6s linear infinite;
+}
+
+@keyframes cis-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Error ──────────────────────────────────────────────── */
+.cis-import-error {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.85rem 1.15rem;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  border-radius: 10px;
+  color: #fca5a5;
+  font-size: 0.88rem;
+  margin-bottom: 1.5rem;
+}
+
+/* ── Tabs ───────────────────────────────────────────────── */
+.cis-import-results {
+  background: rgba(30, 41, 59, 0.6);
+  border: 1px solid rgba(100, 116, 139, 0.2);
+  border-radius: 16px;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  overflow: hidden;
+}
+
+.cis-import-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid rgba(100, 116, 139, 0.2);
+  padding: 0 0.5rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.cis-import-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.cis-import-tab {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.85rem 1rem;
+  background: none;
+  border: none;
+  color: #64748b;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+  white-space: nowrap;
+  font-family: inherit;
+}
+
+.cis-import-tab:hover {
+  color: #94a3b8;
+}
+
+.cis-import-tab--active {
+  color: #a78bfa;
+  border-bottom-color: #7c3aed;
+}
+
+.cis-import-tab__icon {
+  font-size: 0.95rem;
+}
+
+.cis-import-tab-content {
+  padding: 1.5rem;
+}
+
+/* ── Summary Tab ────────────────────────────────────────── */
+.cis-import-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.75rem;
+}
+
+.cis-import-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1.25rem 1rem;
+  background: rgba(15, 23, 42, 0.5);
+  border: 1px solid rgba(100, 116, 139, 0.15);
+  border-radius: 12px;
+}
+
+.cis-import-stat__value {
+  font-size: 2rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, #c084fc, #818cf8);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  line-height: 1.2;
+}
+
+.cis-import-stat__label {
+  font-size: 0.75rem;
+  color: #64748b;
+  margin-top: 0.35rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+}
+
+/* ── Meta Info ──────────────────────────────────────────── */
+.cis-import-meta {
+  background: rgba(15, 23, 42, 0.4);
+  border: 1px solid rgba(100, 116, 139, 0.15);
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin-bottom: 1.25rem;
+}
+
+.cis-import-meta h3 {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #64748b;
+  margin: 0 0 0.85rem;
+  font-weight: 700;
+}
+
+.cis-import-meta__row {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.45rem 0;
+  border-bottom: 1px solid rgba(100, 116, 139, 0.1);
+}
+
+.cis-import-meta__row:last-child {
+  border-bottom: none;
+}
+
+.cis-import-meta__label {
+  font-size: 0.82rem;
+  color: #94a3b8;
+}
+
+.cis-import-meta__value {
+  font-size: 0.82rem;
+  color: #e2e8f0;
+  font-weight: 600;
+}
+
+/* ── Warnings ───────────────────────────────────────────── */
+.cis-import-warnings {
+  background: rgba(234, 179, 8, 0.08);
+  border: 1px solid rgba(234, 179, 8, 0.2);
+  border-radius: 12px;
+  padding: 1.25rem;
+}
+
+.cis-import-warnings h3 {
+  font-size: 0.85rem;
+  color: #fbbf24;
+  margin: 0 0 0.75rem;
+}
+
+.cis-import-warning-item {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+  font-size: 0.8rem;
+  color: #fde68a;
+  padding: 0.35rem 0;
+}
+
+.cis-import-warning-item__type {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 0.1rem 0.4rem;
+  background: rgba(234, 179, 8, 0.15);
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+/* ── Tables Tab ─────────────────────────────────────────── */
+.cis-import-tables {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.cis-import-table-card {
+  background: rgba(15, 23, 42, 0.4);
+  border: 1px solid rgba(100, 116, 139, 0.15);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.cis-import-table-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.85rem 1.15rem;
+  background: rgba(100, 116, 139, 0.08);
+  border-bottom: 1px solid rgba(100, 116, 139, 0.12);
+}
+
+.cis-import-table-card__header h3 {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #c084fc;
+}
+
+.cis-import-table-card__meta {
+  font-size: 0.75rem;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.cis-import-table-card__body {
+  overflow-x: auto;
+  padding: 0.5rem;
+}
+
+.cis-import-extracted-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.78rem;
+}
+
+.cis-import-extracted-table td {
+  padding: 0.5rem 0.65rem;
+  border: 1px solid rgba(100, 116, 139, 0.15);
+  color: #cbd5e1;
+  max-width: 250px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: top;
+}
+
+.cis-import-extracted-table tr:first-child td {
+  background: rgba(100, 116, 139, 0.1);
+  color: #e2e8f0;
+  font-weight: 600;
+}
+
+.cis-import-cell--empty {
+  color: #475569 !important;
+  font-style: italic;
+}
+
+/* ── Sections Tab ───────────────────────────────────────── */
+.cis-import-section-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.cis-import-section-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 0.85rem;
+  background: rgba(15, 23, 42, 0.4);
+  border: 1px solid rgba(100, 116, 139, 0.12);
+  border-radius: 8px;
+}
+
+.cis-import-section-badge {
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 0.2rem 0.55rem;
+  border-radius: 6px;
+  flex-shrink: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.cis-import-section-badge--1 {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+}
+
+.cis-import-section-badge--2 {
+  background: rgba(234, 179, 8, 0.15);
+  color: #fbbf24;
+}
+
+.cis-import-section-badge--3 {
+  background: rgba(34, 197, 94, 0.15);
+  color: #4ade80;
+}
+
+.cis-import-section-badge--4,
+.cis-import-section-badge--5,
+.cis-import-section-badge--6 {
+  background: rgba(56, 189, 248, 0.15);
+  color: #38bdf8;
+}
+
+.cis-import-section-badge--bold {
+  background: rgba(168, 85, 247, 0.15);
+  color: #c084fc;
+}
+
+.cis-import-section-text {
+  font-size: 0.85rem;
+  color: #e2e8f0;
+}
+
+/* ── Raw Text Tab ───────────────────────────────────────── */
+.cis-import-raw-text__header {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 0.75rem;
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.cis-import-raw-text__content {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(100, 116, 139, 0.15);
+  border-radius: 10px;
+  padding: 1.25rem;
+  font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+  font-size: 0.78rem;
+  line-height: 1.7;
+  color: #94a3b8;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+/* ── JSON Tab ───────────────────────────────────────────── */
+.cis-import-json__header {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 0.75rem;
+}
+
+.cis-import-json__content {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(100, 116, 139, 0.15);
+  border-radius: 10px;
+  padding: 1.25rem;
+  font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+  font-size: 0.72rem;
+  line-height: 1.6;
+  color: #818cf8;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+/* ── Empty State ────────────────────────────────────────── */
+.cis-import-empty {
+  text-align: center;
+  color: #64748b;
+  font-size: 0.88rem;
+  padding: 2rem;
+}
+
+/* ── Scrollbar Styles ───────────────────────────────────── */
+.cis-import-raw-text__content::-webkit-scrollbar,
+.cis-import-json__content::-webkit-scrollbar,
+.cis-import-table-card__body::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.cis-import-raw-text__content::-webkit-scrollbar-track,
+.cis-import-json__content::-webkit-scrollbar-track,
+.cis-import-table-card__body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.cis-import-raw-text__content::-webkit-scrollbar-thumb,
+.cis-import-json__content::-webkit-scrollbar-thumb,
+.cis-import-table-card__body::-webkit-scrollbar-thumb {
+  background: rgba(100, 116, 139, 0.3);
+  border-radius: 3px;
+}
+
+/* ── Responsive ─────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .cis-import-test {
+    padding: 1.25rem 1rem 3rem;
+  }
+
+  .cis-import-header__title {
+    font-size: 1.5rem;
+  }
+
+  .cis-import-stat-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .cis-import-tab {
+    padding: 0.75rem 0.65rem;
+    font-size: 0.75rem;
+  }
+}

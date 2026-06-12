@@ -1,0 +1,62 @@
+/**
+ * ccrImport.controller.js — CCR DOCX Import.
+ *
+ * POST /api/ccr-import/parse-for-form
+ *   - Accepts a .docx file via multipart/form-data (field name: "file")
+ *   - Returns extracted JSON mapped to CCR form state
+ */
+
+const { parseDocxBuffer } = require('../services/docxImportService');
+const { mapExtractedToCCRFormState } = require('../services/ccrImportMapper');
+
+/**
+ * @route   POST /api/ccr-import/parse-for-form
+ * @desc    Parse an uploaded .docx CCR file and return mapped form state
+ * @access  Private (requires auth token)
+ */
+const parseCCRForForm = async (req, res) => {
+  try {
+    // 1. Validate file presence
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: 'No file uploaded. Please upload a .docx file.',
+      });
+    }
+
+    // 2. Validate file type
+    const allowedMimeTypes = [
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    ];
+    if (!allowedMimeTypes.includes(req.file.mimetype)) {
+      return res.status(400).json({
+        success: false,
+        message: `Invalid file type: ${req.file.mimetype}. Only .docx files are accepted.`,
+      });
+    }
+
+    // 3. Parse the document
+    const extracted = await parseDocxBuffer(req.file.buffer);
+
+    // 4. Map to form state
+    const { formState, importSummary } = mapExtractedToCCRFormState(extracted);
+
+    // 5. Return mapped result
+    return res.status(200).json({
+      success: true,
+      message: 'Document parsed and mapped successfully.',
+      fileName: req.file.originalname,
+      formState,
+      importSummary,
+    });
+  } catch (error) {
+    console.error('[CCR Import] Parse-for-form error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to parse and map document.',
+      error: error.message,
+    });
+  }
+};
+
+module.exports = { parseCCRForForm };

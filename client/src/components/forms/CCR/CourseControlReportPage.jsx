@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import api from '../../../api/axios';
 import useToast from '../../../hooks/useToast';
 import CourseInfoSection from './CourseInfoSection';
@@ -55,6 +55,58 @@ const CourseControlReportPage = ({ courseId }) => {
   const [loading, setLoading] = useState(false);
   const [isExporting, setIsExporting] = useState('');
   const [validationErrors, setValidationErrors] = useState([]);
+
+  const [isImporting, setIsImporting] = useState(false);
+  const [importSummary, setImportSummary] = useState(null);
+  const fileInputRef = useRef(null);
+
+  const handleImportClick = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  const handleFileChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    e.target.value = '';
+
+    if (!file.name.endsWith('.docx')) {
+      toast.warning('Please select a valid Word (.docx) file.');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      setIsImporting(true);
+      setImportSummary(null);
+      
+      const { data } = await api.post('/ccr-import/parse-for-form', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      const { formState, importSummary: summary } = data;
+
+      if (formState.courseInfo) setCourseInfo(formState.courseInfo);
+      if (formState.weeklyData?.length) setWeeklyData(formState.weeklyData);
+      if (formState.alternateData?.length) setAlternateData(formState.alternateData);
+
+      setImportSummary(summary);
+      toast.success('Form populated from Word document successfully!');
+      
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (err) {
+      console.error('Import failed:', err);
+      toast.error(err.response?.data?.message || 'Failed to import document.');
+    } finally {
+      setIsImporting(false);
+    }
+  };
 
   /* ── Validation ─────────────────────────────────────────── */
   const validateForm = () => {
@@ -225,6 +277,143 @@ const CourseControlReportPage = ({ courseId }) => {
       }}>
         Course Control Report (CCR)
       </h2>
+
+      {/* Hidden file input */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileChange}
+        accept=".docx"
+        style={{ display: 'none' }}
+      />
+
+      {/* Word Import Banner */}
+      <div style={{
+        background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
+        border: '1px solid #cbd5e1',
+        borderRadius: '8px',
+        padding: '1.5rem',
+        marginBottom: '2rem',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '1rem',
+        boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)'
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+          <div>
+            <h4 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '700', color: '#1e293b' }}>
+              Auto-populate from Word Document
+            </h4>
+            <p style={{ margin: '0.25rem 0 0', fontSize: '0.88rem', color: '#64748b' }}>
+              Upload a filled CCR template (.docx) to automatically extract and populate the form fields.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={handleImportClick}
+            disabled={isImporting}
+            style={{
+              padding: '0.6rem 1.25rem',
+              backgroundColor: isImporting ? '#94a3b8' : '#3949ab',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              fontSize: '0.9rem',
+              fontWeight: '600',
+              cursor: isImporting ? 'wait' : 'pointer',
+              transition: 'all 0.2s',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem'
+            }}
+          >
+            {isImporting ? 'Importing...' : 'Import from Word (.docx)'}
+          </button>
+        </div>
+
+        {/* Import Summary Report */}
+        {importSummary && (
+          <div style={{
+            backgroundColor: '#ffffff',
+            borderLeft: '4px solid #10b981',
+            padding: '1rem',
+            borderRadius: '0 8px 8px 0',
+            fontSize: '0.88rem',
+            borderTop: '1px solid #e2e8f0',
+            borderRight: '1px solid #e2e8f0',
+            borderBottom: '1px solid #e2e8f0'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+              <strong style={{ color: '#065f46', fontSize: '0.95rem' }}>Import Success Report</strong>
+              <button
+                type="button"
+                onClick={() => setImportSummary(null)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#9ca3af',
+                  cursor: 'pointer',
+                  fontSize: '1.1rem',
+                  padding: '0 0.25rem',
+                  lineHeight: 1
+                }}
+                title="Dismiss summary"
+              >
+                ✕
+              </button>
+            </div>
+            <p style={{ margin: '0 0 0.5rem 0', color: '#374151' }}>
+              Successfully extracted <strong>{importSummary.importedCount}</strong> sections/tables.
+            </p>
+            {importSummary.missingCount > 0 && (
+              <p style={{ margin: '0 0 0.5rem 0', color: '#b91c1c' }}>
+                Missing/empty in document: <strong>{importSummary.missingCount}</strong> fields (you can fill these in manually below).
+              </p>
+            )}
+            
+            <details style={{ cursor: 'pointer', color: '#4b5563', marginTop: '0.75rem' }}>
+              <summary style={{ fontSize: '0.85rem', fontWeight: '600', color: '#3949ab', outline: 'none' }}>
+                View Detailed Log
+              </summary>
+              <div style={{
+                marginTop: '0.5rem',
+                maxHeight: '200px',
+                overflowY: 'auto',
+                padding: '0.75rem',
+                backgroundColor: '#f8fafc',
+                border: '1px solid #e2e8f0',
+                borderRadius: '6px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.5rem'
+              }}>
+                <div>
+                  <div style={{ fontWeight: 'bold', color: '#059669', marginBottom: '0.25rem', fontSize: '0.8rem' }}>Imported Fields:</div>
+                  {importSummary.imported.map((item, idx) => (
+                    <div key={idx} style={{ color: '#047857', fontFamily: 'monospace', fontSize: '0.75rem', paddingLeft: '0.5rem' }}>• {item}</div>
+                  ))}
+                </div>
+                {importSummary.missing.length > 0 && (
+                  <div>
+                    <div style={{ fontWeight: 'bold', color: '#dc2626', marginBottom: '0.25rem', fontSize: '0.8rem' }}>Missing/Empty Fields:</div>
+                    {importSummary.missing.map((item, idx) => (
+                      <div key={idx} style={{ color: '#b91c1c', fontFamily: 'monospace', fontSize: '0.75rem', paddingLeft: '0.5rem' }}>• {item}</div>
+                    ))}
+                  </div>
+                )}
+                {importSummary.unmapped.length > 0 && (
+                  <div>
+                    <div style={{ fontWeight: 'bold', color: '#d97706', marginBottom: '0.25rem', fontSize: '0.8rem' }}>Unmapped Fields:</div>
+                    {importSummary.unmapped.map((item, idx) => (
+                      <div key={idx} style={{ color: '#b45309', fontFamily: 'monospace', fontSize: '0.75rem', paddingLeft: '0.5rem' }}>• {item}</div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </details>
+          </div>
+        )}
+      </div>
 
       {validationErrors.length > 0 && (
         <div style={{ backgroundColor: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', padding: '1rem', marginBottom: '1.5rem' }}>

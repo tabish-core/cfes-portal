@@ -40,7 +40,7 @@ const createOffering = async (facultyId, courseId, semesterId, section = 'A', us
 
   // ── Confirm documents exist ─────────────────────────────────────────────
   const [faculty, course, semester] = await Promise.all([
-    User.findOne({ _id: facultyId, role: 'faculty' }),
+    User.findById(facultyId),
     Course.findById(courseId),
     Semester.findById(semesterId),
   ]);
