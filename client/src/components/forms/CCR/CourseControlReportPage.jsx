@@ -108,6 +108,17 @@ const CourseControlReportPage = ({ courseId }) => {
     }
   };
 
+  const handleClearForm = () => {
+    if (!window.confirm('This will clear all current form data and cannot be undone. Continue?')) return;
+    setCourseInfo(INITIAL_COURSE_INFO);
+    setWeeklyData(INITIAL_WEEKLY_DATA);
+    setAlternateData(INITIAL_ALTERNATE_DATA);
+    setValidationErrors([]);
+    setImportSummary(null);
+    toast.success('Form cleared successfully.');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   /* ── Validation ─────────────────────────────────────────── */
   const validateForm = () => {
     const errors = [];
@@ -455,6 +466,25 @@ const CourseControlReportPage = ({ courseId }) => {
         />
 
         <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+          <button
+            type="button"
+            onClick={handleClearForm}
+            disabled={loading || isExporting || isImporting}
+            style={{
+              padding: '0.75rem 1.5rem',
+              backgroundColor: '#f8fafc',
+              color: '#334155',
+              border: '1px solid #cbd5e1',
+              borderRadius: '4px',
+              fontSize: '0.95rem',
+              cursor: (loading || isExporting || isImporting) ? 'wait' : 'pointer',
+              fontWeight: '600',
+              transition: 'all 0.2s'
+            }}
+          >
+            Clear Form
+          </button>
+
           <button
             type="button"
             onClick={() => handleDownload('docx')}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import axios from 'axios';
+import api from '../../../api/axios';
 import useToast from '../../../hooks/useToast';
 import UniversityHeader from './UniversityHeader';
 import CourseSummarySection from './CourseSummarySection';
@@ -126,11 +126,9 @@ const CourseInformationSheetPage = ({ courseId }) => {
     try {
       setIsImporting(true);
       setImportSummary(null);
-      const token = localStorage.getItem('token');
       
-      const res = await axios.post('/api/cis-import/parse-for-form', formData, {
+      const res = await api.post('/cis-import/parse-for-form', formData, {
         headers: {
-          Authorization: `Bearer ${token}`,
           'Content-Type': 'multipart/form-data',
         },
       });
@@ -161,6 +159,23 @@ const CourseInformationSheetPage = ({ courseId }) => {
     }
   };
 
+  const handleClearForm = () => {
+    if (!window.confirm('This will clear all current form data and cannot be undone. Continue?')) return;
+    setCourseSummary(INITIAL_COURSE_SUMMARY);
+    setBasicInfo(INITIAL_BASIC_INFO);
+    setCourseObjectives('');
+    setCourseContents('');
+    setCloData(INITIAL_CLO_DATA);
+    setTextbooks(INITIAL_TEXTBOOKS);
+    setObaData(INITIAL_OBA_DATA);
+    setWeeklyPlan(INITIAL_WEEKLY_PLAN);
+    setGrading(INITIAL_GRADING);
+    setValidationErrors([]);
+    setImportSummary(null);
+    toast.success('Form cleared successfully.');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   /* ── Validation ─────────────────────────────────────────── */
   const validateForm = () => {
     const errors = [];
@@ -175,10 +190,7 @@ const CourseInformationSheetPage = ({ courseId }) => {
     const fetchCIS = async () => {
       try {
         setIsLoading(true);
-        const token = localStorage.getItem('token');
-        const res = await axios.get(`/api/forms/cis/${courseId}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        const res = await api.get(`/forms/cis/${courseId}`);
         
         if (res.data.data && res.data.data.form) {
           const f = res.data.data.form;
@@ -339,10 +351,7 @@ const CourseInformationSheetPage = ({ courseId }) => {
     };
 
     try {
-      const token = localStorage.getItem('token');
-      await axios.post('/api/forms/cis', formData, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      await api.post('/forms/cis', formData);
       toast.success('Course Information Sheet saved successfully!');
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) {
@@ -363,9 +372,7 @@ const CourseInformationSheetPage = ({ courseId }) => {
   const handleDownload = async (format) => {
     try {
       setIsExporting(format);
-      const token = localStorage.getItem('token');
-      const res = await axios.get(`/api/forms/cis/${courseId}/export?format=${format}`, {
-        headers: { Authorization: `Bearer ${token}` },
+      const res = await api.get(`/forms/cis/${courseId}/export?format=${format}`, {
         responseType: 'blob', // Important for handling binary data
       });
 
@@ -617,6 +624,27 @@ const CourseInformationSheetPage = ({ courseId }) => {
         />
 
         <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+          <button
+            type="button"
+            onClick={handleClearForm}
+            disabled={isSaving || isExporting || isImporting}
+            style={{
+              padding: '0.75rem 1.5rem',
+              backgroundColor: '#f8fafc',
+              color: '#334155',
+              border: '1px solid #cbd5e1',
+              borderRadius: '6px',
+              fontSize: '0.95rem',
+              cursor: (isSaving || isExporting || isImporting) ? 'wait' : 'pointer',
+              fontWeight: '600',
+              transition: 'all 0.2s'
+            }}
+            onMouseOver={(e) => { if (!isSaving && !isExporting && !isImporting) e.currentTarget.style.backgroundColor = '#e2e8f0'; }}
+            onMouseOut={(e) => { if (!isSaving && !isExporting && !isImporting) e.currentTarget.style.backgroundColor = '#f8fafc'; }}
+          >
+            Clear Form
+          </button>
+
           <button
             type="button"
             onClick={() => handleDownload('docx')}
