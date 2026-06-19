@@ -1,4 +1,4 @@
-const puppeteer = require('puppeteer');
+const { launchBrowser } = require('./launchBrowser');
 const handlebars = require('handlebars');
 const fs = require('fs');
 const path = require('path');
@@ -95,42 +95,42 @@ const generateCISPDF = async (formData) => {
     const template = handlebars.compile(templateHtml);
     const html = template(formData);
 
-    // Launch Puppeteer
-    // --no-sandbox is often required for environments like Render/Docker
-    const browser = await puppeteer.launch({
-      headless: 'new',
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
-    });
+    // Launch Puppeteer via shared launcher
+    // (uses @sparticuz/chromium in production, local Chrome in dev)
+    let browser;
+    try {
+      browser = await launchBrowser();
     
-    const page = await browser.newPage();
+      const page = await browser.newPage();
     
-    // Set HTML content
-    await page.setContent(html, { waitUntil: 'networkidle0' });
+      // Set HTML content
+      await page.setContent(html, { waitUntil: 'networkidle0' });
 
-    // Generate PDF
-    const pdfBuffer = await page.pdf({
-      format: 'Letter',
-      printBackground: true,
-      displayHeaderFooter: true,
-      headerTemplate: `
-        <div style="font-size: 10px; width: 100%; text-align: center;">
-          ${logoBase64 ? `<img src="${logoBase64}" style="height: 41px;">` : '<span style="font-weight: bold; color: #1a56db;">IQRA UNIVERSITY IU</span>'}
-        </div>
-      `,
-      footerTemplate: '<div style="font-size: 10px; width: 100%; text-align: center;"><span class="pageNumber"></span> / <span class="totalPages"></span></div>',
-      margin: {
-        top: '0.75in',
-        bottom: '0.75in',
-        left: '0.75in',
-        right: '0.75in'
-      }
-    });
+      // Generate PDF
+      const pdfBuffer = await page.pdf({
+        format: 'Letter',
+        printBackground: true,
+        displayHeaderFooter: true,
+        headerTemplate: `
+          <div style="font-size: 10px; width: 100%; text-align: center;">
+            ${logoBase64 ? `<img src="${logoBase64}" style="height: 41px;">` : '<span style="font-weight: bold; color: #1a56db;">IQRA UNIVERSITY IU</span>'}
+          </div>
+        `,
+        footerTemplate: '<div style="font-size: 10px; width: 100%; text-align: center;"><span class="pageNumber"></span> / <span class="totalPages"></span></div>',
+        margin: {
+          top: '0.75in',
+          bottom: '0.75in',
+          left: '0.75in',
+          right: '0.75in'
+        }
+      });
 
-    await browser.close();
-
-    // Puppeteer 24+ returns Uint8Array. We must convert it to a Node Buffer 
-    // so Express doesn't accidentally serialize it into a JSON object.
-    return Buffer.from(pdfBuffer);
+      // Puppeteer 24+ returns Uint8Array. We must convert it to a Node Buffer 
+      // so Express doesn't accidentally serialize it into a JSON object.
+      return Buffer.from(pdfBuffer);
+    } finally {
+      if (browser) await browser.close();
+    }
 
   } catch (error) {
     console.error("Error generating PDF via Puppeteer:", error);

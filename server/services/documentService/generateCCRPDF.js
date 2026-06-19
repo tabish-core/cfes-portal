@@ -1,4 +1,4 @@
-const puppeteer = require('puppeteer');
+const { launchBrowser } = require('./launchBrowser');
 const fs = require('fs');
 const path = require('path');
 const handlebars = require('handlebars');
@@ -60,10 +60,7 @@ const generateCCRPDF = async (data) => {
     const template = handlebars.compile(templateHtml);
     const finalHtml = template(templateData);
 
-    browser = await puppeteer.launch({
-      headless: "new",
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
-    });
+    browser = await launchBrowser();
     
     const page = await browser.newPage();
     await page.setContent(finalHtml, { waitUntil: 'networkidle0' });
