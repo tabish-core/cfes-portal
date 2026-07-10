@@ -2,6 +2,7 @@ import { useParams, Link } from 'react-router-dom';
 import '../dean/Dashboard.css';
 import CourseControlReportPage from '../../components/forms/CCR/CourseControlReportPage';
 import CourseInformationSheetPage from '../../components/forms/CIS/CourseInformationSheetPage';
+import CourseCompletionCertificatePage from '../../components/forms/CCC/CourseCompletionCertificatePage';
 
 
 const CourseForm = () => {
@@ -22,6 +23,8 @@ const CourseForm = () => {
           <CourseControlReportPage courseId={courseId} />
         ) : formType === 'CIS' ? (
           <CourseInformationSheetPage courseId={courseId} />
+        ) : formType === 'CCC' ? (
+          <CourseCompletionCertificatePage courseId={courseId} />
         ) : (
           <>
             <p>Multi-step form will be implemented in Phase 2.</p>

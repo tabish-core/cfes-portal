@@ -1,10 +1,12 @@
 const CIS = require('../models/CIS.model');
 const CCR = require('../models/CCR.model');
+const CCC = require('../models/CCC.model');
 const { sendSuccess, sendError } = require('../utils/response');
 const { generateCISWord } = require('../services/documentService/generateCISWord');
 const { generateCISPDF } = require('../services/documentService/generateCISPDF');
 const { generateCCRWord } = require('../services/documentService/generateCCRWord');
 const { generateCCRPDF } = require('../services/documentService/generateCCRPDF');
+const { generateCCCPDF } = require('../services/documentService/generateCCCPDF');
 
 /* ── Validation Helpers ─────────────────────────────────────────────────── */
 
@@ -375,11 +377,166 @@ const exportCISForm = async (req, res, next) => {
   }
 };
 
+/* ══════════════════════════════════════════════════════════════════════════
+ *  CCC  –  Course Completion Certificate
+ * ══════════════════════════════════════════════════════════════════════════ */
+
+/**
+ * Validate CCC payload.
+ * Returns an array of { field, message } objects. Empty array = valid.
+ */
+const validateCCC = ({ certificateData }) => {
+  const errors = [];
+  if (!certificateData || typeof certificateData !== 'object') {
+    errors.push({ field: 'certificateData', message: 'Certificate data section is required.' });
+    return errors;
+  }
+  if (!filled(certificateData.sessionsHeld))          errors.push({ field: 'sessionsHeld', message: 'Sessions Held is required.' });
+  if (!filled(certificateData.totalRequiredSessions))  errors.push({ field: 'totalRequiredSessions', message: 'Total Required Sessions is required.' });
+  if (!filled(certificateData.date))                   errors.push({ field: 'date', message: 'Date is required.' });
+  return errors;
+};
+
+/**
+ * @route   GET /api/forms/ccc/:courseId
+ * @access  Private
+ *
+ * Query params:
+ *   semester — Semester ObjectId (optional)
+ */
+const getCCCForm = async (req, res, next) => {
+  try {
+    const { courseId } = req.params;
+    const facultyId = req.user._id;
+    const { semester: semesterId } = req.query;
+
+    if (!courseId) {
+      return sendError(res, 'Course ID is required', 400);
+    }
+
+    const query = {
+      course: courseId,
+      faculty: facultyId,
+      formType: 'CCC'
+    };
+    if (semesterId) query.semester = semesterId;
+
+    const form = await CCC.findOne(query);
+
+    return sendSuccess(res, { form: form || null }, 'CCC form fetched successfully');
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * @route   POST /api/forms/ccc
+ * @access  Private
+ *
+ * Body:
+ *   courseId, semesterId (optional), courseInfo, certificateData
+ */
+const saveCCCForm = async (req, res, next) => {
+  try {
+    const facultyId = req.user._id;
+    const { courseId, semesterId, courseInfo, certificateData } = req.body;
+
+    if (!courseId) {
+      return sendError(res, 'Course ID is required', 400);
+    }
+
+    // Validate required fields
+    const validationErrors = validateCCC({ certificateData });
+    if (validationErrors.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: `Please fill in the required fields: ${validationErrors.map(e => e.message).join(' ')}`,
+        data: { errors: validationErrors }
+      });
+    }
+
+    const filter = { course: courseId, faculty: facultyId, formType: 'CCC' };
+    if (semesterId) filter.semester = semesterId;
+
+    const updateData = {
+      course: courseId,
+      faculty: facultyId,
+      formType: 'CCC',
+      courseInfo,
+      certificateData,
+      status: 'draft'
+    };
+    if (semesterId) updateData.semester = semesterId;
+
+    const form = await CCC.findOneAndUpdate(
+      filter,
+      updateData,
+      { new: true, upsert: true, setDefaultsOnInsert: true }
+    );
+
+    return sendSuccess(res, { form }, 'CCC form saved successfully');
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * @route   GET /api/forms/ccc/:courseId/export
+ * @access  Private
+ *
+ * Query params:
+ *   format   — 'pdf'
+ *   semester — Semester ObjectId (optional)
+ */
+const exportCCCForm = async (req, res, next) => {
+  try {
+    const { courseId } = req.params;
+    const facultyId = req.user._id;
+    const { format, semester: semesterId } = req.query;
+
+    if (!courseId) {
+      return sendError(res, 'Course ID is required', 400);
+    }
+
+    const query = {
+      course: courseId,
+      faculty: facultyId,
+      formType: 'CCC'
+    };
+    if (semesterId) query.semester = semesterId;
+
+    const form = await CCC.findOne(query).lean();
+
+    if (!form) {
+      return sendError(res, 'CCC form not found. Please save it first.', 404);
+    }
+
+    if (format === 'pdf') {
+      const exportData = {
+        courseInfo: form.courseInfo,
+        certificateData: form.certificateData
+      };
+
+      const buffer = await generateCCCPDF(exportData);
+      res.setHeader('Content-Disposition', `attachment; filename=CCC_${form.courseInfo?.courseCode || 'Course'}.pdf`);
+      res.setHeader('Content-Type', 'application/pdf');
+      return res.send(buffer);
+    }
+
+    return sendError(res, 'Invalid format requested. Only PDF is supported for CCC.', 400);
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   getCCRForm,
   saveCCRForm,
   exportCCRForm,
   getCISForm,
   saveCISForm,
-  exportCISForm
+  exportCISForm,
+  getCCCForm,
+  saveCCCForm,
+  exportCCCForm
 };

@@ -1,13 +1,13 @@
 import { useParams, Link } from 'react-router-dom';
 import '../dean/Dashboard.css';
-
 const formTemplates = [
   { name: 'Course Information Sheet', formType: 'CIS' },
   { name: 'Weekly Plan', formType: 'WP' },
   { name: 'Course Control Report', formType: 'CCR' },
   { name: 'Timetable with consulting hours', formType: 'TIMETABLE' },
   { name: 'Attendance Record', formType: 'AR' },
-  { name: 'Lectures', formType: 'LECTURES' }
+  { name: 'Lectures', formType: 'LECTURES' },
+  { name: 'Course Completion Certificate', formType: 'CCC' }
 ];
 
 const CourseTemplates = () => {

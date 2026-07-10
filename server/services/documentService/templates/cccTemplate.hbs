@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Course Completion Certificate</title>
+  <style>
+    @page {
+      size: A4 portrait;
+      margin: 0.5in;
+    }
+    body {
+      font-family: "Times New Roman", Times, serif;
+      font-size: 11pt;
+      line-height: 1.5;
+      color: #000;
+      margin: 0;
+      padding: 0;
+    }
+    .header-area {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+    .header-area img {
+      height: 70px;
+      margin-bottom: 10px;
+    }
+    .dept-title {
+      font-weight: bold;
+      font-size: 12pt;
+      margin: 0;
+    }
+    .faculty-title {
+      font-weight: bold;
+      font-size: 12pt;
+      margin: 0;
+    }
+    .cert-title {
+      font-weight: bold;
+      font-size: 16pt;
+      margin-top: 30px;
+      margin-bottom: 30px;
+    }
+    .course-info {
+      margin-bottom: 40px;
+    }
+    .course-info p {
+      margin: 5px 0;
+    }
+    table {
+      width: 70%;
+      border-collapse: collapse;
+      margin-bottom: 40px;
+    }
+    table td {
+      border: 1pt solid #000;
+      padding: 5px 10px;
+      vertical-align: middle;
+    }
+    .declaration-area {
+      margin-bottom: 60px;
+    }
+    .declaration-title {
+      font-weight: bold;
+      margin-bottom: 15px;
+    }
+    .declaration-text {
+      text-align: justify;
+    }
+    .signature-area {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    .signature-box {
+      width: 200px;
+    }
+    .signature-line {
+      height: 60px;
+    }
+    .faculty-name {
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+    .date-text {
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <div class="header-area">
+    {{#if logoBase64}}
+      <img src="{{logoBase64}}" alt="Iqra University Logo">
+    {{else}}
+      <div style="background-color: #312e81; color: white; display: inline-block; padding: 10px 20px; font-size: 24px; font-weight: bold; margin-bottom: 10px;">
+         IQRA UNIVERSITY IU 
+      </div>
+    {{/if}}
+    <p class="dept-title">Department of Computer Science</p>
+    <p class="faculty-title">Faculty of Engineering, Science and Technology</p>
+    
+    <p class="cert-title">Course Completion Certificate</p>
+  </div>
+
+  <!-- Course Info -->
+  <div class="course-info">
+    <p><strong>Course Title:</strong> {{courseInfo.courseTitle}}</p>
+    <p><strong>Course Code:</strong>  {{courseInfo.courseCode}}</p>
+    <p><strong>Semester:</strong>     {{courseInfo.semesterName}}</p>
+  </div>
+
+  <!-- Sessions Table -->
+  <table>
+    <tr>
+      <td>No of Session Held? (Sessions Held/Total Sessions Req.)</td>
+      <td><strong>{{certificateData.sessionsHeld}}/{{certificateData.totalRequiredSessions}}</strong></td>
+    </tr>
+    <tr>
+      <td>End Term Review Filled?  (Yes or No)</td>
+      <td><strong>{{certificateData.endTermReviewFilled}}</strong></td>
+    </tr>
+  </table>
+
+  <!-- Declaration -->
+  <div class="declaration-area">
+    <div class="declaration-title">Instructor's Declaration:</div>
+    <div class="declaration-text">
+      I hereby certify that I have covered 100% of the total syllabus topics of above-mentioned course and have fulfilled all the requirements as per the curriculum.
+    </div>
+  </div>
+
+  <!-- Signature -->
+  <div class="signature-area">
+    <div class="signature-box">
+      <div class="signature-line"></div>
+      <div class="faculty-name">{{courseInfo.facultyName}}</div>
+      <div class="date-text">Date: {{certificateData.date}}</div>
+    </div>
+  </div>
+
+</body>
+</html>

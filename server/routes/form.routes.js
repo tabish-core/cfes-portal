@@ -13,4 +13,8 @@ router.get('/cis/:courseId', verifyToken, formController.getCISForm);
 router.post('/cis', verifyToken, formController.saveCISForm);
 router.get('/cis/:courseId/export', verifyToken, formController.exportCISForm);
 
+router.get('/ccc/:courseId', verifyToken, formController.getCCCForm);
+router.post('/ccc', verifyToken, formController.saveCCCForm);
+router.get('/ccc/:courseId/export', verifyToken, formController.exportCCCForm);
+
 module.exports = router;
