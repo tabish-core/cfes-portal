@@ -3,6 +3,7 @@ import '../dean/Dashboard.css';
 import CourseControlReportPage from '../../components/forms/CCR/CourseControlReportPage';
 import CourseInformationSheetPage from '../../components/forms/CIS/CourseInformationSheetPage';
 import CourseCompletionCertificatePage from '../../components/forms/CCC/CourseCompletionCertificatePage';
+import CourseReviewReportTheoryPage from '../../components/forms/CRR/CourseReviewReportTheoryPage';
 
 
 const CourseForm = () => {
@@ -25,6 +26,8 @@ const CourseForm = () => {
           <CourseInformationSheetPage courseId={courseId} />
         ) : formType === 'CCC' ? (
           <CourseCompletionCertificatePage courseId={courseId} />
+        ) : formType === 'CRR' ? (
+          <CourseReviewReportTheoryPage courseId={courseId} />
         ) : (
           <>
             <p>Multi-step form will be implemented in Phase 2.</p>

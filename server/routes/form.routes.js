@@ -17,4 +17,8 @@ router.get('/ccc/:courseId', verifyToken, formController.getCCCForm);
 router.post('/ccc', verifyToken, formController.saveCCCForm);
 router.get('/ccc/:courseId/export', verifyToken, formController.exportCCCForm);
 
+router.get('/course-review/:courseId', verifyToken, formController.getCourseReviewForm);
+router.post('/course-review', verifyToken, formController.saveCourseReviewForm);
+router.get('/course-review/:courseId/export', verifyToken, formController.exportCourseReviewForm);
+
 module.exports = router;

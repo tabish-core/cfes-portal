@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Course Review Report (Theory Courses)</title>
+  <style>
+    @page {
+      size: A4 portrait;
+      margin: 0.5in;
+    }
+    body {
+      font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
+      font-size: 10pt;
+      line-height: 1.3;
+      color: #000;
+      margin: 0;
+      padding: 0;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 10px;
+    }
+    table td, table th {
+      border: 0.5pt solid #000;
+      padding: 3px 6px;
+      vertical-align: middle;
+    }
+    th {
+      font-weight: bold;
+      font-size: 9pt;
+    }
+    .text-center { text-align: center; }
+    .text-left { text-align: left; }
+    .text-uppercase { text-transform: uppercase; }
+    .text-bold { font-weight: bold; }
+    .bg-header {
+      background-color: #d0d0d0;
+      font-weight: bold;
+      font-size: 10pt;
+      padding: 5px 8px;
+    }
+    .bg-light { background-color: #f0f0f0; }
+    .section-header {
+      background-color: #d0d0d0;
+      font-weight: bold;
+      font-size: 10pt;
+      padding: 5px 8px;
+      border: 0.5pt solid #000;
+      margin-top: 15px;
+      margin-bottom: 0;
+    }
+    .question-block {
+      margin: 10px 0 10px 15px;
+      page-break-inside: avoid;
+    }
+    .question-label {
+      font-weight: bold;
+      font-size: 9.5pt;
+      margin-bottom: 5px;
+      text-transform: uppercase;
+    }
+    .answer-text {
+      border-bottom: 0.5pt solid #999;
+      min-height: 16px;
+      padding: 2px 0;
+      margin-bottom: 3px;
+      font-size: 10pt;
+    }
+    .signature-area {
+      border: 1pt solid #000;
+      padding: 20px 15px;
+      margin-top: 20px;
+      page-break-inside: avoid;
+    }
+    .sig-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      margin-bottom: 30px;
+    }
+    .sig-row:last-child {
+      margin-bottom: 0;
+    }
+    .sig-block {
+      width: 55%;
+    }
+    .sig-date {
+      width: 35%;
+    }
+    .sig-line {
+      border-bottom: 1pt solid #000;
+      height: 30px;
+    }
+    .sig-label {
+      font-size: 8.5pt;
+      text-align: center;
+      margin-top: 3px;
+    }
+    .header-area {
+      text-align: center;
+      margin-bottom: 5px;
+    }
+    .header-area img {
+      height: 60px;
+      margin-bottom: 5px;
+    }
+    .version-text {
+      text-align: right;
+      font-size: 8pt;
+      margin-bottom: 5px;
+    }
+    .radio-display {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border: 1pt solid #000;
+      margin-right: 3px;
+      vertical-align: middle;
+      text-align: center;
+      font-size: 9pt;
+      line-height: 12px;
+    }
+    .radio-checked {
+      background-color: #000;
+      color: #fff;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <div class="version-text">BS(CS)V1.0</div>
+  <div class="header-area">
+    {{#if logoBase64}}
+      <img src="{{logoBase64}}" alt="Iqra University Logo">
+    {{else}}
+      <div style="background-color: #312e81; color: white; display: inline-block; padding: 8px 18px; font-size: 20px; font-weight: bold; margin-bottom: 5px;">
+         IQRA UNIVERSITY IU 
+      </div>
+    {{/if}}
+    <div style="font-weight: bold; font-size: 10pt;">FACULTY OF ENGINEERING SCIENCE & TECHNOLOGY</div>
+    <div style="font-weight: bold; font-size: 11pt; margin-top: 8px; text-decoration: underline;">COURSE REVIEW REPORT (THEORY COURSES)</div>
+  </div>
+
+  <!-- Section A: Course Details -->
+  <div class="section-header">A. &nbsp; COURSE DETAILS</div>
+  <table>
+    <tr>
+      <td style="width: 5%;" class="text-center text-bold">1</td>
+      <td style="width: 22%;" class="text-bold text-uppercase">Teacher's Name:</td>
+      <td colspan="3">{{courseInfo.teacherName}}</td>
+    </tr>
+    <tr>
+      <td class="text-center text-bold">2</td>
+      <td class="text-bold text-uppercase">Department:</td>
+      <td colspan="3">{{courseInfo.department}}</td>
+    </tr>
+    <tr>
+      <td class="text-center text-bold">3</td>
+      <td class="text-bold text-uppercase">Course Title:</td>
+      <td colspan="3">{{courseInfo.courseTitle}}</td>
+    </tr>
+    <tr>
+      <td class="text-center text-bold">4</td>
+      <td class="text-bold text-uppercase">Course Code:</td>
+      <td style="width: 28%;">{{courseInfo.courseCode}}</td>
+      <td style="width: 20%;"><span class="text-bold">5</span> &nbsp; <span class="text-bold text-uppercase">Credit Hours:</span></td>
+      <td style="width: 25%;">{{courseInfo.creditHours}}</td>
+    </tr>
+    <tr>
+      <td class="text-center text-bold">5</td>
+      <td class="text-bold text-uppercase">Semester:</td>
+      <td>{{courseInfo.semester}}</td>
+      <td><span class="text-bold">6</span> &nbsp; <span class="text-bold text-uppercase">No. of Students:</span></td>
+      <td>{{courseInfo.noOfStudents}}</td>
+    </tr>
+  </table>
+
+  <!-- Section B: Assessment Summary -->
+  <div class="section-header">B. &nbsp; ASSESSMENT SUMMARY (ON COHORT LEVEL)</div>
+  <table>
+    <tr class="bg-light">
+      <th style="width: 10%;">CLOs</th>
+      <th style="width: 15%;">CLO<br>ATTAINMENT</th>
+      <th style="width: 15%;">MAPPED<br>GAs</th>
+      <th style="width: 15%;">GAs<br>ATTAINMENT</th>
+      <th>ASSESSMENT NAME<br>(QUIZ, ASSIGNMENT, EXAM, ETC.)</th>
+    </tr>
+    {{#each assessmentSummary}}
+    <tr>
+      <td class="text-center text-bold">{{this.clo}}</td>
+      <td class="text-center">{{this.cloAttainment}}</td>
+      <td class="text-center">{{this.mappedGAs}}</td>
+      <td class="text-center">{{this.gaAttainment}}</td>
+      <td>{{this.assessmentName}}</td>
+    </tr>
+    {{/each}}
+  </table>
+
+  <!-- Section C: Grade Summary -->
+  <div class="section-header">C. &nbsp; GRADE SUMMARY</div>
+  <table>
+    <tr>
+      <th class="bg-light" style="width: 14%;">GRADE</th>
+      <th style="width: 12%;">A+</th>
+      <th style="width: 12%;">A</th>
+      <th style="width: 12%;">B+</th>
+      <th style="width: 12%;">B</th>
+      <th style="width: 12%;">C+</th>
+      <th style="width: 12%;">C</th>
+      <th style="width: 14%;">F</th>
+    </tr>
+    <tr>
+      <td class="text-center text-bold bg-light">NO. OF<br>STUDENTS</td>
+      <td class="text-center">{{gradeSummary.Aplus}}</td>
+      <td class="text-center">{{gradeSummary.A}}</td>
+      <td class="text-center">{{gradeSummary.Bplus}}</td>
+      <td class="text-center">{{gradeSummary.B}}</td>
+      <td class="text-center">{{gradeSummary.Cplus}}</td>
+      <td class="text-center">{{gradeSummary.C}}</td>
+      <td class="text-center">{{gradeSummary.F}}</td>
+    </tr>
+  </table>
+  <div style="text-align: right; font-weight: bold; font-size: 10pt; margin-bottom: 10px;">
+    CLASS AVERAGE: &nbsp; <span style="border-bottom: 1pt solid #000; padding: 0 30px;">{{gradeSummary.classAverage}}</span>
+  </div>
+
+  <!-- Section D: Course Learning Outcomes -->
+  <div class="section-header">D. &nbsp; COURSE LEARNING OUTCOMES</div>
+  
+  <div class="question-block">
+    <div class="question-label">1. &nbsp; Were the Course Learning Outcomes and Respective Taxonomy Levels Adequate for the Course.</div>
+    <div style="margin-left: 15px; margin-top: 5px;">
+      <span class="radio-display {{#if outcomesYes}}radio-checked{{/if}}">{{#if outcomesYes}}✓{{/if}}</span> YES &nbsp;&nbsp;&nbsp;
+      <span class="radio-display {{#if outcomesNo}}radio-checked{{/if}}">{{#if outcomesNo}}✓{{/if}}</span> NO
+    </div>
+  </div>
+
+  <div class="question-block">
+    <div class="question-label">2. &nbsp; If No, Suggest any Revision:</div>
+    <div class="answer-text">{{learningOutcomes.revisionSuggestion}}</div>
+    <div class="answer-text">&nbsp;</div>
+  </div>
+
+  <div class="question-block">
+    <div class="question-label">3. &nbsp; Comment on CLO Attainment (Satisfactory (Y/N), in case of No give possible reason):</div>
+    <div style="margin-left: 15px; margin-top: 5px; margin-bottom: 5px;">
+      <span class="radio-display {{#if cloSatisfied}}radio-checked{{/if}}">{{#if cloSatisfied}}✓{{/if}}</span> Satisfied &nbsp;&nbsp;&nbsp;
+      <span class="radio-display {{#if cloNotSatisfied}}radio-checked{{/if}}">{{#if cloNotSatisfied}}✓{{/if}}</span> Not Satisfied
+    </div>
+    <div class="answer-text">{{learningOutcomes.cloAttainmentReason}}</div>
+    <div class="answer-text">&nbsp;</div>
+  </div>
+
+  <div class="question-block">
+    <div class="question-label">4. &nbsp; Comment on PLO Attainment (Satisfactory (Y/N), in case of No give possible reason):</div>
+    <div style="margin-left: 15px; margin-top: 5px; margin-bottom: 5px;">
+      <span class="radio-display {{#if ploSatisfied}}radio-checked{{/if}}">{{#if ploSatisfied}}✓{{/if}}</span> Satisfied &nbsp;&nbsp;&nbsp;
+      <span class="radio-display {{#if ploNotSatisfied}}radio-checked{{/if}}">{{#if ploNotSatisfied}}✓{{/if}}</span> Not Satisfied
+    </div>
+    <div class="answer-text">{{learningOutcomes.ploAttainmentReason}}</div>
+    <div class="answer-text">&nbsp;</div>
+  </div>
+
+  <!-- Section E: Course Enhancement -->
+  <div class="section-header">E. &nbsp; COURSE ENHANCEMENT/IMPROVEMENT:</div>
+
+  <div class="question-block">
+    <div class="question-label">5. &nbsp; Comment on the Implementation of Changes Proposed in Earlier Faculty Course Review Reports</div>
+    <div class="answer-text">{{courseEnhancement.implementationComments}}</div>
+    <div class="answer-text">&nbsp;</div>
+    <div class="answer-text">&nbsp;</div>
+  </div>
+
+  <div class="question-block">
+    <div class="question-label">6. &nbsp; Comment on the Continuing Appropriateness of the Course Curriculum in Relation to the Intended Learning Outcomes for Future.</div>
+    <div class="answer-text">{{courseEnhancement.appropriatenessComments}}</div>
+    <div class="answer-text">&nbsp;</div>
+    <div class="answer-text">&nbsp;</div>
+  </div>
+
+  <!-- Signature Section -->
+  <div class="signature-area">
+    <div class="sig-row">
+      <div class="sig-block">
+        <div style="display: flex; align-items: flex-end;">
+          <span class="text-bold text-uppercase" style="white-space: nowrap; margin-right: 5px;">Name/ Signature</span>
+          <div style="flex: 1;"><div class="sig-line"></div></div>
+        </div>
+        <div class="sig-label">(Course Instructor)</div>
+      </div>
+      <div class="sig-date">
+        <div style="display: flex; align-items: flex-end;">
+          <span class="text-bold" style="white-space: nowrap; margin-right: 5px;">Date:</span>
+          <div style="flex: 1; border-bottom: 1pt solid #000; padding: 0 5px;">{{signatureInfo.instructorDate}}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sig-row">
+      <div class="sig-block">
+        <div style="display: flex; align-items: flex-end;">
+          <span class="text-bold text-uppercase" style="white-space: nowrap; margin-right: 5px;">Name/ Signature</span>
+          <div style="flex: 1;"><div class="sig-line"></div></div>
+        </div>
+        <div class="sig-label">(Head of Department)</div>
+      </div>
+      <div class="sig-date">
+        <div style="display: flex; align-items: flex-end;">
+          <span class="text-bold" style="white-space: nowrap; margin-right: 5px;">Date:</span>
+          <div style="flex: 1; border-bottom: 1pt solid #000;">&nbsp;</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

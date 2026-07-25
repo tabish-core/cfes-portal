@@ -7,7 +7,8 @@ const formTemplates = [
   { name: 'Timetable with consulting hours', formType: 'TIMETABLE' },
   { name: 'Attendance Record', formType: 'AR' },
   { name: 'Lectures', formType: 'LECTURES' },
-  { name: 'Course Completion Certificate', formType: 'CCC' }
+  { name: 'Course Completion Certificate', formType: 'CCC' },
+  { name: 'Course Review Report (Theory Courses)', formType: 'CRR' }
 ];
 
 const CourseTemplates = () => {
