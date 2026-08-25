@@ -2,7 +2,7 @@ const { Table, TableRow, TableCell, Paragraph, TextRun, WidthType, AlignmentType
 
 const buildGradingPolicyTable = (gradingPolicy) => {
   const items = [
-    { label: "Quizzes", range: "10-15%", value: gradingPolicy?.quizzes },
+    { label: "Quizzes", range: "10-15%", value: gradingPolicy?.quiz },
     { label: "Assignments", range: "10-15%", value: gradingPolicy?.assignments },
     { label: "Projects/Presentation/CCP", range: "0-10%", value: gradingPolicy?.project },
     { label: "Mid Semester Examination", range: "20-30%", value: gradingPolicy?.midterm },

@@ -4,6 +4,8 @@ import CourseControlReportPage from '../../components/forms/CCR/CourseControlRep
 import CourseInformationSheetPage from '../../components/forms/CIS/CourseInformationSheetPage';
 import CourseCompletionCertificatePage from '../../components/forms/CCC/CourseCompletionCertificatePage';
 import CourseReviewReportTheoryPage from '../../components/forms/CRR/CourseReviewReportTheoryPage';
+import QuizManagementPage from '../../components/forms/Quiz/QuizManagementPage';
+import AssignmentManagementPage from '../../components/forms/Assignment/AssignmentManagementPage';
 
 
 const CourseForm = () => {
@@ -28,6 +30,10 @@ const CourseForm = () => {
           <CourseCompletionCertificatePage courseId={courseId} />
         ) : formType === 'CRR' ? (
           <CourseReviewReportTheoryPage courseId={courseId} />
+        ) : formType === 'ASSESS_QUIZ' ? (
+          <QuizManagementPage courseId={courseId} />
+        ) : formType === 'ASSESS_ASSIGN' ? (
+          <AssignmentManagementPage courseId={courseId} />
         ) : (
           <>
             <p>Multi-step form will be implemented in Phase 2.</p>

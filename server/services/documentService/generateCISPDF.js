@@ -16,14 +16,14 @@ const generateCISPDF = async (formData) => {
       logoBase64 = `data:image/png;base64,${logoBuffer.toString('base64')}`;
     }
     formData.logoBase64 = logoBase64;
-    
+
     // Calculate total CLOs for rowspan
     formData.alternateData.cloCount = (formData.alternateData?.cloTable || []).length;
 
     // Pre-process Grading Policy for cleaner row-less rendering
     const gradingPolicy = formData.alternateData?.gradingPolicy || {};
     formData.alternateData.gradingPolicyItems = [
-      { label: "Quizzes", range: "10-15%", value: gradingPolicy.quizzes || 0 },
+      { label: "Quizzes", range: "10-15%", value: gradingPolicy.quiz || 0 },
       { label: "Assignments", range: "10-15%", value: gradingPolicy.assignments || 0 },
       { label: "Projects/Presentation/CCP", range: "0-10%", value: gradingPolicy.project || 0 },
       { label: "Mid Semester Examination", range: "20-30%", value: gradingPolicy.midterm || 0 },
@@ -55,14 +55,14 @@ const generateCISPDF = async (formData) => {
         });
         grouped[cat].overallWeight += (Number(row.weightPercentage) || 0);
       });
-      
+
       for (const key in grouped) {
         grouped[key].rowSpan = grouped[key].items.length + 1; // +1 for the total row
         grouped[key].itemsCount = grouped[key].items.length;
-        
+
         const catLower = grouped[key].categoryName.toLowerCase();
         grouped[key].mergeDate = !(catLower.includes('quiz') || catLower.includes('assignment'));
-        
+
         obaTableGrouped.push(grouped[key]);
       }
     }
@@ -100,9 +100,9 @@ const generateCISPDF = async (formData) => {
     let browser;
     try {
       browser = await launchBrowser();
-    
+
       const page = await browser.newPage();
-    
+
       // Set HTML content
       await page.setContent(html, { waitUntil: 'networkidle0' });
 
