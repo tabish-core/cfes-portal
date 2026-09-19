@@ -32,6 +32,7 @@ import CourseFileChecklist from './pages/faculty/CourseFileChecklist';
 import CourseTemplates from './pages/faculty/CourseTemplates';
 import CourseForm from './pages/faculty/CourseForm';
 import CISImportTest from './pages/faculty/CISImportTest';
+import OBEWorkspace from './pages/faculty/OBEWorkspace';
 
 function App() {
   return (
@@ -74,6 +75,7 @@ function App() {
               <Route element={<FacultyLayout />}>
                 <Route path="/faculty/dashboard" element={<FacultyDashboard />} />
                 <Route path="/faculty/course/:courseId" element={<CourseFileChecklist />} />
+                <Route path="/faculty/course/:courseId/obe" element={<OBEWorkspace />} />
                 <Route path="/faculty/course/:courseId/templates" element={<CourseTemplates />} />
                 <Route path="/course/:courseId/form/:formType" element={<CourseForm />} />
               </Route>

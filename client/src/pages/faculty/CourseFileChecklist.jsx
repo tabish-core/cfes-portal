@@ -148,12 +148,32 @@ const CourseFileChecklist = () => {
 
   return (
     <div className="dashboard">
-      <div className="dashboard-header-container">
-        <Link to="/faculty/dashboard" className="back-link">
-          ← Back to Courses
-        </Link>
-        <h1 className="dashboard-heading">Course File Checklist</h1>
-        <p className="dashboard-sub">Track all required course documents.</p>
+      <div className="dashboard-header-container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div>
+          <Link to="/faculty/dashboard" className="back-link">
+            ← Back to Courses
+          </Link>
+          <h1 className="dashboard-heading">Course File Checklist</h1>
+          <p className="dashboard-sub">Track all required course documents.</p>
+        </div>
+        <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
+          <Link
+            to={`/faculty/course/${courseId}/obe`}
+            style={{
+              padding: '0.6rem 1.2rem',
+              backgroundColor: '#4338ca',
+              color: 'white',
+              textDecoration: 'none',
+              borderRadius: '6px',
+              fontWeight: '600',
+              fontSize: '0.95rem',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+              transition: 'all 0.2s'
+            }}
+          >
+            OBE Workspace
+          </Link>
+        </div>
       </div>
 
       {loading && <div style={{ textAlign: 'center', marginBottom: '1rem', fontStyle: 'italic', color: '#64748b' }}>Processing...</div>}

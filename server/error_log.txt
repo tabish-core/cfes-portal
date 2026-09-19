@@ -1,0 +1,19 @@
+Error: Unknown pseudo-class :wsdr
+    at compilePseudoSelector (D:\cfes-portal\server\node_modules\css-select\lib\pseudo-selectors\index.js:43:11)
+    at compileGeneralSelector (D:\cfes-portal\server\node_modules\css-select\lib\general.js:36:57)
+    at rules.reduce._a (D:\cfes-portal\server\node_modules\css-select\lib\compile.js:137:55)
+    at Array.reduce (<anonymous>)
+    at compileRules (D:\cfes-portal\server\node_modules\css-select\lib\compile.js:134:18)
+    at D:\cfes-portal\server\node_modules\css-select\lib\compile.js:125:16
+    at Array.map (<anonymous>)
+    at compileToken (D:\cfes-portal\server\node_modules\css-select\lib\compile.js:109:10)
+    at addAdapter (D:\cfes-portal\server\node_modules\css-select\lib\index.js:55:16)
+    at findElements (D:\cfes-portal\server\node_modules\cheerio-select\lib\index.js:287:48)
+    at Object.select (D:\cfes-portal\server\node_modules\cheerio-select\lib\index.js:197:22)
+    at LoadedCheerio._findBySelector (D:\cfes-portal\server\node_modules\cheerio\dist\commonjs\api\traversing.js:125:30)
+    at LoadedCheerio.find (D:\cfes-portal\server\node_modules\cheerio\dist\commonjs\api\traversing.js:98:17)
+    at initialize (D:\cfes-portal\server\node_modules\cheerio\dist\commonjs\load.js:138:34)
+    at addPlaceholderChart (D:\cfes-portal\server\services\obe\obeExcelService.js:477:5)
+    at injectNativeCharts (D:\cfes-portal\server\services\obe\obeExcelService.js:496:3)
+    at async exports.generateOBEExcel (D:\cfes-portal\server\services\obe\obeExcelService.js:445:23)
+    at async D:\cfes-portal\server\controllers\obe.controller.js:698:20
