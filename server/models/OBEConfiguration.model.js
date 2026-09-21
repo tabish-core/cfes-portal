@@ -6,7 +6,11 @@ const obeConfigurationSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Course',
       required: [true, 'Course reference is required'],
-      unique: true, // One configuration per course
+    },
+    faculty: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: [true, 'Faculty reference is required'],
     },
     clos: [
       {
@@ -51,5 +55,8 @@ const obeConfigurationSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+// One configuration per faculty-course pair
+obeConfigurationSchema.index({ course: 1, faculty: 1 }, { unique: true });
 
 module.exports = mongoose.model('OBEConfiguration', obeConfigurationSchema);

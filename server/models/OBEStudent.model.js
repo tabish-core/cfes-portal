@@ -7,6 +7,11 @@ const obeStudentSchema = new mongoose.Schema(
       ref: 'Course',
       required: [true, 'Course reference is required'],
     },
+    faculty: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: [true, 'Faculty reference is required'],
+    },
     registrationNo: {
       type: String,
       required: [true, 'Registration number is required'],
@@ -25,7 +30,7 @@ const obeStudentSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Prevent duplicate registration numbers within the SAME course
-obeStudentSchema.index({ course: 1, registrationNo: 1 }, { unique: true });
+// Prevent duplicate registration numbers within the SAME faculty-course workspace
+obeStudentSchema.index({ course: 1, faculty: 1, registrationNo: 1 }, { unique: true });
 
 module.exports = mongoose.model('OBEStudent', obeStudentSchema);

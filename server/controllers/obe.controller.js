@@ -23,19 +23,21 @@ const checkCourseAuth = async (user, courseId) => {
 };
 
 /**
- * Helper function to ensure exactly one Mid Term and Final Exam exist for the course.
+ * Helper function to ensure exactly one Mid Term and Final Exam exist
+ * for the given faculty-course workspace.
  */
-const ensureFixedAssessments = async (courseId) => {
+const ensureFixedAssessments = async (courseId, facultyId) => {
   const fixedCategories = [
     { category: 'midTerm', title: 'Mid Term' },
     { category: 'finalExam', title: 'Final Exam' }
   ];
 
   for (const fixed of fixedCategories) {
-    const exists = await OBEAssessment.findOne({ course: courseId, category: fixed.category });
+    const exists = await OBEAssessment.findOne({ course: courseId, faculty: facultyId, category: fixed.category });
     if (!exists) {
       await OBEAssessment.create({
         course: courseId,
+        faculty: facultyId,
         category: fixed.category,
         title: fixed.title,
         order: fixed.category === 'midTerm' ? 100 : 200, // Keep them logically ordered at the end
@@ -77,16 +79,17 @@ const generateNextComponentNumber = (assessment, category) => {
  */
 exports.getConfig = asyncHandler(async (req, res, next) => {
   const { courseId } = req.params;
+  const facultyId = req.user._id;
 
   if (!(await checkCourseAuth(req.user, courseId))) {
     return next(new ErrorResponse('Not authorized to access this course', 403));
   }
 
   // Ensure Fixed Assessments are created during OBE initialization
-  await ensureFixedAssessments(courseId);
+  await ensureFixedAssessments(courseId, facultyId);
 
-  // Find configuration
-  let config = await OBEConfiguration.findOne({ course: courseId }).populate('course', 'courseCode courseName creditHours type');
+  // Find configuration scoped to this faculty-course pair
+  let config = await OBEConfiguration.findOne({ course: courseId, faculty: facultyId }).populate('course', 'courseCode courseName creditHours type');
 
   // If none exists, return a default template (not saved yet, will be saved on first POST/PUT)
   if (!config) {
@@ -126,6 +129,7 @@ exports.getConfig = asyncHandler(async (req, res, next) => {
  */
 exports.updateConfig = asyncHandler(async (req, res, next) => {
   const { courseId } = req.params;
+  const facultyId = req.user._id;
   const { clos, gas, cloGaMapping, assessments, grades, kpiThreshold } = req.body;
 
   if (!(await checkCourseAuth(req.user, courseId))) {
@@ -149,10 +153,10 @@ exports.updateConfig = asyncHandler(async (req, res, next) => {
     }
   }
 
-  // Upsert configuration
+  // Upsert configuration scoped to this faculty-course pair
   const config = await OBEConfiguration.findOneAndUpdate(
-    { course: courseId },
-    { clos, gas, cloGaMapping, assessments, grades, kpiThreshold },
+    { course: courseId, faculty: facultyId },
+    { clos, gas, cloGaMapping, assessments, grades, kpiThreshold, faculty: facultyId },
     { new: true, upsert: true, runValidators: true }
   ).populate('course', 'courseCode courseName creditHours type');
 
@@ -172,12 +176,13 @@ exports.updateConfig = asyncHandler(async (req, res, next) => {
  */
 exports.getStudents = asyncHandler(async (req, res, next) => {
   const { courseId } = req.params;
+  const facultyId = req.user._id;
 
   if (!(await checkCourseAuth(req.user, courseId))) {
     return next(new ErrorResponse('Not authorized to access this course', 403));
   }
 
-  const students = await OBEStudent.find({ course: courseId, active: true }).sort({ registrationNo: 1 });
+  const students = await OBEStudent.find({ course: courseId, faculty: facultyId, active: true }).sort({ registrationNo: 1 });
 
   res.status(200).json({
     success: true,
@@ -192,14 +197,15 @@ exports.getStudents = asyncHandler(async (req, res, next) => {
  */
 exports.createStudent = asyncHandler(async (req, res, next) => {
   const { courseId } = req.params;
+  const facultyId = req.user._id;
   const { registrationNo, studentName } = req.body;
 
   if (!(await checkCourseAuth(req.user, courseId))) {
     return next(new ErrorResponse('Not authorized to modify this course', 403));
   }
 
-  // Check for existing active or inactive student
-  let existing = await OBEStudent.findOne({ course: courseId, registrationNo });
+  // Check for existing active or inactive student in this faculty's workspace
+  let existing = await OBEStudent.findOne({ course: courseId, faculty: facultyId, registrationNo });
   
   if (existing) {
     if (!existing.active) {
@@ -213,6 +219,7 @@ exports.createStudent = asyncHandler(async (req, res, next) => {
 
   const student = await OBEStudent.create({
     course: courseId,
+    faculty: facultyId,
     registrationNo,
     studentName,
     active: true
@@ -230,20 +237,21 @@ exports.createStudent = asyncHandler(async (req, res, next) => {
  */
 exports.updateStudent = asyncHandler(async (req, res, next) => {
   const { courseId, studentId } = req.params;
+  const facultyId = req.user._id;
   const { registrationNo, studentName, active } = req.body;
 
   if (!(await checkCourseAuth(req.user, courseId))) {
     return next(new ErrorResponse('Not authorized to modify this course', 403));
   }
 
-  let student = await OBEStudent.findOne({ _id: studentId, course: courseId });
+  let student = await OBEStudent.findOne({ _id: studentId, course: courseId, faculty: facultyId });
   if (!student) {
     return next(new ErrorResponse('Student not found in this course', 404));
   }
 
   // Prevent duplicate registrationNo if they changed it
   if (registrationNo && registrationNo !== student.registrationNo) {
-    const existing = await OBEStudent.findOne({ course: courseId, registrationNo });
+    const existing = await OBEStudent.findOne({ course: courseId, faculty: facultyId, registrationNo });
     if (existing) {
       return next(new ErrorResponse('Registration number already exists for another student.', 400));
     }
@@ -267,12 +275,13 @@ exports.updateStudent = asyncHandler(async (req, res, next) => {
  */
 exports.deleteStudent = asyncHandler(async (req, res, next) => {
   const { courseId, studentId } = req.params;
+  const facultyId = req.user._id;
 
   if (!(await checkCourseAuth(req.user, courseId))) {
     return next(new ErrorResponse('Not authorized to modify this course', 403));
   }
 
-  const student = await OBEStudent.findOne({ _id: studentId, course: courseId });
+  const student = await OBEStudent.findOne({ _id: studentId, course: courseId, faculty: facultyId });
   if (!student) {
     return next(new ErrorResponse('Student not found in this course', 404));
   }
@@ -296,12 +305,13 @@ exports.deleteStudent = asyncHandler(async (req, res, next) => {
  */
 exports.getAssessments = asyncHandler(async (req, res, next) => {
   const { courseId } = req.params;
+  const facultyId = req.user._id;
 
   if (!(await checkCourseAuth(req.user, courseId))) {
     return next(new ErrorResponse('Not authorized to access this course', 403));
   }
 
-  const assessments = await OBEAssessment.find({ course: courseId, active: true }).sort({ category: 1, order: 1, createdAt: 1 });
+  const assessments = await OBEAssessment.find({ course: courseId, faculty: facultyId, active: true }).sort({ category: 1, order: 1, createdAt: 1 });
 
   res.status(200).json({
     success: true,
@@ -316,6 +326,7 @@ exports.getAssessments = asyncHandler(async (req, res, next) => {
  */
 exports.createAssessment = asyncHandler(async (req, res, next) => {
   const { courseId } = req.params;
+  const facultyId = req.user._id;
   const { category, title, order } = req.body;
 
   if (!(await checkCourseAuth(req.user, courseId))) {
@@ -328,6 +339,7 @@ exports.createAssessment = asyncHandler(async (req, res, next) => {
 
   const assessment = await OBEAssessment.create({
     course: courseId,
+    faculty: facultyId,
     category,
     title,
     order: order || 0,
@@ -347,13 +359,14 @@ exports.createAssessment = asyncHandler(async (req, res, next) => {
  */
 exports.updateAssessment = asyncHandler(async (req, res, next) => {
   const { courseId, assessmentId } = req.params;
+  const facultyId = req.user._id;
   const { title, order, active } = req.body;
 
   if (!(await checkCourseAuth(req.user, courseId))) {
     return next(new ErrorResponse('Not authorized to modify this course', 403));
   }
 
-  let assessment = await OBEAssessment.findOne({ _id: assessmentId, course: courseId });
+  let assessment = await OBEAssessment.findOne({ _id: assessmentId, course: courseId, faculty: facultyId });
   if (!assessment) {
     return next(new ErrorResponse('Assessment not found in this course', 404));
   }
@@ -376,12 +389,13 @@ exports.updateAssessment = asyncHandler(async (req, res, next) => {
  */
 exports.deleteAssessment = asyncHandler(async (req, res, next) => {
   const { courseId, assessmentId } = req.params;
+  const facultyId = req.user._id;
 
   if (!(await checkCourseAuth(req.user, courseId))) {
     return next(new ErrorResponse('Not authorized to modify this course', 403));
   }
 
-  const assessment = await OBEAssessment.findOne({ _id: assessmentId, course: courseId });
+  const assessment = await OBEAssessment.findOne({ _id: assessmentId, course: courseId, faculty: facultyId });
   if (!assessment) {
     return next(new ErrorResponse('Assessment not found in this course', 404));
   }
@@ -409,17 +423,18 @@ exports.deleteAssessment = asyncHandler(async (req, res, next) => {
  */
 exports.addComponent = asyncHandler(async (req, res, next) => {
   const { courseId, assessmentId } = req.params;
+  const facultyId = req.user._id;
   const { maxMarks, cloNumber, title } = req.body;
 
   if (!(await checkCourseAuth(req.user, courseId))) {
     return next(new ErrorResponse('Not authorized to modify this course', 403));
   }
 
-  const assessment = await OBEAssessment.findOne({ _id: assessmentId, course: courseId });
+  const assessment = await OBEAssessment.findOne({ _id: assessmentId, course: courseId, faculty: facultyId });
   if (!assessment) return next(new ErrorResponse('Assessment not found', 404));
 
-  // Validate CLO exists
-  const config = await OBEConfiguration.findOne({ course: courseId });
+  // Validate CLO exists in this faculty's configuration
+  const config = await OBEConfiguration.findOne({ course: courseId, faculty: facultyId });
   if (!config) return next(new ErrorResponse('OBE Configuration not found for this course.', 404));
   
   const validClo = config.clos.find(c => c.cloNumber === cloNumber && c.active);
@@ -449,13 +464,14 @@ exports.addComponent = asyncHandler(async (req, res, next) => {
  */
 exports.updateComponent = asyncHandler(async (req, res, next) => {
   const { courseId, assessmentId, componentId } = req.params;
+  const facultyId = req.user._id;
   const { maxMarks, cloNumber, title, active } = req.body;
 
   if (!(await checkCourseAuth(req.user, courseId))) {
     return next(new ErrorResponse('Not authorized to modify this course', 403));
   }
 
-  const assessment = await OBEAssessment.findOne({ _id: assessmentId, course: courseId });
+  const assessment = await OBEAssessment.findOne({ _id: assessmentId, course: courseId, faculty: facultyId });
   if (!assessment) return next(new ErrorResponse('Assessment not found', 404));
 
   const component = assessment.components.id(componentId);
@@ -463,7 +479,7 @@ exports.updateComponent = asyncHandler(async (req, res, next) => {
 
   // Validate CLO exists if changing
   if (cloNumber && cloNumber !== component.cloNumber) {
-    const config = await OBEConfiguration.findOne({ course: courseId });
+    const config = await OBEConfiguration.findOne({ course: courseId, faculty: facultyId });
     if (!config) return next(new ErrorResponse('OBE Configuration not found', 404));
     
     const validClo = config.clos.find(c => c.cloNumber === cloNumber && c.active);
@@ -488,12 +504,13 @@ exports.updateComponent = asyncHandler(async (req, res, next) => {
  */
 exports.deleteComponent = asyncHandler(async (req, res, next) => {
   const { courseId, assessmentId, componentId } = req.params;
+  const facultyId = req.user._id;
 
   if (!(await checkCourseAuth(req.user, courseId))) {
     return next(new ErrorResponse('Not authorized to modify this course', 403));
   }
 
-  const assessment = await OBEAssessment.findOne({ _id: assessmentId, course: courseId });
+  const assessment = await OBEAssessment.findOne({ _id: assessmentId, course: courseId, faculty: facultyId });
   if (!assessment) return next(new ErrorResponse('Assessment not found', 404));
 
   const component = assessment.components.id(componentId);
@@ -515,12 +532,13 @@ exports.deleteComponent = asyncHandler(async (req, res, next) => {
  */
 exports.getMarks = asyncHandler(async (req, res, next) => {
   const { courseId } = req.params;
+  const facultyId = req.user._id;
 
   if (!(await checkCourseAuth(req.user, courseId))) {
     return next(new ErrorResponse('Not authorized to access this course', 403));
   }
 
-  const marks = await OBEMark.find({ course: courseId });
+  const marks = await OBEMark.find({ course: courseId, faculty: facultyId });
 
   res.status(200).json({
     success: true,
@@ -535,6 +553,7 @@ exports.getMarks = asyncHandler(async (req, res, next) => {
  */
 exports.saveMarksBulk = asyncHandler(async (req, res, next) => {
   const { courseId } = req.params;
+  const facultyId = req.user._id;
   const { marks } = req.body;
 
   if (!(await checkCourseAuth(req.user, courseId))) {
@@ -546,8 +565,8 @@ exports.saveMarksBulk = asyncHandler(async (req, res, next) => {
   }
 
   // Pre-fetch active students and assessments to validate in memory (O(N) db queries instead of O(N*M))
-  const students = await OBEStudent.find({ course: courseId, active: true }).lean();
-  const assessments = await OBEAssessment.find({ course: courseId, active: true }).lean();
+  const students = await OBEStudent.find({ course: courseId, faculty: facultyId, active: true }).lean();
+  const assessments = await OBEAssessment.find({ course: courseId, faculty: facultyId, active: true }).lean();
 
   const studentIds = new Set(students.map(s => s._id.toString()));
   
@@ -571,12 +590,12 @@ exports.saveMarksBulk = asyncHandler(async (req, res, next) => {
   for (const markObj of marks) {
     const { student, componentId, marks: markValue } = markObj;
 
-    // Validate student exists and is active in this course
+    // Validate student exists and is active in this faculty's workspace
     if (!studentIds.has(student)) {
       return next(new ErrorResponse(`Invalid or inactive student: ${student}`, 400));
     }
 
-    // Validate component exists and is active in this course
+    // Validate component exists and is active in this faculty's workspace
     if (!componentMap.has(componentId)) {
       return next(new ErrorResponse(`Invalid or inactive component: ${componentId}`, 400));
     }
@@ -587,7 +606,7 @@ exports.saveMarksBulk = asyncHandler(async (req, res, next) => {
     if (markValue === null || markValue === '' || markValue === undefined) {
       bulkOps.push({
         deleteOne: {
-          filter: { course: courseId, student, componentId }
+          filter: { course: courseId, faculty: facultyId, student, componentId }
         }
       });
       continue;
@@ -602,7 +621,7 @@ exports.saveMarksBulk = asyncHandler(async (req, res, next) => {
     // Valid mark -> Upsert the document
     bulkOps.push({
       updateOne: {
-        filter: { course: courseId, student, componentId },
+        filter: { course: courseId, faculty: facultyId, student, componentId },
         update: { $set: { assessment: assessmentId, marks: numericMark } },
         upsert: true
       }
@@ -625,17 +644,18 @@ exports.saveMarksBulk = asyncHandler(async (req, res, next) => {
  */
 exports.getResults = asyncHandler(async (req, res, next) => {
   const { courseId } = req.params;
+  const facultyId = req.user._id;
 
   if (!(await checkCourseAuth(req.user, courseId))) {
     return next(new ErrorResponse('Not authorized to access this course', 403));
   }
 
-  // Load configuration, active students, active assessments, and marks
+  // Load configuration, active students, active assessments, and marks — all scoped to this faculty
   const [config, students, assessments, marks] = await Promise.all([
-    OBEConfiguration.findOne({ course: courseId }).lean(),
-    OBEStudent.find({ course: courseId, active: true }).sort({ registrationNo: 1 }).lean(),
-    OBEAssessment.find({ course: courseId, active: true }).lean(),
-    OBEMark.find({ course: courseId }).lean()
+    OBEConfiguration.findOne({ course: courseId, faculty: facultyId }).lean(),
+    OBEStudent.find({ course: courseId, faculty: facultyId, active: true }).sort({ registrationNo: 1 }).lean(),
+    OBEAssessment.find({ course: courseId, faculty: facultyId, active: true }).lean(),
+    OBEMark.find({ course: courseId, faculty: facultyId }).lean()
   ]);
 
   if (!config) {
@@ -656,13 +676,14 @@ exports.getResults = asyncHandler(async (req, res, next) => {
  */
 exports.exportOBEExcel = asyncHandler(async (req, res, next) => {
   const { courseId } = req.params;
+  const facultyId = req.user._id;
 
   if (!(await checkCourseAuth(req.user, courseId))) {
     return next(new ErrorResponse('Not authorized to access this course', 403));
   }
 
-  // Load course details
-  const course = await CourseOffering.findOne({ course: courseId })
+  // Load course details — scoped to the current faculty's offering
+  const course = await CourseOffering.findOne({ course: courseId, faculty: facultyId })
     .populate('course')
     .populate('faculty', 'name')
     .populate('semester', 'name session')
@@ -681,11 +702,12 @@ exports.exportOBEExcel = asyncHandler(async (req, res, next) => {
     type: course.course?.type
   };
 
+  // Load all OBE data scoped to this faculty
   const [config, students, assessments, marks] = await Promise.all([
-    OBEConfiguration.findOne({ course: courseId }).lean(),
-    OBEStudent.find({ course: courseId, active: true }).sort({ registrationNo: 1 }).lean(),
-    OBEAssessment.find({ course: courseId, active: true }).lean(),
-    OBEMark.find({ course: courseId }).lean()
+    OBEConfiguration.findOne({ course: courseId, faculty: facultyId }).lean(),
+    OBEStudent.find({ course: courseId, faculty: facultyId, active: true }).sort({ registrationNo: 1 }).lean(),
+    OBEAssessment.find({ course: courseId, faculty: facultyId, active: true }).lean(),
+    OBEMark.find({ course: courseId, faculty: facultyId }).lean()
   ]);
 
   if (!config) {

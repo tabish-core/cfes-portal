@@ -7,6 +7,11 @@ const obeMarkSchema = new mongoose.Schema(
       ref: 'Course',
       required: [true, 'Course reference is required'],
     },
+    faculty: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: [true, 'Faculty reference is required'],
+    },
     student: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'OBEStudent',
@@ -30,7 +35,7 @@ const obeMarkSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Ensure there is at most one mark per student for a specific component in a course
-obeMarkSchema.index({ course: 1, student: 1, componentId: 1 }, { unique: true });
+// Ensure there is at most one mark per student for a specific component in a faculty-course workspace
+obeMarkSchema.index({ course: 1, faculty: 1, student: 1, componentId: 1 }, { unique: true });
 
 module.exports = mongoose.model('OBEMark', obeMarkSchema);

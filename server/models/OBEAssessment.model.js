@@ -7,6 +7,11 @@ const obeAssessmentSchema = new mongoose.Schema(
       ref: 'Course',
       required: [true, 'Course reference is required'],
     },
+    faculty: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: [true, 'Faculty reference is required'],
+    },
     category: {
       type: String,
       required: [true, 'Category is required'],
@@ -53,5 +58,8 @@ const obeAssessmentSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+// Index for efficient faculty-course scoped queries
+obeAssessmentSchema.index({ course: 1, faculty: 1 });
 
 module.exports = mongoose.model('OBEAssessment', obeAssessmentSchema);
