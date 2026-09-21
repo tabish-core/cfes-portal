@@ -8,6 +8,7 @@ const OBEAssessment = require('../models/OBEAssessment.model');
 const OBEMark = require('../models/OBEMark.model');
 const { generateCourseResults } = require('../services/obe/obeCalculationService');
 const { generateOBEExcel } = require('../services/obe/obeExcelService');
+const cisObeSyncService = require('../services/obe/cisObeSyncService');
 
 /**
  * Helper function to verify if the faculty is authorized for the given course.
@@ -733,4 +734,25 @@ exports.exportOBEExcel = asyncHandler(async (req, res, next) => {
     console.error('Excel Generation Error:', error);
     return next(new ErrorResponse('Failed to generate Excel file: ' + error.message, 500));
   }
+});
+
+/**
+ * @desc    Sync data from CIS to OBE Workspace
+ * @route   POST /api/obe/:courseId/sync-from-cis
+ */
+exports.syncFromCIS = asyncHandler(async (req, res, next) => {
+  const { courseId } = req.params;
+  const facultyId = req.user._id;
+
+  if (!(await checkCourseAuth(req.user, courseId))) {
+    return next(new ErrorResponse('Not authorized to modify this course', 403));
+  }
+
+  const syncResult = await cisObeSyncService.syncCISData(courseId, facultyId);
+
+  res.status(200).json({
+    success: true,
+    data: syncResult,
+    message: 'CIS data synchronized successfully'
+  });
 });

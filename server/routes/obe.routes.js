@@ -4,7 +4,7 @@ const {
   getStudents, createStudent, updateStudent, deleteStudent,
   getAssessments, createAssessment, updateAssessment, deleteAssessment,
   addComponent, updateComponent, deleteComponent,
-  getMarks, saveMarksBulk, getResults, exportOBEExcel
+  getMarks, saveMarksBulk, getResults, exportOBEExcel, syncFromCIS
 } = require('../controllers/obe.controller');
 const { verifyToken } = require('../middlewares/auth.middleware');
 
@@ -59,5 +59,9 @@ router.route('/:courseId/results')
 // Export route
 router.route('/:courseId/export/excel')
   .get(exportOBEExcel);
+
+// Sync route
+router.route('/:courseId/sync-from-cis')
+  .post(syncFromCIS);
 
 module.exports = router;

@@ -20,6 +20,7 @@ const OBEWorkspace = () => {
   const [activeStep, setActiveStep] = useState('setup');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [syncing, setSyncing] = useState(false);
 
   // --- Course Setup State ---
   const [courseInfo, setCourseInfo] = useState({ courseName: 'Loading...', courseCode: '...', creditHours: '', type: '' });
@@ -122,6 +123,22 @@ const OBEWorkspace = () => {
       toast.error(err.response?.data?.error || 'Failed to save configuration.');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleSyncFromCIS = async () => {
+    try {
+      setSyncing(true);
+      const { data } = await api.post(`/obe/${courseId}/sync-from-cis`);
+      const summary = data.data;
+      toast.success(`CIS Synced! CLOs: ${summary.closSynced}, Assessments Created/Updated: ${summary.assessmentsCreated}/${summary.componentsUpdated}`);
+      // Refresh config and assessments to reflect the new data
+      await fetchConfig();
+      await fetchAssessments();
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Failed to sync from CIS.');
+    } finally {
+      setSyncing(false);
     }
   };
 
@@ -352,6 +369,17 @@ const OBEWorkspace = () => {
   // ==========================================
   const renderCourseSetup = () => (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', padding: '1rem', backgroundColor: '#fff', borderRadius: '8px' }}>
+
+      <div style={{ display: 'flex', justifyContent: 'flex-end', paddingBottom: '1rem', borderBottom: '1px solid #e2e8f0' }}>
+        <button
+          onClick={handleSyncFromCIS}
+          disabled={syncing || saving}
+          style={{ padding: '0.6rem 1.5rem', backgroundColor: '#10b981', color: '#fff', border: 'none', borderRadius: '4px', cursor: (syncing || saving) ? 'not-allowed' : 'pointer', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+        >
+          {syncing ? 'Syncing...' : 'Import from CIS'}
+        </button>
+      </div>
+
       <section>
         <h3 className="dashboard-section-title">Course Information</h3>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', background: '#f8fafc', padding: '1rem', borderRadius: '8px' }}>
