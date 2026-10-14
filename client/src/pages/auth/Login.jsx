@@ -81,7 +81,7 @@ const Login = () => {
           </div>
 
           <h2 className="login-heading">Welcome back</h2>
-          <p className="login-sub">Sign in to your account to continue</p>
+
 
           <form id="login-form" onSubmit={handleSubmit} noValidate>
             {/* Email */}
