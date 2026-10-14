@@ -158,7 +158,7 @@ const CourseFileChecklist = () => {
             ← Back to Courses
           </Link>
           <h1 className="dashboard-heading">Course File Checklist</h1>
-          <p className="dashboard-sub">Track all required course documents.</p>
+
         </div>
         <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
           <Link

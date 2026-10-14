@@ -23,11 +23,7 @@ const CourseForm = () => {
         <h1 className="dashboard-heading">
           {isAttendance ? 'Attendance Record' : `Submit ${formType}`}
         </h1>
-        <p className="dashboard-sub">
-          {isAttendance
-            ? 'Access the attendance sheet for this course.'
-            : 'Fill out the details for this course file.'}
-        </p>
+
       </div>
 
       <div className="dashboard-panel">
