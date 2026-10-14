@@ -67,7 +67,7 @@ const Departments = () => {
       <h1 className="users-heading">Department Management</h1>
       <p className="users-sub">View departments and assign Heads of Department (HoD).</p>
 
-      <div className="users-card users-card-section">
+      <div className="users-card">
         <h2 className="users-card-title">Departments Overview</h2>
         
         {loading ? (
@@ -94,8 +94,8 @@ const Departments = () => {
                     <td>{dept.hod ? `${dept.hod.name}` : <span className="users-muted">None</span>}</td>
                     <td>
                       <select
-                        className="users-input"
-                        style={{ margin: 0, padding: '0.4rem', height: 'auto' }}
+                        className="users-input users-table-select"
+                        style={{ margin: 0, padding: '0.4rem 2rem 0.4rem 0.6rem', height: 'auto' }}
                         value={selectedHods[dept._id] || ''}
                         onChange={(e) => handleHodChange(dept._id, e.target.value)}
                         disabled={savingId === dept._id}

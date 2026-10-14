@@ -252,7 +252,7 @@ const Courses = () => {
             </div>
           </div>
 
-          <div className="courses-form-row">
+          <div className="courses-form-row courses-form-row--faculty">
             <div className="courses-form-group">
               <label className="courses-label" htmlFor="faculty-select">Faculty</label>
               <select

@@ -194,84 +194,102 @@ const Users = () => {
       <div className="users-card">
         <h2 className="users-card-title">Create Faculty Account</h2>
         <form onSubmit={handleSubmit} className="users-form" noValidate autoComplete="off">
-          <label className="users-label" htmlFor="faculty-name">Full name</label>
-          <input
-            id="faculty-name"
-            name="name"
-            type="text"
-            value={form.name}
-            onChange={handleChange}
-            className="users-input"
-            placeholder="Faculty Name"
-            disabled={loading}
-          />
+          <div className="users-form-row">
+            <div className="users-form-group">
+              <label className="users-label" htmlFor="faculty-name">Full name</label>
+              <input
+                id="faculty-name"
+                name="name"
+                type="text"
+                value={form.name}
+                onChange={handleChange}
+                className="users-input"
+                placeholder="Faculty Name"
+                disabled={loading}
+              />
+            </div>
 
-          <label className="users-label" htmlFor="faculty-email">Email</label>
-          <input
-            id="faculty-email"
-            name="email"
-            type="email"
-            value={form.email}
-            onChange={handleChange}
-            className="users-input"
-            placeholder="aisha@iqra.edu.pk"
-            disabled={loading}
-            autoComplete="new-password" // Using new-password on email sometimes helps trick aggressive password managers
-          />
+            <div className="users-form-group">
+              <label className="users-label" htmlFor="faculty-email">Email</label>
+              <input
+                id="faculty-email"
+                name="email"
+                type="email"
+                value={form.email}
+                onChange={handleChange}
+                className="users-input"
+                placeholder="aisha@iqra.edu.pk"
+                disabled={loading}
+                autoComplete="new-password"
+              />
+            </div>
+          </div>
 
-          <label className="users-label" htmlFor="faculty-password">Temporary password</label>
-          <input
-            id="faculty-password"
-            name="password"
-            type="password"
-            value={form.password}
-            onChange={handleChange}
-            className="users-input"
-            placeholder="At least 6 characters"
-            disabled={loading}
-            autoComplete="new-password"
-          />
+          <div className="users-form-row">
+            <div className="users-form-group">
+              <label className="users-label" htmlFor="faculty-password">Temporary password</label>
+              <input
+                id="faculty-password"
+                name="password"
+                type="password"
+                value={form.password}
+                onChange={handleChange}
+                className="users-input"
+                placeholder="At least 6 characters"
+                disabled={loading}
+                autoComplete="new-password"
+              />
+            </div>
 
-          <label className="users-label" htmlFor="faculty-confirm-password">Confirm temporary password</label>
-          <input
-            id="faculty-confirm-password"
-            name="confirmPassword"
-            type="password"
-            value={form.confirmPassword}
-            onChange={handleChange}
-            className="users-input"
-            placeholder="Retype password"
-            disabled={loading}
-            autoComplete="new-password"
-          />
+            <div className="users-form-group">
+              <label className="users-label" htmlFor="faculty-confirm-password">Confirm temporary password</label>
+              <input
+                id="faculty-confirm-password"
+                name="confirmPassword"
+                type="password"
+                value={form.confirmPassword}
+                onChange={handleChange}
+                className="users-input"
+                placeholder="Retype password"
+                disabled={loading}
+                autoComplete="new-password"
+              />
+            </div>
+          </div>
 
-          <label className="users-label" htmlFor="faculty-designation">Designation</label>
-          <select
-            id="faculty-designation"
-            name="designation"
-            value={form.designation}
-            onChange={handleChange}
-            className="users-input"
-            disabled={loading}
-          >
-            <option value="faculty">Faculty</option>
-            <option value="hod">Head of Department (HoD)</option>
-          </select>
+          <div className="users-form-row">
+            <div className="users-form-group">
+              <label className="users-label" htmlFor="faculty-designation">Designation</label>
+              <select
+                id="faculty-designation"
+                name="designation"
+                value={form.designation}
+                onChange={handleChange}
+                className="users-input"
+                disabled={loading}
+              >
+                <option value="faculty">Faculty</option>
+                <option value="hod">Head of Department (HoD)</option>
+              </select>
+            </div>
 
-          <label className="users-label" htmlFor="faculty-department">Department (optional)</label>
-          <select
-            id="faculty-department"
-            name="department"
-            value={form.department}
-            onChange={handleChange}
-            className="users-input"
-            disabled={loading}
-          >
-            <option value="">None</option>
-            {departments.map((d) => (
-              <option key={d._id} value={d._id}>{d.name} ({d.code})</option>
-            ))}
-          </select>
+            <div className="users-form-group">
+              <label className="users-label" htmlFor="faculty-department">Department (optional)</label>
+              <select
+                id="faculty-department"
+                name="department"
+                value={form.department}
+                onChange={handleChange}
+                className="users-input"
+                disabled={loading}
+              >
+                <option value="">None</option>
+                {departments.map((d) => (
+                  <option key={d._id} value={d._id}>{d.name} ({d.code})</option>
+                ))}
+              </select>
+            </div>
+          </div>
 
           {createdCredentials && (
             <div className="users-hint">
@@ -340,98 +358,118 @@ const Users = () => {
       <div className="users-card users-card-section">
         <h2 className="users-card-title">Update Faculty Credentials</h2>
         <form onSubmit={handleUpdate} className="users-form" noValidate autoComplete="off">
-          <label className="users-label" htmlFor="faculty-select">Select faculty</label>
-          <select
-            id="faculty-select"
-            name="facultySelect"
-            className="users-input"
-            value={selectedFacultyId}
-            onChange={(e) => setSelectedFacultyId(e.target.value)}
-            disabled={updating || loadingList}
-          >
-            <option value="">Choose a faculty account</option>
-            {faculties.map((faculty) => (
-              <option key={faculty._id} value={faculty._id}>
-                {faculty.name} ({faculty.email})
-              </option>
-            ))}
-          </select>
+          <div className="users-form-group">
+            <label className="users-label" htmlFor="faculty-select">Select faculty</label>
+            <select
+              id="faculty-select"
+              name="facultySelect"
+              className="users-input"
+              value={selectedFacultyId}
+              onChange={(e) => setSelectedFacultyId(e.target.value)}
+              disabled={updating || loadingList}
+            >
+              <option value="">Choose a faculty account</option>
+              {faculties.map((faculty) => (
+                <option key={faculty._id} value={faculty._id}>
+                  {faculty.name} ({faculty.email})
+                </option>
+              ))}
+            </select>
+          </div>
 
-          <label className="users-label" htmlFor="edit-name">Full name</label>
-          <input
-            id="edit-name"
-            name="name"
-            type="text"
-            value={editForm.name}
-            onChange={handleEditChange}
-            className="users-input"
-            disabled={updating || !selectedFacultyId}
-          />
+          <div className="users-form-row">
+            <div className="users-form-group">
+              <label className="users-label" htmlFor="edit-name">Full name</label>
+              <input
+                id="edit-name"
+                name="name"
+                type="text"
+                value={editForm.name}
+                onChange={handleEditChange}
+                className="users-input"
+                disabled={updating || !selectedFacultyId}
+              />
+            </div>
 
-          <label className="users-label" htmlFor="edit-email">Email</label>
-          <input
-            id="edit-email"
-            name="email"
-            type="email"
-            value={editForm.email}
-            onChange={handleEditChange}
-            className="users-input"
-            disabled={updating || !selectedFacultyId}
-          />
+            <div className="users-form-group">
+              <label className="users-label" htmlFor="edit-email">Email</label>
+              <input
+                id="edit-email"
+                name="email"
+                type="email"
+                value={editForm.email}
+                onChange={handleEditChange}
+                className="users-input"
+                disabled={updating || !selectedFacultyId}
+              />
+            </div>
+          </div>
 
-          <label className="users-label" htmlFor="edit-designation">Designation</label>
-          <select
-            id="edit-designation"
-            name="designation"
-            value={editForm.designation}
-            onChange={handleEditChange}
-            className="users-input"
-            disabled={updating || !selectedFacultyId}
-          >
-            <option value="faculty">Faculty</option>
-            <option value="hod">Head of Department (HoD)</option>
-          </select>
+          <div className="users-form-row">
+            <div className="users-form-group">
+              <label className="users-label" htmlFor="edit-designation">Designation</label>
+              <select
+                id="edit-designation"
+                name="designation"
+                value={editForm.designation}
+                onChange={handleEditChange}
+                className="users-input"
+                disabled={updating || !selectedFacultyId}
+              >
+                <option value="faculty">Faculty</option>
+                <option value="hod">Head of Department (HoD)</option>
+              </select>
+            </div>
 
-          <label className="users-label" htmlFor="edit-department">Department</label>
-          <select
-            id="edit-department"
-            name="department"
-            value={editForm.department}
-            onChange={handleEditChange}
-            className="users-input"
-            disabled={updating || !selectedFacultyId}
-          >
-            <option value="">None</option>
-            {departments.map((d) => (
-              <option key={d._id} value={d._id}>{d.name} ({d.code})</option>
-            ))}
-          </select>
+            <div className="users-form-group">
+              <label className="users-label" htmlFor="edit-department">Department</label>
+              <select
+                id="edit-department"
+                name="department"
+                value={editForm.department}
+                onChange={handleEditChange}
+                className="users-input"
+                disabled={updating || !selectedFacultyId}
+              >
+                <option value="">None</option>
+                {departments.map((d) => (
+                  <option key={d._id} value={d._id}>{d.name} ({d.code})</option>
+                ))}
+              </select>
+            </div>
+          </div>
 
-          <label className="users-label" htmlFor="edit-password">New password (optional)</label>
-          <input
-            id="edit-password"
-            name="password"
-            type="password"
-            value={editForm.password}
-            onChange={handleEditChange}
-            className="users-input"
-            placeholder="Leave blank to keep current password"
-            disabled={updating || !selectedFacultyId}
-            autoComplete="new-password"
-          />
+          <div className="users-form-row">
+            <div className="users-form-group">
+              <label className="users-label" htmlFor="edit-password">New password (optional)</label>
+              <input
+                id="edit-password"
+                name="password"
+                type="password"
+                value={editForm.password}
+                onChange={handleEditChange}
+                className="users-input"
+                placeholder="Leave blank to keep current password"
+                disabled={updating || !selectedFacultyId}
+                autoComplete="new-password"
+              />
+            </div>
 
-          <label className="users-label" htmlFor="edit-confirm-password">Confirm new password</label>
-          <input
-            id="edit-confirm-password"
-            name="confirmPassword"
-            type="password"
-            value={editForm.confirmPassword}
-            onChange={handleEditChange}
-            className="users-input"
-            placeholder="Retype new password"
-            disabled={updating || !selectedFacultyId}
-            autoComplete="new-password"
-          />
+            <div className="users-form-group">
+              <label className="users-label" htmlFor="edit-confirm-password">Confirm new password</label>
+              <input
+                id="edit-confirm-password"
+                name="confirmPassword"
+                type="password"
+                value={editForm.confirmPassword}
+                onChange={handleEditChange}
+                className="users-input"
+                placeholder="Retype new password"
+                disabled={updating || !selectedFacultyId}
+                autoComplete="new-password"
+              />
+            </div>
+          </div>
 
           <label className="users-checkbox">
             <input

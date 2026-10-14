@@ -1,5 +1,6 @@
 .courses-page {
-  max-width: 1000px;
+  width: 100%;
+  max-width: 100%;
 }
 
 .courses-heading {
@@ -20,10 +21,11 @@
   border-radius: 12px;
   padding: 1.4rem;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  margin-bottom: 1.5rem;
 }
 
 .courses-card-section {
-  margin-top: 1rem;
+  margin-top: 0;
 }
 
 .courses-card-title {
@@ -49,22 +51,27 @@
 
 .courses-form {
   display: grid;
-  gap: 0.75rem;
+  gap: 0.85rem;
 }
 
 .courses-form-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 0.75rem;
+  gap: 0.85rem;
+}
+
+.courses-form-row--faculty {
+  grid-template-columns: 1fr 140px;
 }
 
 .courses-form-group {
-  display: grid;
-  gap: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
 }
 
 .courses-form-group--narrow {
-  max-width: 120px;
+  max-width: 140px;
 }
 
 .courses-label {
@@ -169,10 +176,12 @@ select.courses-input {
 
 .courses-table-wrap {
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .courses-table {
   width: 100%;
+  min-width: 650px;
   border-collapse: collapse;
   font-size: 0.9rem;
 }
@@ -180,14 +189,16 @@ select.courses-input {
 .courses-table th,
 .courses-table td {
   border-bottom: 1px solid #e5e7eb;
-  padding: 0.7rem 0.45rem;
+  padding: 0.75rem 0.6rem;
   text-align: left;
   color: #111827;
+  vertical-align: middle;
 }
 
 .courses-table th {
   color: #374151;
   font-weight: 700;
+  white-space: nowrap;
 }
 
 /* ── Link buttons ──────────────────────────────────────────────────────── */
@@ -199,6 +210,7 @@ select.courses-input {
   cursor: pointer;
   font-weight: 600;
   padding: 0;
+  text-decoration: none;
 }
 
 .courses-link-btn:hover {
@@ -276,23 +288,26 @@ select.courses-input {
 /* ── Responsive ────────────────────────────────────────────────────────── */
 
 @media (max-width: 768px) {
-  .courses-page {
-    max-width: 100%;
-  }
-
   .courses-card {
     padding: 1rem;
+    border-radius: 10px;
+    margin-bottom: 1rem;
   }
 
   .courses-heading {
-    font-size: 1.25rem;
+    font-size: 1.35rem;
   }
 
   .courses-sub {
     font-size: 0.88rem;
+    margin-bottom: 1rem;
   }
 
   .courses-form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .courses-form-row--faculty {
     grid-template-columns: 1fr;
   }
 
@@ -319,12 +334,16 @@ select.courses-input {
     min-width: auto;
   }
 
+  .courses-submit {
+    width: 100%;
+  }
+
   .courses-table {
-    font-size: 0.82rem;
+    font-size: 0.84rem;
   }
 
   .courses-table th,
   .courses-table td {
-    padding: 0.55rem 0.35rem;
+    padding: 0.6rem 0.45rem;
   }
 }

@@ -29,7 +29,7 @@ const HodFaculty = () => {
       <h1 className="users-heading">Department Faculty</h1>
       <p className="users-sub">View all faculty members within your department.</p>
 
-      <div className="users-card users-card-section">
+      <div className="users-card">
         <h2 className="users-card-title">Faculty List</h2>
         
         {loading ? (
