@@ -405,15 +405,7 @@ const CourseInformationSheetPage = ({ courseId }) => {
   }
 
   return (
-    <div style={{
-      maxWidth: '1400px',
-      margin: '2rem 0',
-      padding: '3rem',
-      backgroundColor: '#ffffff',
-      borderRadius: '12px',
-      boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1)',
-      border: '1px solid #e2e8f0'
-    }}>
+    <div className="course-information-sheet" style={{ width: '100%', boxSizing: 'border-box' }}>
       <UniversityHeader />
 
       {/* Hidden file input */}
@@ -623,7 +615,7 @@ const CourseInformationSheetPage = ({ courseId }) => {
           onChange={handleSectionChange(setGrading, 'gradingPolicy')}
         />
 
-        <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+        <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'flex-end', gap: '1rem', flexWrap: 'wrap' }}>
           <button
             type="button"
             onClick={handleClearForm}

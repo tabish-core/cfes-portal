@@ -57,16 +57,88 @@ const normalizeCategoryMap = {
   'midterm': 'Midterm',
   'mid-term': 'Midterm',
   'mid term': 'Midterm',
+  'mid semester examination': 'Midterm',
   'final': 'Final Exam',
   'final exam': 'Final Exam',
   'final examination': 'Final Exam',
+  'end semester examination': 'Final Exam',
   'project': 'Project',
+  'project/ccp': 'Project',
+  'project /ccp': 'Project',
+  'project / ccp': 'Project',
+  'project/ ccp': 'Project',
   'lab': 'Lab',
   'laboratory': 'Lab',
   'presentation': 'Presentation',
   'class participation': 'Class Participation',
   'participation': 'Class Participation',
 };
+
+const MONTH_MAP = {
+  jan: '01', feb: '02', mar: '03', apr: '04', may: '05', jun: '06',
+  jul: '07', aug: '08', sep: '09', oct: '10', nov: '11', dec: '12',
+  january: '01', february: '02', march: '03', april: '04',
+  june: '06', july: '07', august: '08', september: '09',
+  october: '10', november: '11', december: '12'
+};
+
+/**
+ * Normalizes common human and document date formats into ISO YYYY-MM-DD
+ * for display in HTML5 <input type="date">.
+ */
+const normalizeDate = (rawDate) => {
+  if (!rawDate) return '';
+  const trimmed = rawDate.trim();
+
+  // 1. ISO YYYY-MM-DD or YYYY/MM/DD
+  const isoMatch = trimmed.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
+  if (isoMatch) {
+    const [, y, m, d] = isoMatch;
+    return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+  }
+
+  // 2. Numeric DD-MM-YYYY or DD/MM/YYYY (handles MM/DD/YYYY if month > 12)
+  const numDateMatch = trimmed.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/);
+  if (numDateMatch) {
+    const [, p1, p2, y] = numDateMatch;
+    const n1 = parseInt(p1, 10);
+    const n2 = parseInt(p2, 10);
+    let d = p1;
+    let m = p2;
+    if (n1 <= 12 && n2 > 12) {
+      m = p1;
+      d = p2;
+    } else {
+      d = p1;
+      m = p2;
+    }
+    return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+  }
+
+  // 3. DD[st/nd/rd/th] MonthName YYYY (e.g. "21st Oct 2024", "2nd Dec 2024")
+  const textDateMatch = trimmed.match(/^(\d{1,2})(?:st|nd|rd|th)?\s+([A-Za-z]+)[,\s]+(\d{4})$/i);
+  if (textDateMatch) {
+    const [, d, monthStr, y] = textDateMatch;
+    const m = MONTH_MAP[monthStr.toLowerCase()];
+    if (m) {
+      return `${y}-${m}-${d.padStart(2, '0')}`;
+    }
+  }
+
+  // 4. MonthName DD[st/nd/rd/th], YYYY (e.g. "Oct 21st, 2024")
+  const mdyTextMatch = trimmed.match(/^([A-Za-z]+)\s+(\d{1,2})(?:st|nd|rd|th)?[,\s]+(\d{4})$/i);
+  if (mdyTextMatch) {
+    const [, monthStr, d, y] = mdyTextMatch;
+    const m = MONTH_MAP[monthStr.toLowerCase()];
+    if (m) {
+      return `${y}-${m}-${d.padStart(2, '0')}`;
+    }
+  }
+
+  return trimmed;
+};
+
+const looksLikeCLO = (text) => /^clo\b/i.test((text || '').trim());
 
 const normalizeCategory = (rawCategory) => {
   if (!rawCategory) return '';
@@ -273,52 +345,103 @@ const mapExtractedToFormState = (extractedData) => {
 
   /* ── Table 7: OBA Table ─────────────────────────────── */
   const obaData = [];
-  if (tables[6]) {
-    const t = tables[6];
-    // Row 0: title ("6. CLO Outcome Based Assessment..."), 1 cell colspan=7
-    // Row 1: column headers ("Assessment Tool" colspan=2, ...), 6 cells
-    // Data rows: 7 cells — cell[0] = "CategoryNameWeight" (e.g. "Quiz10"),
-    //   cell[1]=tool, cell[2]=cloMapped, cell[3]=marks, cell[4]=weight%, cell[5]=total, cell[6]=date
-    // Total rows: 5 cells with "Total Category %" — skip
-    // Spacing rows: 1 cell empty — skip
-    // Grand total: 4 cells with "Total Marks" — skip
-    // Footer note: 1 cell "Note:..." — skip
+  const obaTable = tables[6] || tables.find(tbl => {
+    const text = tbl.rows?.map(r => r.cells?.map(c => c.text).join(' ')).join(' ').toLowerCase() || '';
+    return text.includes('outcome based assessment') || text.includes('oba tentative');
+  });
 
-    for (let i = 2; i < t.rows.length; i++) {
+  if (obaTable) {
+    const t = obaTable;
+    // Word documents use vertically merged cells (vMerge) for category and dates.
+    // Mammoth only includes merged cells in the first row of each group.
+    // Subsequent rows omit the merged cell(s), resulting in 6 or 5 cells instead of 7.
+    let currentCategory = '';
+    let currentCategoryDate = '';
+
+    for (let i = 0; i < t.rows.length; i++) {
       const row = t.rows[i];
       if (!row || !row.cells) continue;
 
-      // Skip 1-cell rows (spacing rows, footer notes)
+      // Skip 1-cell rows (title row, spacing rows, footer notes)
       if (row.cells.length <= 1) continue;
 
-      // Skip total rows (5 cells or 4 cells containing "total")
-      if (row.cells.length <= 5) {
-        const rowText = row.cells.map(c => c.text?.trim() || '').join(' ').toLowerCase();
-        if (rowText.includes('total')) continue;
+      const rowText = row.cells.map(c => c.text?.trim() || '').join(' ').toLowerCase();
+
+      // Skip table header rows (e.g., "Assessment Tool", "CLO Mapped")
+      if (rowText.includes('assessment tool') || rowText.includes('clo mapped')) continue;
+
+      // Skip subtotal / total rows (e.g., "Total Quizzes %", "Total Midterm %", "Total Marks")
+      if (rowText.includes('total')) continue;
+
+      // Skip footer notes (e.g., "Note: Please make sure...")
+      if (rowText.startsWith('note') || rowText.includes('please make sure')) continue;
+
+      // Skip entirely empty rows
+      if (row.cells.every(c => !c.text?.trim())) continue;
+
+      // Determine whether the Category column is present in this row
+      let isCategoryPresent = false;
+      if (row.cells.length >= 7) {
+        isCategoryPresent = true;
+      } else if (row.cells.length === 6) {
+        if (looksLikeCLO(row.cells[1]?.text)) {
+          isCategoryPresent = false;
+        } else if (looksLikeCLO(row.cells[2]?.text)) {
+          isCategoryPresent = true;
+        } else {
+          const lastCell = row.cells[5]?.text?.trim() || '';
+          const hasDateInLastCell = /\d{4}|\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\b/i.test(lastCell);
+          isCategoryPresent = !hasDateInLastCell;
+        }
+      } else {
+        // 5 cells: Category is omitted (merged from row above) and Date is omitted (merged from row above)
+        isCategoryPresent = false;
       }
 
-      // Only process 7-cell data rows
-      if (row.cells.length >= 7) {
+      const offset = isCategoryPresent ? 1 : 0;
+
+      if (isCategoryPresent) {
+        currentCategoryDate = ''; // Reset date context for new category
         const firstCellText = row.cells[0]?.text?.trim() || '';
-
-        // Extract category name by stripping trailing digits from the
-        // concatenated "CategoryNameWeight" string (e.g., "Quiz10" → "Quiz")
-        const categoryRaw = firstCellText.replace(/\d+\s*$/, '').trim();
-        const category = normalizeCategory(categoryRaw);
-
-        const obaRow = {
-          category,
-          assessmentTool: row.cells[1]?.text?.trim() || '',
-          cloMapped: row.cells[2]?.text?.trim() || '',
-          cloMarks: parseNum(row.cells[3]?.text),
-          weightPercentage: parsePercent(row.cells[4]?.text),
-          totalMarks: parseNum(row.cells[5]?.text),
-          assessmentDate: row.cells[6]?.text?.trim() || '',
-        };
-
-        if (obaRow.assessmentTool || obaRow.cloMapped) {
-          obaData.push(obaRow);
+        const categoryRaw = firstCellText.replace(/[\d\s%–—\-]+$/, '').trim();
+        const detectedCategory = normalizeCategory(categoryRaw);
+        if (detectedCategory) {
+          currentCategory = detectedCategory;
         }
+        if (row.cells.length >= 7 && row.cells[6]?.text?.trim()) {
+          currentCategoryDate = row.cells[6].text.trim();
+        }
+      }
+
+      const assessmentTool = row.cells[offset]?.text?.trim() || '';
+      const cloMapped = row.cells[offset + 1]?.text?.trim() || '';
+      const cloMarks = parseNum(row.cells[offset + 2]?.text);
+      const weightPercentage = parsePercent(row.cells[offset + 3]?.text);
+      const totalMarks = parseNum(row.cells[offset + 4]?.text);
+
+      // Date: use this row's own date if present; otherwise inherit category-level merged date
+      const dateCell = row.cells[offset + 5]?.text?.trim();
+      const rawDate = dateCell || currentCategoryDate || '';
+      const assessmentDate = normalizeDate(rawDate);
+
+      // Category fallback: if currentCategory is empty, infer from tool name
+      let finalCategory = currentCategory;
+      if (!finalCategory && assessmentTool) {
+        finalCategory = normalizeCategory(assessmentTool);
+      }
+
+      const obaRow = {
+        category: finalCategory,
+        assessmentTool,
+        cloMapped,
+        cloMarks,
+        weightPercentage,
+        totalMarks,
+        assessmentDate,
+      };
+
+      if (obaRow.assessmentTool || obaRow.cloMapped) {
+        obaData.push(obaRow);
       }
     }
 
@@ -475,4 +598,4 @@ const isLikelyCategory = (text) => {
 };
 
 
-module.exports = { mapExtractedToFormState };
+module.exports = { mapExtractedToFormState, normalizeCategory, normalizeDate };

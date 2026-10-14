@@ -72,6 +72,14 @@ const Login = () => {
       {/* Right panel — form */}
       <div className="login-form-panel">
         <div className="login-card">
+          <div className="login-mobile-brand">
+            <div className="brand-logo-mobile">IU</div>
+            <div className="brand-text-mobile">
+              <div className="brand-name-mobile">Iqra University</div>
+              <div className="brand-tagline-mobile">Course File Submission System</div>
+            </div>
+          </div>
+
           <h2 className="login-heading">Welcome back</h2>
           <p className="login-sub">Sign in to your account to continue</p>
 

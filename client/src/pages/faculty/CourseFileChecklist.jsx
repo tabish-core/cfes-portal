@@ -11,40 +11,39 @@ import '../dean/Dashboard.css';
  */
 const INITIAL_CHECKLIST = [
   // Main documents
-  { id: 1, type: 'item', name: 'Course Information Sheet', formType: 'CIS' },
-  { id: 2, type: 'item', name: 'Weekly Plan', formType: 'WP' },
-  { id: 3, type: 'item', name: 'Course Control Report', formType: 'CCR' },
-  { id: 4, type: 'item', name: 'Timetable with consulting hours', formType: 'TIMETABLE' },
-  { id: 5, type: 'item', name: 'Attendance Record', formType: 'AR' },
-  { id: 6, type: 'item', name: 'Lectures', formType: 'LECTURES' },
+  { id: 1, type: 'item', name: 'Course Information Sheet & Weekly Plan', formType: 'CIS' },
+  { id: 2, type: 'item', name: 'Course Control Report', formType: 'CCR' },
+  { id: 3, type: 'item', name: 'Timetable with consulting hours', formType: 'TIMETABLE' },
+  { id: 4, type: 'item', name: 'Attendance Record', formType: 'AR' },
+  { id: 5, type: 'item', name: 'Lectures', formType: 'LECTURES' },
 
   // Separator
   { id: 's1', type: 'separator', label: 'Attach Page Separator here' },
 
   // Assessment Record (grouped)
-  { id: 7, type: 'group-header', name: 'Assessment Record' },
-  { id: '7a', type: 'sub-item', name: 'Quizzes', formType: 'ASSESS_QUIZ' },
-  { id: '7b', type: 'sub-item', name: 'Assignments', formType: 'ASSESS_ASSIGN' },
-  { id: '7c', type: 'sub-item', name: 'Midterm', formType: 'ASSESS_MID' },
-  { id: '7d', type: 'sub-item', name: 'Final Exam', formType: 'ASSESS_FINAL' },
-  { id: '7e', type: 'sub-item', name: 'CCP/Class Project/PBL', formType: 'ASSESS_PROJECT' },
+  { id: 6, type: 'group-header', name: 'Assessment Record' },
+  { id: '6a', type: 'sub-item', name: 'Quizzes', formType: 'ASSESS_QUIZ' },
+  { id: '6b', type: 'sub-item', name: 'Assignments', formType: 'ASSESS_ASSIGN' },
+  { id: '6c', type: 'sub-item', name: 'Midterm', formType: 'ASSESS_MID' },
+  { id: '6d', type: 'sub-item', name: 'Final Exam', formType: 'ASSESS_FINAL' },
+  { id: '6e', type: 'sub-item', name: 'CCP/Class Project', formType: 'ASSESS_PROJECT' },
 
   // Separator
   { id: 's2', type: 'separator', label: 'Attach Page Separator here' },
 
   // Remaining items
-  { id: 8, type: 'item', name: 'Course Completion Certificate', formType: 'CCC' },
-  { id: 9, type: 'item', name: 'Final Marks and Grade Report', formType: 'FMGR' },
-  { id: 10, type: 'item', name: 'Record of CLO assessment', formType: 'CLO' },
-  { id: 11, type: 'item', name: 'Record of GA assessment', formType: 'GA' },
-  { id: 12, type: 'item', name: 'Course Review Report', formType: 'CRR' },
+  { id: 7, type: 'item', name: 'Course Completion Certificate', formType: 'CCC' },
+  { id: 8, type: 'item', name: 'Final Marks and Grade Report', formType: 'FMGR' },
+  { id: 9, type: 'item', name: 'Record of CLO assessment', formType: 'CLO' },
+  { id: 10, type: 'item', name: 'Record of GA assessment', formType: 'GA' },
+  { id: 11, type: 'item', name: 'Course Review Report', formType: 'CRR' },
 
   // Separator
   { id: 's3', type: 'separator', label: 'Attach Page Separator here' },
 
-  { id: 13, type: 'item', name: 'Detail of technology involved', formType: 'TECH' },
-  { id: 14, type: 'item', name: 'Design skills practiced', formType: 'DESIGN' },
-  { id: 15, type: 'item', name: 'Course effectiveness analysis', formType: 'CEA' },
+  { id: 12, type: 'item', name: 'Detail of technology involved', formType: 'TECH' },
+  { id: 13, type: 'item', name: 'Design skills practiced', formType: 'DESIGN' },
+  { id: 14, type: 'item', name: 'Course effectiveness analysis', formType: 'CEA' },
 ];
 
 const CourseFileChecklist = () => {
@@ -89,6 +88,11 @@ const CourseFileChecklist = () => {
             setChecklist((prev) =>
               prev.map((item) => {
                 if (item.type === 'separator' || item.type === 'group-header') return item;
+                if (item.formType === 'CIS') {
+                  const cisMatch = saved.checklistItems.find((s) => s.type === 'CIS');
+                  const wpMatch = saved.checklistItems.find((s) => s.type === 'WP');
+                  return { ...item, completed: Boolean(cisMatch?.completed || wpMatch?.completed) };
+                }
                 const match = saved.checklistItems.find((s) => s.type === item.formType);
                 return match ? { ...item, completed: match.completed } : item;
               })
@@ -312,7 +316,7 @@ const CourseFileChecklist = () => {
                 // Separator row
                 if (item.type === 'separator') {
                   return (
-                    <tr key={item.id} style={{ backgroundColor: '#fef3c7' }}>
+                    <tr key={item.id} style={{ backgroundColor: '#F1F5F9' }}>
                       <td
                         colSpan={3}
                         style={{
@@ -320,7 +324,7 @@ const CourseFileChecklist = () => {
                           border: '1px solid #e2e8f0',
                           textAlign: 'center',
                           fontWeight: '600',
-                          color: '#92400e',
+                          color: '#475569',
                           fontStyle: 'italic',
                           fontSize: '0.85rem'
                         }}

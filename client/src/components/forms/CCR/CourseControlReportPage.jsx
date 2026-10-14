@@ -269,18 +269,11 @@ const CourseControlReportPage = ({ courseId }) => {
   };
 
   return (
-    <div className="course-control-report" style={{ 
-      maxWidth: '1400px', 
-      margin: '2rem 0', 
-      padding: '3rem', 
-      backgroundColor: '#ffffff', 
-      borderRadius: '12px', 
-      boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
-      border: '1px solid #e2e8f0'
-    }}>
+    <div className="course-control-report" style={{ width: '100%', boxSizing: 'border-box' }}>
       <h2 style={{ 
         textAlign: 'center', 
-        marginBottom: '3rem', 
+        marginBottom: '2rem', 
+        marginTop: 0,
         color: '#0f172a',
         fontSize: '1.8rem',
         fontWeight: '700',
@@ -465,7 +458,7 @@ const CourseControlReportPage = ({ courseId }) => {
           showSpecialRows={false}
         />
 
-        <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+        <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'flex-end', gap: '1rem', flexWrap: 'wrap' }}>
           <button
             type="button"
             onClick={handleClearForm}

@@ -220,24 +220,17 @@ const CourseReviewReportTheoryPage = ({ courseId }) => {
   };
 
   return (
-    <div className="course-review-report" style={{
-      maxWidth: '1000px',
-      margin: '2rem auto',
-      padding: '3rem',
-      backgroundColor: '#ffffff',
-      borderRadius: '12px',
-      boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
-      border: '1px solid #e2e8f0'
-    }}>
+    <div className="course-review-report" style={{ width: '100%', boxSizing: 'border-box' }}>
       <h2 style={{
         textAlign: 'center',
-        marginBottom: '3rem',
+        marginBottom: '2rem',
+        marginTop: 0,
         color: '#0f172a',
         fontSize: '1.8rem',
         fontWeight: '700',
         letterSpacing: '-0.025em'
       }}>
-        Course Review Report (Theory Courses)
+        Course Review Report
       </h2>
 
       {validationErrors.length > 0 && (
@@ -259,7 +252,7 @@ const CourseReviewReportTheoryPage = ({ courseId }) => {
         <CourseEnhancementSection data={courseEnhancement} onChange={handleSectionChange} />
         <SignatureSection data={signatures} onChange={handleSectionChange} facultyName={courseDetails.teacherName} />
 
-        <div style={{ marginTop: '3rem', display: 'flex', justifyContent: 'flex-end', gap: '1rem', borderTop: '1px solid #e2e8f0', paddingTop: '2rem' }}>
+        <div style={{ marginTop: '3rem', display: 'flex', justifyContent: 'flex-end', gap: '1rem', borderTop: '1px solid #e2e8f0', paddingTop: '2rem', flexWrap: 'wrap' }}>
           <button
             type="button"
             onClick={handleClearForm}

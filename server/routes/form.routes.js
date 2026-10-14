@@ -1,5 +1,6 @@
 const express = require('express');
 const formController = require('../controllers/form.controller');
+const timetableController = require('../controllers/timetable.controller');
 const { verifyToken } = require('../middlewares/auth.middleware');
 
 const router = express.Router();
@@ -21,4 +22,13 @@ router.get('/course-review/:courseId', verifyToken, formController.getCourseRevi
 router.post('/course-review', verifyToken, formController.saveCourseReviewForm);
 router.get('/course-review/:courseId/export', verifyToken, formController.exportCourseReviewForm);
 
+// Timetable with Consulting Hours
+router.get('/timetable/export', verifyToken, timetableController.exportTimetable);
+router.get('/timetable/:courseId/export', verifyToken, timetableController.exportTimetable);
+router.get('/timetable/:courseId', verifyToken, timetableController.getTimetable);
+router.get('/timetable', verifyToken, timetableController.getTimetable);
+router.post('/timetable', verifyToken, timetableController.saveTimetable);
+router.put('/timetable', verifyToken, timetableController.saveTimetable);
+
 module.exports = router;
+

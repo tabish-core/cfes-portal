@@ -1,0 +1,661 @@
+/* ==========================================================================
+   Timetable.css — Modern, polished styles for Timetable with Consulting Hours
+   ========================================================================== */
+
+.timetable-container {
+  width: 100%;
+  box-sizing: border-box;
+  font-family: inherit;
+  color: #1e293b;
+}
+
+.grid-table-wrapper {
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+.tt-grid-matrix {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 650px;
+}
+
+/* Header & Actions Bar */
+.timetable-top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  padding-bottom: 2rem;
+  margin-bottom: 2rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.timetable-title-group h1 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 0.4rem 0;
+  letter-spacing: -0.02em;
+}
+
+.timetable-title-group p {
+  color: #64748b;
+  font-size: 0.95rem;
+  margin: 0;
+}
+
+.timetable-semester-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background-color: #eff6ff;
+  color: #1d4ed8;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.35rem 0.8rem;
+  border-radius: 9999px;
+  margin-top: 0.6rem;
+  border: 1px solid #bfdbfe;
+}
+
+.timetable-actions-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* Reusable Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1.25rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.15s ease-in-out;
+  text-decoration: none;
+  line-height: 1.25;
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background-color: #3949ab;
+  color: #ffffff;
+  border-color: #3949ab;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background-color: #303f9f;
+  border-color: #303f9f;
+}
+
+.btn-secondary {
+  background-color: #f8fafc;
+  color: #334155;
+  border-color: #cbd5e1;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background-color: #e2e8f0;
+}
+
+.btn-danger-outline {
+  background-color: #fef2f2;
+  color: #dc2626;
+  border-color: #fecaca;
+}
+
+.btn-danger-outline:hover:not(:disabled) {
+  background-color: #fee2e2;
+}
+
+.btn-sm {
+  padding: 0.35rem 0.75rem;
+  font-size: 0.8rem;
+  border-radius: 6px;
+}
+
+/* Section Cards */
+.tt-section {
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1.75rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.tt-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.tt-section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #1e3a8a;
+  margin: 0;
+}
+
+.tt-section-sub {
+  font-size: 0.85rem;
+  color: #64748b;
+  margin: 0.25rem 0 0 0;
+}
+
+/* Form Grid */
+.tt-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1.25rem;
+}
+
+.tt-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.tt-form-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #334155;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.tt-form-input,
+.tt-form-select,
+.tt-form-textarea {
+  width: 100%;
+  padding: 0.6rem 0.85rem;
+  font-size: 0.9rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background-color: #ffffff;
+  color: #0f172a;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  box-sizing: border-box;
+}
+
+.tt-form-input:focus,
+.tt-form-select:focus,
+.tt-form-textarea:focus {
+  outline: none;
+  border-color: #3949ab;
+  box-shadow: 0 0 0 3px rgba(57, 73, 171, 0.15);
+}
+
+.tt-form-hint {
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.tt-input-error {
+  border-color: #ef4444 !important;
+}
+
+.tt-error-text {
+  color: #dc2626;
+  font-size: 0.78rem;
+  margin-top: 0.2rem;
+}
+
+/* Time Slot Manager List */
+.slots-list-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.slot-row-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem 1.25rem;
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  transition: border-color 0.15s, background-color 0.15s;
+}
+
+.slot-row-card:hover {
+  background-color: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+.slot-details {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.slot-badge-order {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #475569;
+  background-color: #e2e8f0;
+  padding: 0.2rem 0.6rem;
+  border-radius: 4px;
+}
+
+.slot-time-range {
+  font-weight: 700;
+  color: #0f172a;
+  font-size: 0.95rem;
+  font-family: ui-monospace, monospace;
+}
+
+.slot-label-text {
+  color: #334155;
+  font-size: 0.85rem;
+  background-color: #e0e7ff;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+}
+
+.slot-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+/* Visual Timetable Grid Matrix */
+.grid-table-wrapper {
+  overflow-x: auto;
+  margin: 1rem 0;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+}
+
+.tt-grid-matrix {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 900px;
+  background-color: #ffffff;
+}
+
+.tt-grid-matrix th,
+.tt-grid-matrix td {
+  border: 1px solid #cbd5e1;
+  padding: 8px 6px;
+  text-align: center;
+  vertical-align: middle;
+  font-size: 0.85rem;
+}
+
+.tt-grid-matrix th {
+  background-color: #0f172a;
+  color: #ffffff;
+  font-weight: 700;
+  padding: 10px 8px;
+}
+
+.tt-grid-day-cell {
+  background-color: #f8fafc;
+  font-weight: 700;
+  color: #1e293b;
+  width: 120px;
+}
+
+.tt-offday-banner {
+  background-color: #f1f5f9;
+  color: #64748b;
+  font-weight: 700;
+  letter-spacing: 2px;
+  padding: 1rem;
+  text-transform: uppercase;
+}
+
+.tt-empty-cell {
+  background-color: #ffffff;
+  height: 60px;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.tt-empty-cell:hover {
+  background-color: #f8fafc;
+}
+
+/* Activity Cell in Grid */
+.tt-activity-cell {
+  padding: 8px !important;
+  border-radius: 4px;
+  text-align: left !important;
+  vertical-align: top !important;
+  cursor: pointer;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+  position: relative;
+}
+
+.tt-activity-cell:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.tt-act-title {
+  font-weight: 700;
+  font-size: 0.88rem;
+  margin-bottom: 2px;
+  line-height: 1.25;
+}
+
+.tt-act-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  font-size: 0.78rem;
+  margin-top: 4px;
+}
+
+.tt-act-venue {
+  font-weight: 600;
+}
+
+.tt-act-badge {
+  font-weight: 600;
+  font-size: 0.75rem;
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+.tt-act-notes {
+  font-size: 0.75rem;
+  color: #475569;
+  font-style: italic;
+  margin-top: 4px;
+}
+
+/* Activity Type Colors */
+.act-type-class {
+  background-color: #eff6ff;
+  border: 1px solid #3b82f6 !important;
+  color: #1e3a8a;
+}
+.act-type-class .tt-act-badge {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+
+.act-type-lab {
+  background-color: #f0fdf4;
+  border: 1px solid #22c55e !important;
+  color: #14532d;
+}
+.act-type-lab .tt-act-badge {
+  background-color: #dcfce7;
+  color: #166534;
+}
+
+.act-type-counseling {
+  background-color: #fffbeb;
+  border: 1px solid #f59e0b !important;
+  color: #78350f;
+}
+.act-type-counseling .tt-act-badge {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.act-type-meeting {
+  background-color: #faf5ff;
+  border: 1px solid #a855f7 !important;
+  color: #581c87;
+}
+.act-type-meeting .tt-act-badge {
+  background-color: #f3e8ff;
+  color: #6b21a8;
+}
+
+.act-type-research {
+  background-color: #f0fdfa;
+  border: 1px solid #14b8a6 !important;
+  color: #134e4a;
+}
+.act-type-research .tt-act-badge {
+  background-color: #ccfbf1;
+  color: #115e59;
+}
+
+.act-type-other {
+  background-color: #f8fafc;
+  border: 1px solid #94a3b8 !important;
+  color: #1e293b;
+}
+
+/* Day Tabs & Editor */
+.day-tabs-container {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding-bottom: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.day-tab-btn {
+  padding: 0.6rem 1rem;
+  border: 1px solid #cbd5e1;
+  background-color: #f8fafc;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.88rem;
+  color: #475569;
+  cursor: pointer;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.15s ease;
+}
+
+.day-tab-btn.active {
+  background-color: #3949ab;
+  color: #ffffff;
+  border-color: #3949ab;
+}
+
+.day-tab-badge {
+  font-size: 0.72rem;
+  padding: 2px 6px;
+  border-radius: 9999px;
+  background-color: #e2e8f0;
+  color: #334155;
+}
+
+.day-tab-btn.active .day-tab-badge {
+  background-color: rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+}
+
+.offday-tab-badge {
+  background-color: #fee2e2 !important;
+  color: #b91c1c !important;
+}
+
+/* Activities List for Selected Day */
+.day-activities-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.activity-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  transition: border-color 0.15s;
+}
+
+.activity-card:hover {
+  border-color: #cbd5e1;
+}
+
+/* Dedicated Consulting Hours Section */
+.consulting-hours-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0.5rem;
+}
+
+.consulting-hours-table th,
+.consulting-hours-table td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #e2e8f0;
+  text-align: left;
+  font-size: 0.9rem;
+}
+
+.consulting-hours-table th {
+  background-color: #f8fafc;
+  font-weight: 700;
+  color: #334155;
+}
+
+.consulting-hours-table tr:hover td {
+  background-color: #f8fafc;
+}
+
+/* Modals */
+.tt-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1.5rem;
+}
+
+.tt-modal-box {
+  background-color: #ffffff;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 580px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  border: 1px solid #cbd5e1;
+  overflow: hidden;
+  animation: ttModalIn 0.18s ease-out;
+}
+
+@keyframes ttModalIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.tt-modal-header {
+  padding: 1.25rem 1.5rem;
+  background-color: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.tt-modal-header h3 {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.tt-modal-close {
+  background: none;
+  border: none;
+  font-size: 1.4rem;
+  color: #64748b;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+
+.tt-modal-body {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+  max-height: 75vh;
+  overflow-y: auto;
+}
+
+.tt-modal-footer {
+  padding: 1rem 1.5rem;
+  background-color: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+/* Empty states */
+.tt-empty-box {
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+  color: #64748b;
+  background-color: #f8fafc;
+  border: 2px dashed #cbd5e1;
+  border-radius: 8px;
+}
+
+.tt-empty-box p {
+  margin: 0 0 1rem 0;
+  font-size: 0.95rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .timetable-container {
+    padding: 1.25rem;
+  }
+  .timetable-top-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .timetable-actions-group {
+    justify-content: flex-start;
+  }
+  .tt-form-grid {
+    grid-template-columns: 1fr;
+  }
+  .slot-row-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

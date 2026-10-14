@@ -75,12 +75,12 @@ const FacultyDashboard = () => {
   /* ── Stat card configuration ─────────────────────────────────────────── */
   const statCards = stats
     ? [
-        { label: 'Assigned Courses', value: stats.totalCourses, color: 'blue' },
-        { label: 'Total Forms Available', value: stats.totalForms, color: 'purple' },
-        { label: 'Draft Forms', value: stats.draftForms, color: 'yellow' },
-        { label: 'Submitted Forms', value: stats.submittedForms, color: 'green' },
-        { label: 'Pending Forms', value: stats.pendingForms, color: 'red' },
-      ]
+      { label: 'Assigned Courses', value: stats.totalCourses, color: 'blue' },
+      { label: 'Total Forms Available', value: stats.totalForms, color: 'purple' },
+      { label: 'Draft Forms', value: stats.draftForms, color: 'yellow' },
+      { label: 'Submitted Forms', value: stats.submittedForms, color: 'green' },
+      { label: 'Pending Forms', value: stats.pendingForms, color: 'red' },
+    ]
     : [];
 
   return (
@@ -153,7 +153,7 @@ const FacultyDashboard = () => {
       {/* ── Course List ──────────────────────────────────────────────────── */}
       <div className="dashboard-panel">
         <h2 className="dashboard-section-title">
-          Assigned Courses{selectedSemesterName ? ` — ${selectedSemesterName}` : ''}
+          Assigned Courses{selectedSemesterName ? ` for ${selectedSemesterName}` : ''}
         </h2>
 
         {!selectedSemesterId ? (

@@ -6,10 +6,13 @@ import CourseCompletionCertificatePage from '../../components/forms/CCC/CourseCo
 import CourseReviewReportTheoryPage from '../../components/forms/CRR/CourseReviewReportTheoryPage';
 import QuizManagementPage from '../../components/forms/Quiz/QuizManagementPage';
 import AssignmentManagementPage from '../../components/forms/Assignment/AssignmentManagementPage';
-
+import TimetablePage from '../../components/forms/Timetable/TimetablePage';
+import AttendanceRecordPage from '../../components/forms/Attendance/AttendanceRecordPage';
 
 const CourseForm = () => {
   const { courseId, formType } = useParams();
+
+  const isAttendance = formType === 'AR';
 
   return (
     <div className="dashboard">
@@ -17,8 +20,14 @@ const CourseForm = () => {
         <Link to={`/faculty/course/${courseId}`} className="back-link">
           ← Back to Checklist
         </Link>
-        <h1 className="dashboard-heading">Submit {formType}</h1>
-        <p className="dashboard-sub">Fill out the details for this course file.</p>
+        <h1 className="dashboard-heading">
+          {isAttendance ? 'Attendance Record' : `Submit ${formType}`}
+        </h1>
+        <p className="dashboard-sub">
+          {isAttendance
+            ? 'Access the attendance sheet for this course.'
+            : 'Fill out the details for this course file.'}
+        </p>
       </div>
 
       <div className="dashboard-panel">
@@ -34,6 +43,10 @@ const CourseForm = () => {
           <QuizManagementPage courseId={courseId} />
         ) : formType === 'ASSESS_ASSIGN' ? (
           <AssignmentManagementPage courseId={courseId} />
+        ) : formType === 'TIMETABLE' ? (
+          <TimetablePage courseId={courseId} />
+        ) : isAttendance ? (
+          <AttendanceRecordPage courseId={courseId} />
         ) : (
           <>
             <p>Multi-step form will be implemented in Phase 2.</p>

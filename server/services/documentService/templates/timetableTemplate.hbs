@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>{{academicTerm}} Class Schedule and Counseling Hours</title>
+  <style>
+    @page {
+      size: A4 landscape;
+      margin: 0.5in 0.6in;
+    }
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
+      font-size: 10pt;
+      line-height: 1.25;
+      color: #000000;
+      margin: 0;
+      padding: 0;
+    }
+
+    /* Header Container */
+    .header-container {
+      text-align: center;
+      margin-bottom: 12px;
+    }
+    .logo-img {
+      height: 65px;
+      margin-bottom: 6px;
+      display: inline-block;
+    }
+    .dept-title {
+      font-size: 12.5pt;
+      font-weight: bold;
+      color: #000000;
+      margin-top: 2px;
+    }
+    .school-title {
+      font-size: 12pt;
+      font-weight: bold;
+      color: #000000;
+      margin-top: 2px;
+    }
+    .term-title {
+      font-size: 12pt;
+      font-weight: bold;
+      color: #000000;
+      margin-top: 6px;
+      margin-bottom: 8px;
+    }
+
+    /* Faculty Info Bar */
+    .faculty-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11pt;
+      font-weight: bold;
+      margin-bottom: 8px;
+      padding: 0 2px;
+    }
+
+    /* Schedule Grid Table */
+    table.schedule-table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+      border: 1.5pt solid #000000;
+    }
+    table.schedule-table th,
+    table.schedule-table td {
+      border: 1pt solid #000000;
+      padding: 6px 4px;
+      text-align: center;
+      vertical-align: middle;
+      font-size: 9.5pt;
+      word-wrap: break-word;
+    }
+    table.schedule-table th {
+      background-color: #ffffff;
+      color: #000000;
+      font-weight: bold;
+    }
+    .day-col-header {
+      width: 65px;
+    }
+    .day-label {
+      font-weight: bold;
+      background-color: #ffffff;
+      width: 65px;
+      text-align: center;
+    }
+
+    /* Activity Cell */
+    .activity-cell {
+      background-color: #ffffff;
+      font-weight: bold;
+      color: #000000;
+      line-height: 1.25;
+    }
+    .act-title {
+      font-weight: bold;
+    }
+    .act-venue {
+      font-weight: bold;
+      margin-top: 2px;
+    }
+
+    /* Off Day Row */
+    .offday-cell {
+      background-color: #b0b0b0 !important;
+      color: #000000;
+      font-weight: bold;
+      letter-spacing: 1.5px;
+      text-align: center;
+    }
+    .empty-cell {
+      background-color: #ffffff;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <div class="header-container">
+    {{#if logoBase64}}
+      <img src="{{logoBase64}}" class="logo-img" alt="Iqra University Logo">
+    {{else}}
+      <div style="background-color: #312e81; color: white; display: inline-block; padding: 8px 16px; font-size: 16pt; font-weight: bold; margin-bottom: 6px;">
+        IQRA UNIVERSITY IU
+      </div>
+    {{/if}}
+
+    {{#if facultyInfo.department}}
+      <div class="dept-title">{{facultyInfo.department}}</div>
+    {{/if}}
+    {{#if facultyInfo.facultySchool}}
+      <div class="school-title">{{facultyInfo.facultySchool}}</div>
+    {{/if}}
+    <div class="term-title">{{academicTerm}} Class Schedule and Counseling Hours</div>
+  </div>
+
+  <!-- Faculty Info Bar -->
+  <div class="faculty-bar">
+    <div>Name: {{facultyInfo.facultyName}}</div>
+    <div>Designation: {{facultyInfo.designation}}</div>
+  </div>
+
+  <!-- Schedule Table -->
+  <table class="schedule-table">
+    <thead>
+      <tr>
+        <th class="day-col-header">Days</th>
+        {{#each timeSlots}}
+          <th>
+            {{#if label}}{{label}}<br>{{/if}}
+            {{startTime}}-{{endTime}}
+          </th>
+        {{/each}}
+      </tr>
+    </thead>
+    <tbody>
+      {{#each processedDays}}
+        <tr>
+          <td class="day-label">{{dayLabel}}</td>
+          {{#if isOffDay}}
+            <td colspan="{{../slotCount}}" class="offday-cell">OFF DAY</td>
+          {{else}}
+            {{#each cells}}
+              {{#if isActivity}}
+                <td colspan="{{colspan}}" class="activity-cell">
+                  <div class="act-title">{{title}}</div>
+                  {{#if venue}}
+                    <div class="act-venue">({{venue}})</div>
+                  {{/if}}
+                </td>
+              {{else}}
+                <td class="empty-cell"></td>
+              {{/if}}
+            {{/each}}
+          {{/if}}
+        </tr>
+      {{/each}}
+    </tbody>
+  </table>
+
+</body>
+</html>

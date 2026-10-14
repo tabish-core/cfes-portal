@@ -220,18 +220,18 @@ const CourseReviewReportTheoryPage = ({ courseId }) => {
   };
 
   return (
-    <div className="course-review-report" style={{ 
-      maxWidth: '1000px', 
-      margin: '2rem auto', 
-      padding: '3rem', 
-      backgroundColor: '#ffffff', 
-      borderRadius: '0', 
+    <div className="course-review-report" style={{
+      maxWidth: '1000px',
+      margin: '2rem auto',
+      padding: '3rem',
+      backgroundColor: '#ffffff',
+      borderRadius: '0',
       boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
       border: '1px solid #e2e8f0'
     }}>
-      <h2 style={{ 
-        textAlign: 'center', 
-        marginBottom: '2rem', 
+      <h2 style={{
+        textAlign: 'center',
+        marginBottom: '2rem',
         color: '#1e293b',
         fontSize: '1.2rem',
         fontWeight: 'bold',

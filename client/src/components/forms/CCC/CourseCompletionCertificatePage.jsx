@@ -160,18 +160,11 @@ const CourseCompletionCertificatePage = ({ courseId }) => {
   const hasError = (key) => validationErrors.some(e => e.field === key);
 
   return (
-    <div className="course-completion-certificate" style={{
-      maxWidth: '900px',
-      margin: '2rem auto',
-      padding: '3rem',
-      backgroundColor: '#ffffff',
-      borderRadius: '12px',
-      boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
-      border: '1px solid #e2e8f0'
-    }}>
+    <div className="course-completion-certificate" style={{ width: '100%', boxSizing: 'border-box' }}>
       <h2 style={{
         textAlign: 'center',
-        marginBottom: '3rem',
+        marginBottom: '2rem',
+        marginTop: 0,
         color: '#0f172a',
         fontSize: '1.8rem',
         fontWeight: '700',
@@ -409,7 +402,7 @@ const CourseCompletionCertificatePage = ({ courseId }) => {
         </div>
 
         {/* Action Buttons */}
-        <div style={{ marginTop: '3rem', display: 'flex', justifyContent: 'flex-end', gap: '1rem', borderTop: '1px solid #e2e8f0', paddingTop: '2rem' }}>
+        <div style={{ marginTop: '3rem', display: 'flex', justifyContent: 'flex-end', gap: '1rem', borderTop: '1px solid #e2e8f0', paddingTop: '2rem', flexWrap: 'wrap' }}>
 
           <button
             type="button"

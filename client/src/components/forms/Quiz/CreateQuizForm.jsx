@@ -355,7 +355,7 @@ const CreateQuizForm = ({ courseId, quizId, onBack }) => {
         </button>
 
         {/* Actions */}
-        <div style={{ marginTop: '3rem', display: 'flex', justifyContent: 'flex-end', gap: '1rem', borderTop: '1px solid #e2e8f0', paddingTop: '2rem' }}>
+        <div style={{ marginTop: '3rem', display: 'flex', justifyContent: 'flex-end', gap: '1rem', borderTop: '1px solid #e2e8f0', paddingTop: '2rem', flexWrap: 'wrap' }}>
           <button type="button" style={backBtnStyle} onClick={onBack} disabled={loading}>
             Back to Quiz List
           </button>
