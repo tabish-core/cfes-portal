@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../../api/axios';
 import useToast from '../../../hooks/useToast';
+import AIQuestionGenerator from '../../common/AIQuestionGenerator';
 
 const CreateQuizForm = ({ courseId, quizId, onBack }) => {
   const toast = useToast();
@@ -321,6 +322,15 @@ const CreateQuizForm = ({ courseId, quizId, onBack }) => {
                 </button>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <AIQuestionGenerator
+                  context="quiz"
+                  placeholder="e.g., Generate a question related to the brute force algorithm."
+                  onAddQuestion={(generatedText) => {
+                    const newQuestions = [...questions];
+                    newQuestions[index].text = generatedText;
+                    setQuestions(newQuestions);
+                  }}
+                />
                 <div>
                   <label style={labelStyle}>Question Text</label>
                   <textarea 

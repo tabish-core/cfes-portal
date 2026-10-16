@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../../api/axios';
 import useToast from '../../../hooks/useToast';
+import AIQuestionGenerator from '../../common/AIQuestionGenerator';
 
 const CreateAssignmentForm = ({ courseId, assignmentId, onBack }) => {
   const toast = useToast();
@@ -341,10 +342,28 @@ const CreateAssignmentForm = ({ courseId, assignmentId, onBack }) => {
 
         {/* Tasks To Complete */}
         <h3 style={sectionHeaderStyle}>Tasks To Complete</h3>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           {tasks.map((task, index) => (
-            <div key={task.id} style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
-              <div style={{ flex: 1 }}>
+            <div key={task.id} style={{ padding: '1.25rem', backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                <span style={{ fontWeight: '700', color: '#1e293b' }}>Task {index + 1}</span>
+                <button type="button" style={dangerBtnStyle} onClick={() => {
+                  if (tasks.length > 1) setTasks(tasks.filter(t => t.id !== task.id));
+                }} disabled={tasks.length === 1}>
+                  Delete Task
+                </button>
+              </div>
+              <AIQuestionGenerator
+                context="assignment"
+                placeholder="e.g., Generate a question or task related to the brute force algorithm."
+                onAddQuestion={(generatedText) => {
+                  const newArr = [...tasks];
+                  newArr[index].text = generatedText;
+                  setTasks(newArr);
+                }}
+              />
+              <div style={{ marginTop: '0.75rem' }}>
+                <label style={labelStyle}>Question / Task Text</label>
                 <textarea 
                   style={{...inputStyle, minHeight: '60px', resize: 'vertical'}} 
                   value={task.text} 
@@ -356,11 +375,6 @@ const CreateAssignmentForm = ({ courseId, assignmentId, onBack }) => {
                   placeholder={`Task ${index + 1}`}
                 />
               </div>
-              <button type="button" style={dangerBtnStyle} onClick={() => {
-                if (tasks.length > 1) setTasks(tasks.filter(t => t.id !== task.id));
-              }} disabled={tasks.length === 1}>
-                Delete
-              </button>
             </div>
           ))}
         </div>

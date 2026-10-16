@@ -8,6 +8,7 @@
     "dev": "nodemon server.js"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@sparticuz/chromium": "^131.0.0",
     "bcryptjs": "^2.4.3",
     "cheerio": "^1.2.0",
