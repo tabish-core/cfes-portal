@@ -1,0 +1,663 @@
+/* ── OBE Student Import Modal — Streamlined & Uncluttered ──── */
+
+.obe-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1050;
+  padding: 1rem;
+}
+
+.obe-modal-container {
+  background: #ffffff;
+  border-radius: 10px;
+  width: 100%;
+  max-width: 620px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 16px 32px -4px rgba(0, 0, 0, 0.12), 0 4px 8px -2px rgba(0, 0, 0, 0.04);
+  border: 1px solid #e2e8f0;
+  overflow: hidden;
+  animation: obeModalIn 0.16s ease-out;
+}
+
+@keyframes obeModalIn {
+  from {
+    opacity: 0;
+    transform: scale(0.98) translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Modal Header */
+.obe-modal-header {
+  padding: 0.9rem 1.25rem;
+  background-color: #ffffff;
+  border-bottom: 1px solid #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.obe-modal-header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+}
+
+.obe-modal-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.obe-template-link {
+  background: transparent;
+  border: none;
+  color: #2563eb;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+}
+
+.obe-template-link:hover {
+  background-color: #eff6ff;
+  color: #1d4ed8;
+}
+
+.obe-modal-close-btn {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 0.3rem;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.obe-modal-close-btn:hover:not(:disabled) {
+  background: #f1f5f9;
+  color: #334155;
+}
+
+/* Modal Body */
+.obe-modal-body {
+  padding: 1rem 1.25rem;
+  overflow-y: auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+/* Upload Dropzone */
+.obe-upload-dropzone {
+  border: 1.5px dashed #cbd5e1;
+  border-radius: 8px;
+  padding: 2.2rem 1rem;
+  text-align: center;
+  background-color: #f8fafc;
+  cursor: pointer;
+  transition: all 0.16s ease;
+}
+
+.obe-upload-dropzone:hover {
+  border-color: #3b82f6;
+  background-color: #eff6ff;
+}
+
+.obe-dropzone-icon {
+  width: 40px;
+  height: 40px;
+  margin: 0 auto 0.6rem auto;
+  border-radius: 50%;
+  background: #eff6ff;
+  color: #2563eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.obe-dropzone-primary-text {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 0.25rem;
+}
+
+.obe-dropzone-sub-text {
+  font-size: 0.78rem;
+  color: #64748b;
+  line-height: 1.35;
+}
+
+/* Selected File Bar */
+.obe-file-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.75rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+}
+
+.obe-file-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+  color: #2563eb;
+}
+
+.obe-file-name {
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: #0f172a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.obe-file-size {
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.obe-change-file-btn {
+  background: transparent;
+  border: none;
+  color: #64748b;
+  font-size: 0.78rem;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+}
+
+.obe-change-file-btn:hover {
+  color: #0f172a;
+  background: #e2e8f0;
+}
+
+/* Alert Simple */
+.obe-alert-simple {
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.obe-alert-simple.error {
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+}
+
+/* ── Mode Segmented Control ──────────────────────────── */
+.obe-mode-segmented-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.obe-mode-segmented {
+  display: flex;
+  background: #f1f5f9;
+  border-radius: 6px;
+  padding: 2px;
+  gap: 2px;
+}
+
+.obe-segmented-btn {
+  flex: 1;
+  background: transparent;
+  border: none;
+  padding: 0.4rem 0.75rem;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: #64748b;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: center;
+}
+
+.obe-segmented-btn.active {
+  background: #ffffff;
+  color: #1d4ed8;
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.obe-segmented-btn.active.replace {
+  color: #1d4ed8;
+}
+
+.obe-mode-caption {
+  font-size: 0.76rem;
+  color: #64748b;
+  padding-left: 2px;
+}
+
+/* Replace Mode Inline Bar */
+.obe-replace-inline-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.5rem 0.65rem;
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+}
+
+.obe-replace-counts {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.count-tag {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.1rem 0.45rem;
+  border-radius: 4px;
+}
+
+.count-tag.add {
+  background: #dcfce7;
+  color: #15803d;
+}
+.count-tag.retain {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+.count-tag.remove {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.obe-text-link {
+  background: transparent;
+  border: none;
+  color: #2563eb;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+}
+
+.obe-replace-checkbox-inline {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.78rem;
+  color: #334155;
+  font-weight: 500;
+  cursor: pointer;
+  margin-left: auto;
+}
+
+.obe-replace-checkbox-inline input {
+  cursor: pointer;
+  margin: 0;
+}
+
+/* ── Preview Table Section ───────────────────────────── */
+.obe-preview-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.obe-table-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.obe-table-filter-links {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.obe-link-tab {
+  background: transparent;
+  border: none;
+  font-size: 0.78rem;
+  color: #64748b;
+  cursor: pointer;
+  padding: 0;
+  font-weight: 500;
+}
+
+.obe-link-tab:hover {
+  color: #0f172a;
+}
+
+.obe-link-tab.active {
+  color: #2563eb;
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+.obe-link-tab.issues {
+  color: #b91c1c;
+}
+
+.obe-table-summary-text {
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.obe-table-scroll {
+  max-height: 190px;
+  overflow-y: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+}
+
+.obe-preview-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+  text-align: left;
+}
+
+.obe-preview-table th {
+  background: #f8fafc;
+  padding: 0.4rem 0.65rem;
+  font-weight: 600;
+  font-size: 0.72rem;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  border-bottom: 1px solid #e2e8f0;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.obe-preview-table td {
+  padding: 0.38rem 0.65rem;
+  border-bottom: 1px solid #f1f5f9;
+  vertical-align: middle;
+}
+
+.obe-preview-table tr.row-invalid {
+  background-color: #fff8f8;
+}
+
+.obe-reg-code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.78rem;
+  color: #1e293b;
+  font-weight: 600;
+  background-color: #f1f5f9;
+  padding: 0.1rem 0.35rem;
+  border-radius: 3px;
+}
+
+.obe-missing-text {
+  color: #dc2626;
+  font-style: italic;
+  font-size: 0.75rem;
+}
+
+.obe-badge-valid {
+  display: inline-block;
+  color: #166534;
+  font-weight: 600;
+  font-size: 0.75rem;
+}
+
+.obe-badge-invalid {
+  display: inline-block;
+  color: #991b1b;
+  font-size: 0.72rem;
+  font-weight: 500;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Streamlined Confirmation View ──────────────────── */
+.obe-confirm-clean {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 0.5rem 0;
+}
+
+.obe-confirm-status {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.obe-confirm-check {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: #16a34a;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.obe-confirm-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.obe-confirm-desc {
+  margin: 0.15rem 0 0 0;
+  font-size: 0.8rem;
+  color: #475569;
+  line-height: 1.35;
+}
+
+/* Minimalist borderless metric row */
+.obe-confirm-metrics {
+  display: flex;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.metric-item {
+  flex: 1;
+  padding: 0.65rem 0.5rem;
+  text-align: center;
+  border-right: 1px solid #e2e8f0;
+}
+
+.metric-item:last-child {
+  border-right: none;
+}
+
+.metric-val {
+  display: block;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.1;
+}
+
+.metric-lbl {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+
+.metric-added .metric-val {
+  color: #16a34a;
+}
+
+.metric-retained .metric-val {
+  color: #2563eb;
+}
+
+.metric-excluded .metric-val {
+  color: #d97706;
+}
+
+.metric-invalid .metric-val {
+  color: #dc2626;
+}
+
+/* Breakdown simple scroll */
+.obe-confirm-breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.breakdown-title {
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: #475569;
+}
+
+.breakdown-scroll {
+  max-height: 100px;
+  overflow-y: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 5px;
+  background: #ffffff;
+  padding: 0.3rem 0.5rem;
+}
+
+.breakdown-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.2rem 0;
+  font-size: 0.78rem;
+  border-bottom: 1px solid #f8fafc;
+}
+
+.breakdown-row:last-child {
+  border-bottom: none;
+}
+
+.breakdown-name {
+  color: #334155;
+}
+
+/* Modal Footer */
+.obe-modal-footer {
+  padding: 0.75rem 1.25rem;
+  border-top: 1px solid #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  background-color: #ffffff;
+}
+
+.obe-footer-flex {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.obe-btn-secondary {
+  background: #ffffff;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+  padding: 0.42rem 0.9rem;
+  border-radius: 6px;
+  font-weight: 500;
+  font-size: 0.835rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.obe-btn-secondary:hover:not(:disabled) {
+  background: #f8fafc;
+  color: #1e293b;
+}
+
+.obe-btn-primary {
+  background: #2563eb;
+  color: #ffffff;
+  border: none;
+  padding: 0.42rem 1.15rem;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.835rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.obe-btn-primary:hover:not(:disabled) {
+  background: #1d4ed8;
+}
+
+.obe-btn-warning {
+  background-color: #2563eb;
+  color: #ffffff;
+  border: none;
+  padding: 0.42rem 1.15rem;
+  border-radius: 6px;
+  font-size: 0.835rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.obe-btn-warning:hover:not(:disabled) {
+  background-color: #1d4ed8;
+}
+
+.obe-btn-primary:disabled,
+.obe-btn-secondary:disabled,
+.obe-btn-warning:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.obe-spinner {
+  width: 12px;
+  height: 12px;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: obeSpin 0.7s linear infinite;
+  display: inline-block;
+  vertical-align: middle;
+  margin-right: 4px;
+}

@@ -1,7 +1,7 @@
 const express = require('express');
 const { 
   getConfig, updateConfig, 
-  getStudents, createStudent, updateStudent, deleteStudent,
+  getStudents, createStudent, updateStudent, deleteStudent, importStudents,
   getAssessments, createAssessment, updateAssessment, deleteAssessment,
   addComponent, updateComponent, deleteComponent,
   getMarks, saveMarksBulk, getResults, exportOBEExcel, syncFromCIS
@@ -23,6 +23,8 @@ router.route('/:courseId/config')
 router.route('/:courseId/students')
   .get(getStudents)
   .post(createStudent);
+
+router.post('/:courseId/students/import', importStudents);
 
 router.route('/:courseId/students/:studentId')
   .put(updateStudent)

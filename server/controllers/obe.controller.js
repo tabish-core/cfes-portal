@@ -296,6 +296,260 @@ exports.deleteStudent = asyncHandler(async (req, res, next) => {
   });
 });
 
+/**
+ * @desc    Bulk import students from Excel data
+ * @route   POST /api/obe/:courseId/students/import
+ */
+exports.importStudents = asyncHandler(async (req, res, next) => {
+  const { courseId } = req.params;
+  const facultyId = req.user._id;
+  const { students, mode = 'append' } = req.body;
+
+  if (!(await checkCourseAuth(req.user, courseId))) {
+    return next(new ErrorResponse('Not authorized to modify this course', 403));
+  }
+
+  if (!Array.isArray(students)) {
+    return next(new ErrorResponse('Invalid payload: students array is required.', 400));
+  }
+
+  if (!['append', 'replace'].includes(mode)) {
+    return next(new ErrorResponse('Invalid import mode: must be "append" or "replace".', 400));
+  }
+
+  if (students.length === 0) {
+    return res.status(200).json({
+      success: true,
+      data: {
+        totalProcessed: 0,
+        importedCount: 0,
+        skippedCount: 0,
+        invalidCount: 0,
+        imported: [],
+        skipped: [],
+        invalid: []
+      }
+    });
+  }
+
+  // Pre-fetch all students for this course and faculty (active and inactive)
+  const existingStudents = await OBEStudent.find({ course: courseId, faculty: facultyId });
+  const existingMap = new Map();
+  for (const s of existingStudents) {
+    existingMap.set(s.registrationNo.trim().toUpperCase(), s);
+  }
+
+  const seenInBatch = new Set();
+  const validBatchItems = [];
+  const invalid = [];
+
+  for (let i = 0; i < students.length; i++) {
+    const item = students[i];
+    const rawReg = item?.registrationNo;
+    const rawName = item?.studentName;
+
+    const registrationNo = typeof rawReg === 'string' ? rawReg.trim() : (rawReg !== null && rawReg !== undefined ? String(rawReg).trim() : '');
+    const studentName = typeof rawName === 'string' ? rawName.trim() : (rawName !== null && rawName !== undefined ? String(rawName).trim() : '');
+
+    if (!registrationNo || !studentName) {
+      invalid.push({
+        row: i + 1,
+        registrationNo: registrationNo || (rawReg !== null && rawReg !== undefined ? String(rawReg) : ''),
+        studentName: studentName || (rawName !== null && rawName !== undefined ? String(rawName) : ''),
+        reason: !registrationNo && !studentName
+          ? 'Missing registration number and student name'
+          : !registrationNo
+          ? 'Missing registration number'
+          : 'Missing student name'
+      });
+      continue;
+    }
+
+    const normReg = registrationNo.toUpperCase();
+
+    // Check duplicate in the batch
+    if (seenInBatch.has(normReg)) {
+      invalid.push({
+        row: i + 1,
+        registrationNo,
+        studentName,
+        reason: 'Duplicate registration number in upload file'
+      });
+      continue;
+    }
+    seenInBatch.add(normReg);
+
+    validBatchItems.push({
+      row: i + 1,
+      registrationNo,
+      studentName,
+      normReg
+    });
+  }
+
+  // Replace mode constraint: Cannot proceed if there are invalid rows or duplicates
+  if (mode === 'replace' && invalid.length > 0) {
+    return next(new ErrorResponse(
+      `Cannot proceed with Replace mode: spreadsheet contains ${invalid.length} invalid record(s) or duplicate registration number(s). Please fix validation issues before replacing the roster, or switch to Append mode.`,
+      400
+    ));
+  }
+
+  // Mode: REPLACE
+  if (mode === 'replace') {
+    const added = [];
+    const retained = [];
+    const removed = [];
+    const studentsToInsert = [];
+    const uploadedNormRegs = new Set(validBatchItems.map(item => item.normReg));
+
+    for (const item of validBatchItems) {
+      const existing = existingMap.get(item.normReg);
+      if (existing) {
+        if (existing.active) {
+          // Retained without silently overwriting existing name or marks
+          retained.push({
+            _id: existing._id,
+            registrationNo: existing.registrationNo,
+            studentName: existing.studentName
+          });
+        } else {
+          // Reactivate soft-deleted student
+          existing.active = true;
+          existing.studentName = item.studentName;
+          await existing.save();
+          added.push({
+            _id: existing._id,
+            registrationNo: existing.registrationNo,
+            studentName: existing.studentName,
+            reactivated: true
+          });
+        }
+        continue;
+      }
+
+      studentsToInsert.push({
+        course: courseId,
+        faculty: facultyId,
+        registrationNo: item.registrationNo,
+        studentName: item.studentName,
+        active: true
+      });
+    }
+
+    if (studentsToInsert.length > 0) {
+      const created = await OBEStudent.insertMany(studentsToInsert);
+      for (const s of created) {
+        added.push({
+          _id: s._id,
+          registrationNo: s.registrationNo,
+          studentName: s.studentName
+        });
+      }
+    }
+
+    // Soft-delete active students who are not in the uploaded file
+    for (const s of existingStudents) {
+      if (s.active && !uploadedNormRegs.has(s.registrationNo.trim().toUpperCase())) {
+        s.active = false;
+        await s.save();
+        removed.push({
+          _id: s._id,
+          registrationNo: s.registrationNo,
+          studentName: s.studentName,
+          reason: 'Excluded from active roster (historical marks preserved)'
+        });
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        mode: 'replace',
+        totalProcessed: students.length,
+        addedCount: added.length,
+        retainedCount: retained.length,
+        removedCount: removed.length,
+        importedCount: added.length,
+        skippedCount: retained.length,
+        invalidCount: invalid.length,
+        added,
+        retained,
+        removed,
+        imported: added,
+        skipped: retained,
+        invalid
+      }
+    });
+  }
+
+  // Mode: APPEND (default)
+  const imported = [];
+  const skipped = [];
+  const studentsToInsert = [];
+
+  for (const item of validBatchItems) {
+    const existing = existingMap.get(item.normReg);
+    if (existing) {
+      if (existing.active) {
+        // Report existing record without overwriting student name or marks
+        skipped.push({
+          row: item.row,
+          registrationNo: existing.registrationNo,
+          studentName: existing.studentName,
+          reason: 'Already exists in course'
+        });
+      } else {
+        // Reactivate soft-deleted student without altering marks
+        existing.active = true;
+        existing.studentName = item.studentName;
+        await existing.save();
+        imported.push({
+          _id: existing._id,
+          registrationNo: existing.registrationNo,
+          studentName: existing.studentName,
+          reactivated: true
+        });
+      }
+      continue;
+    }
+
+    studentsToInsert.push({
+      course: courseId,
+      faculty: facultyId,
+      registrationNo: item.registrationNo,
+      studentName: item.studentName,
+      active: true
+    });
+  }
+
+  if (studentsToInsert.length > 0) {
+    const created = await OBEStudent.insertMany(studentsToInsert);
+    for (const s of created) {
+      imported.push({
+        _id: s._id,
+        registrationNo: s.registrationNo,
+        studentName: s.studentName
+      });
+    }
+  }
+
+  res.status(200).json({
+    success: true,
+    data: {
+      mode: 'append',
+      totalProcessed: students.length,
+      importedCount: imported.length,
+      skippedCount: skipped.length,
+      invalidCount: invalid.length,
+      imported,
+      skipped,
+      invalid
+    }
+  });
+});
+
+
 /* =========================================================
    ASSESSMENT STRUCTURE ENDPOINTS
 ========================================================= */

@@ -1,0 +1,416 @@
+/* ── OBE Marks Entry Layout ────────────────────────────── */
+
+.obe-marks-wrapper {
+  background: #ffffff;
+  border-radius: 10px;
+  padding: 1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.obe-marks-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.obe-marks-nav-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  background: #f8fafc;
+  padding: 0.45rem 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 0.8rem;
+}
+
+.obe-marks-jump-group {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.obe-marks-jump-label {
+  color: #64748b;
+  font-weight: 600;
+  margin-right: 0.25rem;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.obe-jump-pill {
+  background: #ffffff;
+  color: #334155;
+  border: 1px solid #cbd5e1;
+  padding: 0.25rem 0.65rem;
+  border-radius: 4px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.obe-jump-pill:hover {
+  background: #eff6ff;
+  border-color: #93c5fd;
+  color: #1d4ed8;
+}
+
+.obe-jump-pill:active {
+  background: #dbeafe;
+  transform: translateY(1px);
+}
+
+.obe-marks-counter {
+  color: #64748b;
+  font-size: 0.78rem;
+  font-weight: 500;
+}
+
+/* Synchronized Top Scrollbar */
+.obe-top-scrollbar-track {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  height: 9px;
+  background: #f1f5f9;
+  border-radius: 4px;
+  border: 1px solid #e2e8f0;
+  margin-bottom: 2px;
+}
+
+.obe-top-scrollbar-thumb {
+  height: 1px;
+}
+
+/* Main Table Viewport */
+.obe-marks-table-viewport {
+  width: 100%;
+  max-height: calc(100vh - 275px);
+  min-height: 400px;
+  overflow: auto;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #ffffff;
+  position: relative;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+/* Custom modern scrollbar for marks table */
+.obe-marks-table-viewport::-webkit-scrollbar,
+.obe-top-scrollbar-track::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+
+.obe-marks-table-viewport::-webkit-scrollbar-track,
+.obe-top-scrollbar-track::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+.obe-marks-table-viewport::-webkit-scrollbar-thumb,
+.obe-top-scrollbar-track::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+.obe-marks-table-viewport::-webkit-scrollbar-thumb:hover,
+.obe-top-scrollbar-track::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* The Table */
+.obe-marks-table {
+  width: max-content;
+  min-width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.85rem;
+  text-align: left;
+}
+
+/* Sticky Table Headers */
+.obe-marks-table thead tr:first-child th {
+  position: sticky;
+  top: 0;
+  z-index: 15;
+  background-color: #f1f5f9 !important;
+  border-bottom: 1px solid #cbd5e1;
+  height: 34px;
+  line-height: 34px;
+  padding: 0 0.5rem;
+  box-sizing: border-box;
+  white-space: nowrap;
+}
+
+.obe-marks-table thead tr:nth-child(2) th {
+  position: sticky;
+  top: 34px;
+  z-index: 10;
+  background-color: #f8fafc !important;
+  border-bottom: 2px solid #cbd5e1;
+  height: 44px;
+  box-sizing: border-box;
+}
+
+/* Row 1 Sticky Top-Left Corner Header (Student Information spanning 3 columns) */
+.obe-marks-table thead tr:first-child th.col-sticky-student-header {
+  position: sticky;
+  top: 0;
+  left: 0;
+  z-index: 50 !important;
+  width: 334px;
+  min-width: 334px;
+  max-width: 334px;
+  background-color: #f1f5f9 !important;
+  border-right: 2px solid #cbd5e1;
+  border-bottom: 1px solid #cbd5e1;
+  padding: 0 0.75rem;
+  font-weight: 700;
+  font-size: 0.8rem;
+  color: #334155;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  box-sizing: border-box;
+}
+
+/* Category header cells in Row 1 */
+.obe-marks-table thead tr:first-child th.obe-category-header {
+  position: sticky;
+  top: 0;
+  z-index: 15;
+  padding: 0 0.5rem;
+  text-align: center;
+  letter-spacing: 0.05em;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #334155;
+  border-right: 2px solid #cbd5e1;
+  border-bottom: 1px solid #cbd5e1;
+  background-color: #f1f5f9 !important;
+  white-space: nowrap;
+  box-sizing: border-box;
+}
+
+/* Row 2 Sticky Top-Left Headers: S/No, Reg No, Student Name */
+.obe-marks-table thead tr:nth-child(2) th.col-sticky-sno {
+  position: sticky;
+  top: 34px;
+  left: 0;
+  z-index: 45 !important;
+  width: 44px;
+  min-width: 44px;
+  max-width: 44px;
+  background-color: #f8fafc !important;
+  border-right: 1px solid #e2e8f0;
+  border-bottom: 2px solid #cbd5e1;
+  text-align: center;
+  padding: 0.4rem 0.25rem;
+  font-weight: 700;
+  color: #334155;
+  box-sizing: border-box;
+}
+
+.obe-marks-table thead tr:nth-child(2) th.col-sticky-reg {
+  position: sticky;
+  top: 34px;
+  left: 44px;
+  z-index: 45 !important;
+  width: 125px;
+  min-width: 125px;
+  max-width: 125px;
+  background-color: #f8fafc !important;
+  border-right: 1px solid #e2e8f0;
+  border-bottom: 2px solid #cbd5e1;
+  padding: 0.4rem 0.5rem;
+  font-weight: 700;
+  color: #334155;
+  box-sizing: border-box;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.obe-marks-table thead tr:nth-child(2) th.col-sticky-name {
+  position: sticky;
+  top: 34px;
+  left: 169px;
+  z-index: 45 !important;
+  width: 165px;
+  min-width: 165px;
+  max-width: 165px;
+  background-color: #f8fafc !important;
+  border-right: 2px solid #cbd5e1;
+  border-bottom: 2px solid #cbd5e1;
+  padding: 0.4rem 0.5rem;
+  font-weight: 700;
+  color: #334155;
+  box-shadow: 3px 0 5px -2px rgba(0, 0, 0, 0.08);
+  box-sizing: border-box;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Component header cells in Row 2 (Q1, A1, M1, F1...) */
+.obe-marks-table thead tr:nth-child(2) th.obe-component-header {
+  position: sticky;
+  top: 34px;
+  z-index: 10;
+  padding: 0.35rem 0.25rem;
+  text-align: center;
+  width: 68px;
+  min-width: 68px;
+  max-width: 72px;
+  border-right: 1px solid #e2e8f0;
+  border-bottom: 2px solid #cbd5e1;
+  background-color: #f8fafc !important;
+  box-sizing: border-box;
+}
+
+.obe-marks-table thead tr:nth-child(2) th.obe-component-header.category-divider {
+  border-right: 2px solid #cbd5e1;
+}
+
+.obe-comp-title {
+  font-weight: 700;
+  font-size: 0.825rem;
+  color: #1e293b;
+  line-height: 1.2;
+}
+
+.obe-comp-max {
+  font-size: 0.72rem;
+  color: #64748b;
+  font-weight: 500;
+  margin-top: 2px;
+}
+
+/* Table Body Rows */
+.obe-marks-row {
+  --row-bg: #ffffff;
+  background-color: var(--row-bg);
+}
+
+.obe-marks-row.row-alt {
+  --row-bg: #fcfcfd;
+  background-color: var(--row-bg);
+}
+
+.obe-marks-row:hover {
+  --row-bg: #f1f5f9;
+}
+
+/* Sticky Student Body Columns */
+.obe-marks-table tbody td.col-sticky-sno {
+  position: sticky;
+  left: 0;
+  z-index: 20;
+  width: 44px;
+  min-width: 44px;
+  max-width: 44px;
+  background-color: var(--row-bg, #ffffff) !important;
+  border-right: 1px solid #e2e8f0;
+  border-bottom: 1px solid #e2e8f0;
+  text-align: center;
+  color: #64748b;
+  padding: 0.35rem 0.25rem;
+  box-sizing: border-box;
+}
+
+.obe-marks-table tbody td.col-sticky-reg {
+  position: sticky;
+  left: 44px;
+  z-index: 20;
+  width: 125px;
+  min-width: 125px;
+  max-width: 125px;
+  background-color: var(--row-bg, #ffffff) !important;
+  border-right: 1px solid #e2e8f0;
+  border-bottom: 1px solid #e2e8f0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #0f172a;
+  padding: 0.35rem 0.5rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-sizing: border-box;
+}
+
+.obe-marks-table tbody td.col-sticky-name {
+  position: sticky;
+  left: 169px;
+  z-index: 20;
+  width: 165px;
+  min-width: 165px;
+  max-width: 165px;
+  background-color: var(--row-bg, #ffffff) !important;
+  border-right: 2px solid #cbd5e1;
+  border-bottom: 1px solid #e2e8f0;
+  font-size: 0.825rem;
+  color: #1e293b;
+  padding: 0.35rem 0.5rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-shadow: 3px 0 5px -2px rgba(0, 0, 0, 0.08);
+  box-sizing: border-box;
+}
+
+/* Marks Input Cell */
+.obe-mark-cell {
+  width: 68px;
+  min-width: 68px;
+  max-width: 72px;
+  padding: 0.25rem 0.2rem;
+  border-right: 1px solid #e2e8f0;
+  border-bottom: 1px solid #e2e8f0;
+  text-align: center;
+  box-sizing: border-box;
+  background-color: var(--row-bg);
+}
+
+.obe-mark-cell.category-divider {
+  border-right: 2px solid #cbd5e1;
+}
+
+.obe-mark-input {
+  width: 46px;
+  height: 28px;
+  padding: 0.2rem;
+  text-align: center;
+  font-size: 0.825rem;
+  font-weight: 500;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  background-color: #ffffff;
+  color: #0f172a;
+  outline: none;
+  transition: all 0.12s ease;
+  box-sizing: border-box;
+}
+
+.obe-mark-input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.18);
+}
+
+.obe-mark-input.input-error {
+  border-color: #ef4444;
+  background-color: #fef2f2;
+  color: #b91c1c;
+}

@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import api from '../../api/axios';
 import useToast from '../../hooks/useToast';
+import OBEStudentImportModal from '../../components/obe/OBEStudentImportModal';
 import '../dean/Dashboard.css';
+import './OBEMarksTable.css';
 
 const WORKFLOW_STEPS = [
   { id: 'setup', label: '1. Course Setup' },
@@ -34,6 +36,7 @@ const OBEWorkspace = () => {
   // --- Students State ---
   const [students, setStudents] = useState([]);
   const [studentForm, setStudentForm] = useState({ registrationNo: '', studentName: '' });
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
   // --- Assessments State ---
   const [assessments, setAssessments] = useState([]);
@@ -43,6 +46,12 @@ const OBEWorkspace = () => {
   // --- Marks Entry State ---
   const [marksData, setMarksData] = useState({}); // Keyed by studentId_componentId
   const [originalMarks, setOriginalMarks] = useState({});
+  const marksTableScrollRef = useRef(null);
+  const marksTopScrollRef = useRef(null);
+  const isSyncingFromTable = useRef(false);
+  const isSyncingFromTop = useRef(false);
+  const programmaticScrollTimerRef = useRef(null);
+  const [topScrollWidth, setTopScrollWidth] = useState(0);
 
   // --- Results State ---
   const [resultsData, setResultsData] = useState(null);
@@ -63,6 +72,81 @@ const OBEWorkspace = () => {
     }
     // eslint-disable-next-line
   }, [courseId, activeStep]);
+
+  // Synchronize top and bottom horizontal scrollbars for marks table
+  useEffect(() => {
+    if (activeStep !== 'marks') return;
+
+    const tableEl = marksTableScrollRef.current;
+    if (!tableEl) return;
+
+    const updateScrollWidth = () => {
+      if (marksTableScrollRef.current) {
+        setTopScrollWidth(marksTableScrollRef.current.scrollWidth);
+      }
+    };
+
+    updateScrollWidth();
+    const resizeObserver = new ResizeObserver(() => updateScrollWidth());
+    resizeObserver.observe(tableEl);
+
+    return () => {
+      resizeObserver.disconnect();
+      if (programmaticScrollTimerRef.current) {
+        clearTimeout(programmaticScrollTimerRef.current);
+      }
+    };
+  }, [activeStep, assessments, students]);
+
+  const handleTableScroll = (e) => {
+    if (isSyncingFromTop.current) return;
+    if (marksTopScrollRef.current) {
+      isSyncingFromTable.current = true;
+      marksTopScrollRef.current.scrollLeft = e.currentTarget.scrollLeft;
+      requestAnimationFrame(() => {
+        isSyncingFromTable.current = false;
+      });
+    }
+  };
+
+  const handleTopScroll = (e) => {
+    if (isSyncingFromTable.current) return;
+    if (marksTableScrollRef.current) {
+      isSyncingFromTop.current = true;
+      marksTableScrollRef.current.scrollLeft = e.currentTarget.scrollLeft;
+      requestAnimationFrame(() => {
+        isSyncingFromTop.current = false;
+      });
+    }
+  };
+
+  const handleScrollToCategory = (catId) => {
+    const tableEl = marksTableScrollRef.current;
+    if (!tableEl) return;
+    const targetEl = tableEl.querySelector(`[data-category-id="${catId}"]`);
+    if (targetEl) {
+      const stickyHeader = tableEl.querySelector('.col-sticky-student-header');
+      const stickyWidth = stickyHeader ? stickyHeader.offsetWidth : 334;
+      const targetScroll = Math.max(0, targetEl.offsetLeft - stickyWidth);
+
+      // Prevent bidirectional scroll events from cancelling the smooth animation
+      if (programmaticScrollTimerRef.current) {
+        clearTimeout(programmaticScrollTimerRef.current);
+      }
+      isSyncingFromTable.current = true;
+      isSyncingFromTop.current = true;
+
+      tableEl.scrollTo({ left: targetScroll, behavior: 'smooth' });
+      if (marksTopScrollRef.current) {
+        marksTopScrollRef.current.scrollTo({ left: targetScroll, behavior: 'smooth' });
+      }
+
+      programmaticScrollTimerRef.current = setTimeout(() => {
+        isSyncingFromTable.current = false;
+        isSyncingFromTop.current = false;
+      }, 700);
+    }
+  };
 
   // ==========================================
   // CONFIGURATION LOGIC
@@ -145,15 +229,15 @@ const OBEWorkspace = () => {
   // ==========================================
   // STUDENTS LOGIC
   // ==========================================
-  const fetchStudents = async () => {
+  const fetchStudents = async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       const { data } = await api.get(`/obe/${courseId}/students`);
       setStudents(data.data);
     } catch (err) {
       toast.error('Failed to load students.');
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
@@ -524,7 +608,28 @@ const OBEWorkspace = () => {
 
   const renderStudents = () => (
     <div style={{ padding: '1rem', backgroundColor: '#fff', borderRadius: '8px' }}>
-      <h3 className="dashboard-section-title">Student Roster</h3>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+        <h3 className="dashboard-section-title" style={{ margin: 0 }}>Student Roster</h3>
+        <button
+          type="button"
+          onClick={() => setIsImportModalOpen(true)}
+          className="btn-primary"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.45rem',
+            padding: '0.5rem 1rem',
+            fontSize: '0.85rem'
+          }}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="7 10 12 15 17 10" />
+            <line x1="12" y1="15" x2="12" y2="3" />
+          </svg>
+          Import from Excel
+        </button>
+      </div>
 
       <form onSubmit={handleAddStudent} style={{ display: 'flex', gap: '1rem', marginBottom: '2rem', background: '#f8fafc', padding: '1rem', borderRadius: '8px' }}>
         <input type="text" placeholder="Registration No" value={studentForm.registrationNo} onChange={e => setStudentForm({ ...studentForm, registrationNo: e.target.value })} style={{ flex: 1, padding: '0.6rem', borderRadius: '4px', border: '1px solid #cbd5e1' }} />
@@ -645,66 +750,187 @@ const OBEWorkspace = () => {
   };
 
   const renderMarksEntry = () => {
-    const categories = [{ id: 'quizzes', label: 'QUIZZES' }, { id: 'assignments', label: 'ASSIGNMENTS & CCP' }, { id: 'midTerm', label: 'MID TERM' }, { id: 'finalExam', label: 'FINAL EXAM' }];
+    const categories = [
+      { id: 'quizzes', label: 'QUIZZES' },
+      { id: 'assignments', label: 'ASSIGNMENTS & CCP' },
+      { id: 'midTerm', label: 'MID TERM' },
+      { id: 'finalExam', label: 'FINAL EXAM' }
+    ];
     const activeComponents = [];
     categories.forEach(cat => {
-      assessments.filter(a => a.category === cat.id).sort((a, b) => a.order - b.order).forEach(a => {
-        if (a.components) a.components.filter(c => c.active).forEach(c => activeComponents.push({ categoryId: cat.id, categoryLabel: cat.label, componentId: c._id, componentNumber: c.componentNumber, maxMarks: c.maxMarks }));
-      });
+      assessments
+        .filter(a => a.category === cat.id)
+        .sort((a, b) => a.order - b.order)
+        .forEach(a => {
+          if (a.components) {
+            a.components
+              .filter(c => c.active)
+              .forEach(c =>
+                activeComponents.push({
+                  categoryId: cat.id,
+                  categoryLabel: cat.label,
+                  componentId: c._id,
+                  componentNumber: c.componentNumber,
+                  maxMarks: c.maxMarks
+                })
+              );
+          }
+        });
     });
 
-    if (activeComponents.length === 0 || students.length === 0) return (<div style={{ padding: '2rem', textAlign: 'center', backgroundColor: '#fff', borderRadius: '8px' }}><p style={{ color: '#64748b' }}>Please define Assessment Components and Students first.</p></div>);
+    if (activeComponents.length === 0 || students.length === 0) {
+      return (
+        <div style={{ padding: '2rem', textAlign: 'center', backgroundColor: '#fff', borderRadius: '8px' }}>
+          <p style={{ color: '#64748b' }}>Please define Assessment Components and Students first.</p>
+        </div>
+      );
+    }
 
     const headers = [];
     let currentCat = null;
     let count = 0;
     activeComponents.forEach((comp, idx) => {
       if (comp.categoryId !== currentCat) {
-        if (currentCat !== null) headers.push({ label: categories.find(c => c.id === currentCat).label, span: count });
+        if (currentCat !== null) {
+          headers.push({
+            id: currentCat,
+            label: categories.find(c => c.id === currentCat).label,
+            span: count
+          });
+        }
         currentCat = comp.categoryId;
         count = 1;
-      } else count++;
-      if (idx === activeComponents.length - 1) headers.push({ label: categories.find(c => c.id === currentCat).label, span: count });
+      } else {
+        count++;
+      }
+      if (idx === activeComponents.length - 1) {
+        headers.push({
+          id: currentCat,
+          label: categories.find(c => c.id === currentCat).label,
+          span: count
+        });
+      }
     });
 
     return (
-      <div style={{ padding: '1rem', backgroundColor: '#fff', borderRadius: '8px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+      <div className="obe-marks-wrapper">
+        <div className="obe-marks-header-row">
           <h3 className="dashboard-section-title" style={{ margin: 0 }}>Marks Entry</h3>
-          <button onClick={handleSaveMarks} disabled={saving} className="btn-primary" style={{ padding: '0.6rem 1.5rem' }}>{saving ? 'Saving...' : 'Save Marks'}</button>
+          <button
+            onClick={handleSaveMarks}
+            disabled={saving}
+            className="btn-primary"
+            style={{ padding: '0.55rem 1.4rem', fontSize: '0.875rem' }}
+          >
+            {saving ? 'Saving...' : 'Save Marks'}
+          </button>
         </div>
-        <div style={{ overflowX: 'auto', border: '1px solid #e2e8f0', borderRadius: '8px' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '800px' }}>
+
+        {/* Navigation & Jump Bar */}
+        <div className="obe-marks-nav-bar">
+          <div className="obe-marks-jump-group">
+            <span className="obe-marks-jump-label">Jump to:</span>
+            {headers.map(h => (
+              <button
+                key={h.id}
+                type="button"
+                className="obe-jump-pill"
+                onClick={() => handleScrollToCategory(h.id)}
+                title={`Scroll to ${h.label}`}
+              >
+                {h.label} ({h.span})
+              </button>
+            ))}
+          </div>
+          <div className="obe-marks-counter">
+            <span><strong>{students.length}</strong> Students</span>
+            <span style={{ margin: '0 0.35rem' }}>&bull;</span>
+            <span><strong>{activeComponents.length}</strong> Components</span>
+          </div>
+        </div>
+
+        {/* Synchronized Top Horizontal Scrollbar */}
+        {topScrollWidth > 0 && (
+          <div
+            ref={marksTopScrollRef}
+            onScroll={handleTopScroll}
+            className="obe-top-scrollbar-track"
+            title="Horizontal scrollbar"
+          >
+            <div
+              className="obe-top-scrollbar-thumb"
+              style={{ width: `${topScrollWidth}px` }}
+            />
+          </div>
+        )}
+
+        {/* Table Viewport with Sticky Header & Sticky Student Identity Columns */}
+        <div
+          ref={marksTableScrollRef}
+          onScroll={handleTableScroll}
+          className="obe-marks-table-viewport"
+        >
+          <table className="obe-marks-table">
             <thead>
-              <tr style={{ background: '#f1f5f9', borderBottom: '1px solid #cbd5e1' }}>
-                <th colSpan="3" style={{ padding: '0.5rem', borderRight: '2px solid #cbd5e1' }}>Student Information</th>
-                {headers.map((h, i) => <th key={i} colSpan={h.span} style={{ padding: '0.5rem', textAlign: 'center', borderRight: '2px solid #cbd5e1', letterSpacing: '1px', fontSize: '0.85rem', color: '#475569' }}>{h.label}</th>)}
-              </tr>
-              <tr style={{ background: '#f8fafc', borderBottom: '2px solid #cbd5e1', fontSize: '0.9rem' }}>
-                <th style={{ padding: '0.75rem', textAlign: 'left', borderRight: '1px solid #e2e8f0' }}>S/No</th>
-                <th style={{ padding: '0.75rem', textAlign: 'left', borderRight: '1px solid #e2e8f0' }}>Reg No</th>
-                <th style={{ padding: '0.75rem', textAlign: 'left', borderRight: '2px solid #cbd5e1', minWidth: '150px' }}>Name</th>
-                {activeComponents.map((comp, i) => (
-                  <th key={comp.componentId} style={{ padding: '0.5rem', textAlign: 'center', borderRight: (i < activeComponents.length - 1 && activeComponents[i + 1].categoryId !== comp.categoryId) ? '2px solid #cbd5e1' : '1px solid #e2e8f0', minWidth: '60px' }}>
-                    <div>{comp.componentNumber}</div>
-                    <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 'normal' }}>/ {comp.maxMarks}</div>
+              <tr>
+                <th colSpan="3" className="col-sticky-student-header">Student Information</th>
+                {headers.map((h, i) => (
+                  <th
+                    key={i}
+                    data-category-id={h.id}
+                    colSpan={h.span}
+                    className="obe-category-header"
+                  >
+                    {h.label}
                   </th>
                 ))}
+              </tr>
+              <tr>
+                <th className="col-sticky-sno">S/No</th>
+                <th className="col-sticky-reg">Reg No</th>
+                <th className="col-sticky-name">Student Name</th>
+                {activeComponents.map((comp, i) => {
+                  const isCategoryEnd = i < activeComponents.length - 1 && activeComponents[i + 1].categoryId !== comp.categoryId;
+                  return (
+                    <th
+                      key={comp.componentId}
+                      className={`obe-component-header ${isCategoryEnd ? 'category-divider' : ''}`}
+                    >
+                      <div className="obe-comp-title">{comp.componentNumber}</div>
+                      <div className="obe-comp-max">/ {comp.maxMarks}</div>
+                    </th>
+                  );
+                })}
               </tr>
             </thead>
             <tbody>
               {students.map((student, sIdx) => (
-                <tr key={student._id} style={{ borderBottom: '1px solid #e2e8f0', background: sIdx % 2 === 0 ? '#fff' : '#fcfcfc' }}>
-                  <td style={{ padding: '0.5rem', borderRight: '1px solid #e2e8f0', color: '#64748b' }}>{sIdx + 1}</td>
-                  <td style={{ padding: '0.5rem', borderRight: '1px solid #e2e8f0', fontWeight: '500' }}>{student.registrationNo}</td>
-                  <td style={{ padding: '0.5rem', borderRight: '2px solid #cbd5e1' }}>{student.studentName}</td>
+                <tr
+                  key={student._id}
+                  className={`obe-marks-row ${sIdx % 2 === 1 ? 'row-alt' : ''}`}
+                >
+                  <td className="col-sticky-sno">{sIdx + 1}</td>
+                  <td className="col-sticky-reg">{student.registrationNo}</td>
+                  <td className="col-sticky-name" title={student.studentName}>
+                    {student.studentName}
+                  </td>
                   {activeComponents.map((comp, i) => {
                     const key = `${student._id}_${comp.componentId}`;
                     const val = marksData[key] !== undefined ? marksData[key] : '';
                     const isError = val !== '' && (isNaN(Number(val)) || Number(val) < 0 || Number(val) > comp.maxMarks);
+                    const isCategoryEnd = i < activeComponents.length - 1 && activeComponents[i + 1].categoryId !== comp.categoryId;
                     return (
-                      <td key={comp.componentId} style={{ padding: '0.25rem', borderRight: (i < activeComponents.length - 1 && activeComponents[i + 1].categoryId !== comp.categoryId) ? '2px solid #cbd5e1' : '1px solid #e2e8f0', textAlign: 'center' }}>
-                        <input type="text" value={val} onChange={e => handleMarkChange(student._id, comp.componentId, e.target.value)} style={{ width: '45px', padding: '0.25rem', textAlign: 'center', border: isError ? '2px solid #ef4444' : '1px solid #cbd5e1', borderRadius: '4px', background: isError ? '#fef2f2' : '#fff', outline: 'none' }} />
+                      <td
+                        key={comp.componentId}
+                        className={`obe-mark-cell ${isCategoryEnd ? 'category-divider' : ''}`}
+                      >
+                        <input
+                          type="text"
+                          value={val}
+                          onChange={e => handleMarkChange(student._id, comp.componentId, e.target.value)}
+                          className={`obe-mark-input ${isError ? 'input-error' : ''}`}
+                          title={isError ? `Must be between 0 and ${comp.maxMarks}` : undefined}
+                        />
                       </td>
                     );
                   })}
@@ -853,7 +1079,7 @@ const OBEWorkspace = () => {
         <p className="dashboard-sub">{courseInfo.courseCode} - {courseInfo.courseName}</p>
       </div>
 
-      <div className="dashboard-panel" style={{ display: 'flex', gap: '2rem', minHeight: '600px' }}>
+      <div className="dashboard-panel" style={{ display: 'flex', gap: activeStep === 'marks' ? '1.25rem' : '2rem', minHeight: '600px', padding: activeStep === 'marks' ? '1rem' : '1.4rem' }}>
         <div style={{ width: '250px', borderRight: '1px solid #e2e8f0', paddingRight: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', flexShrink: 0 }}>
           <h3 style={{ marginBottom: '1rem', color: '#1e293b', fontSize: '1.1rem' }}>Workflow</h3>
           {WORKFLOW_STEPS.map((step) => (
@@ -873,7 +1099,7 @@ const OBEWorkspace = () => {
           ))}
         </div>
 
-        <div style={{ flex: 1, padding: '0 1rem', overflowY: 'auto' }}>
+        <div style={{ flex: 1, minWidth: 0, padding: activeStep === 'marks' ? '0' : '0 1rem', overflowY: activeStep === 'marks' ? 'visible' : 'auto' }}>
           {loading ? (
             <div style={{ textAlign: 'center', padding: '3rem', color: '#64748b' }}>Loading data...</div>
           ) : activeStep === 'setup' ? (
@@ -892,7 +1118,7 @@ const OBEWorkspace = () => {
             <div style={{ padding: '2rem', backgroundColor: '#fff', borderRadius: '8px', textAlign: 'center' }}>
               <h2 style={{ color: '#334155', marginBottom: '1.5rem', fontSize: '1.5rem' }}>Export OBE Award List</h2>
               <p style={{ color: '#64748b', maxWidth: '500px', margin: '0 auto 2rem auto', lineHeight: '1.6' }}>
-                Click the button below to generate the official OBE Excel Award List containing the student roster, raw marks, analysis charts.
+                Click the button below to generate the official OBE Excel Award List.
               </p>
               <button
                 onClick={async () => {
@@ -917,7 +1143,7 @@ const OBEWorkspace = () => {
                 className="btn-primary"
                 style={{ padding: '1rem 3rem', fontSize: '1.1rem' }}
               >
-                {saving ? 'Generating...' : 'Download Official Excel Workbook'}
+                {saving ? 'Generating...' : 'Download OBE Workbook'}
               </button>
             </div>
           ) : (
@@ -930,6 +1156,14 @@ const OBEWorkspace = () => {
           )}
         </div>
       </div>
+
+      <OBEStudentImportModal
+        courseId={courseId}
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        onImportSuccess={() => fetchStudents(true)}
+        currentStudents={students}
+      />
     </div>
   );
 };
