@@ -8,11 +8,13 @@ import QuizManagementPage from '../../components/forms/Quiz/QuizManagementPage';
 import AssignmentManagementPage from '../../components/forms/Assignment/AssignmentManagementPage';
 import TimetablePage from '../../components/forms/Timetable/TimetablePage';
 import AttendanceRecordPage from '../../components/forms/Attendance/AttendanceRecordPage';
+import ClassProjectPage from '../../components/forms/CCP/ClassProjectPage';
 
 const CourseForm = () => {
   const { courseId, formType } = useParams();
 
   const isAttendance = formType === 'AR';
+  const isProject = formType === 'ASSESS_PROJECT';
 
   return (
     <div className="dashboard">
@@ -21,7 +23,7 @@ const CourseForm = () => {
           ← Back to Checklist
         </Link>
         <h1 className="dashboard-heading">
-          {isAttendance ? 'Attendance Record' : `Submit ${formType}`}
+          {isAttendance ? 'Attendance Record' : isProject ? 'CCP / Class Project' : `Submit ${formType}`}
         </h1>
 
       </div>
@@ -41,6 +43,8 @@ const CourseForm = () => {
           <AssignmentManagementPage courseId={courseId} />
         ) : formType === 'TIMETABLE' ? (
           <TimetablePage courseId={courseId} />
+        ) : formType === 'ASSESS_PROJECT' ? (
+          <ClassProjectPage courseId={courseId} />
         ) : isAttendance ? (
           <AttendanceRecordPage courseId={courseId} />
         ) : (

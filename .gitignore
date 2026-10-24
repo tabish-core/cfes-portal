@@ -81,5 +81,6 @@ Thumbs.db
 .env.local
 .env.*.local
 
-
-reference/obe
+reference
+server/temp_out/
+temp_out/

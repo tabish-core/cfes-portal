@@ -1,6 +1,7 @@
 const express = require('express');
 const formController = require('../controllers/form.controller');
 const timetableController = require('../controllers/timetable.controller');
+const ccpController = require('../controllers/ccp.controller');
 const { verifyToken } = require('../middlewares/auth.middleware');
 
 const router = express.Router();
@@ -21,6 +22,12 @@ router.get('/ccc/:courseId/export', verifyToken, formController.exportCCCForm);
 router.get('/course-review/:courseId', verifyToken, formController.getCourseReviewForm);
 router.post('/course-review', verifyToken, formController.saveCourseReviewForm);
 router.get('/course-review/:courseId/export', verifyToken, formController.exportCourseReviewForm);
+
+// CCP / Class Project (ASSESS_PROJECT)
+router.get('/ccp/:courseId', verifyToken, ccpController.getCCPForm);
+router.post('/ccp', verifyToken, ccpController.saveCCPForm);
+router.put('/ccp/:courseId', verifyToken, ccpController.saveCCPForm);
+router.get('/ccp/:courseId/export', verifyToken, ccpController.exportCCPForm);
 
 // Timetable with Consulting Hours
 router.get('/timetable/export', verifyToken, timetableController.exportTimetable);

@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>CCP / Class Project</title>
+  <style>
+    @page {
+      size: Letter portrait;
+      margin: 0.5in 0.6in 0.4in 0.6in;
+    }
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
+    html, body {
+      background-color: #ffffff;
+      color: #000000;
+      font-family: "Times New Roman", Times, serif;
+      font-size: 10.5pt;
+      line-height: 1.25;
+      margin: 0;
+      padding: 0;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    .page-container {
+      background-color: #ffffff;
+      width: 100%;
+      padding: 10px 0;
+    }
+
+    .header-section {
+      text-align: center;
+      margin-bottom: 8px;
+    }
+    .header-logo {
+      height: 52px;
+      width: auto;
+      display: block;
+      margin: 0 auto 6px auto;
+    }
+    .faculty-title {
+      font-size: 10.5pt;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      margin: 0;
+      color: #000000;
+    }
+
+    .dept-prog-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      font-size: 10.5pt;
+      font-weight: normal;
+      margin-top: 10px;
+      margin-bottom: 8px;
+    }
+
+    .dynamic-text, .red-text {
+      color: #000000 !important;
+    }
+    .bold-dynamic, .bold-red {
+      color: #000000 !important;
+      font-weight: bold;
+    }
+
+    .course-title-banner {
+      border: 1px solid #000000;
+      background-color: #B4C6E7;
+      text-align: center;
+      padding: 4px;
+      font-size: 11pt;
+      font-weight: bold;
+      color: #000000;
+      margin-bottom: -1px;
+    }
+
+    table.ccp-table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+      margin-bottom: 12px;
+    }
+    table.ccp-table td, table.ccp-table th {
+      border: 1px solid #000000;
+      padding: 4px 6px;
+      font-size: 10pt;
+      vertical-align: top;
+      color: #000000;
+    }
+    .banner-blue {
+      background-color: #B4C6E7;
+      text-align: center;
+      font-weight: bold;
+    }
+    .text-center {
+      text-align: center;
+    }
+    .text-justify {
+      text-align: justify;
+    }
+
+    .section-heading {
+      font-size: 10.5pt;
+      font-weight: bold;
+      color: #000000;
+      margin-top: 8pt;
+      margin-bottom: 5pt;
+    }
+
+    .problem-statement-content {
+      font-size: 10pt;
+      color: #000000;
+      margin-bottom: 6pt;
+      white-space: pre-line;
+      text-align: justify;
+    }
+
+    .narrative-item {
+      font-size: 10.5pt;
+      margin-top: 6pt;
+      margin-bottom: 6pt;
+    }
+    .narrative-title {
+      display: block;
+      color: #000000;
+      font-weight: bold;
+      margin-bottom: 5pt;
+    }
+    .narrative-content {
+      color: #000000;
+      font-size: 10pt;
+      padding-left: 20px;
+      margin-top: 0;
+      margin-bottom: 2pt;
+      white-space: pre-line;
+      text-align: justify;
+    }
+
+    .deliverables-section {
+      margin-top: 8pt;
+      margin-bottom: 6pt;
+    }
+    .deliverables-heading {
+      color: #000000;
+      margin-top: 0;
+      margin-bottom: 5pt;
+      font-size: 10.5pt;
+      font-weight: bold;
+    }
+    .deliverables-list {
+      margin: 0;
+      padding-left: 24px;
+      color: #000000;
+      font-size: 10pt;
+    }
+    .deliverables-list li {
+      margin-bottom: 2px;
+    }
+
+    .page-break {
+      page-break-before: always;
+      break-before: page;
+    }
+
+    /* Page 2 WP Table */
+    table.wp-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 14px;
+    }
+    table.wp-table td, table.wp-table th {
+      border: 1px solid #000000;
+      padding: 4px 8px;
+      font-size: 10pt;
+      vertical-align: middle;
+      color: #000000;
+    }
+    table.wp-table th {
+      font-weight: bold;
+    }
+    .wp-code-cell {
+      width: 12%;
+      text-align: center;
+      font-weight: bold;
+    }
+    .wp-desc-cell {
+      width: 38%;
+      text-align: left;
+    }
+    .wp-just-cell {
+      width: 50%;
+      color: #000000 !important;
+      text-align: left;
+      white-space: pre-line;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ==================== PAGE 1 ==================== -->
+  <div class="page-container">
+    <!-- Header -->
+    <div class="header-section">
+      {{#if logoBase64}}
+        <img src="{{logoBase64}}" alt="Iqra University" class="header-logo">
+      {{/if}}
+      <h2 class="faculty-title">FACULTY OF ENGINEERING SCIENCES AND TECHNOLOGY</h2>
+    </div>
+
+    <!-- Dept / Program -->
+    <div class="dept-prog-bar">
+      <div>Department: <span class="bold-red">{{headerInfo.department}}</span></div>
+      <div>Program: <span class="bold-red">{{headerInfo.program}}</span></div>
+    </div>
+
+    <!-- Course Title Banner -->
+    <div class="course-title-banner">
+      {{#if headerInfo.courseTitle}}
+        {{headerInfo.courseTitle}}
+      {{else}}
+        {{headerInfo.courseCode}}
+      {{/if}}
+    </div>
+
+    <!-- Table 0: Dates, Banner, Mappings (7-column grid) -->
+    <table class="ccp-table">
+      <!-- Row 0: Dates and Total Marks (cols: 2 + 2 + 3 = 7) -->
+      <tr>
+        <td colspan="2" style="width: 32%;">Announced date: <span class="red-text">{{headerInfo.announcedDate}}</span></td>
+        <td colspan="2" style="width: 34%; text-align: center;">Due Date: <span class="red-text">{{headerInfo.dueDate}}</span></td>
+        <td colspan="3" style="width: 34%; text-align: right;">Total Marks = <span class="red-text">{{headerInfo.totalMarks}}</span></td>
+      </tr>
+      <!-- Row 1: CEP/CCP Banner (colspan 7) -->
+      <tr>
+        <td colspan="7" class="banner-blue">
+          Complex Engineering Problem (CEP)/Complex Computing Problem (CCP)
+        </td>
+      </tr>
+      <!-- Row 2: Sub-headers (1 + 1 + 2 + 3 = 7) -->
+      <tr>
+        <th style="width: 14%; text-align: center;">Mapped CLO</th>
+        <th style="width: 14%; text-align: center;">SDG</th>
+        <th colspan="2" style="width: 32%; text-align: center;">Knowledge Profile<br><small style="font-weight: normal;">(only for PEC)</small></th>
+        <th colspan="3" style="width: 40%; text-align: center;">Complex Problem Solving Mapped</th>
+      </tr>
+      <!-- Row 3: Mapping Data -->
+      <tr>
+        <td class="text-center red-text" style="font-weight: bold; vertical-align: middle;">
+          {{mappingTable.mappedClo}}
+        </td>
+        <td class="text-center red-text" style="vertical-align: middle;">
+          {{mappingTable.sdg}}
+        </td>
+        <td colspan="2" class="red-text" style="vertical-align: top; white-space: pre-line;">{{mappingTable.knowledgeProfile}}</td>
+        <td colspan="3" class="red-text" style="vertical-align: top; white-space: pre-line;">{{mappingTable.complexProblemSolvingMapped}}</td>
+      </tr>
+    </table>
+
+    <!-- Problem Statement -->
+    <div class="section-heading">Problem Statement:</div>
+    <div class="problem-statement-content">
+      {{#if problemStatement}}
+        {{problemStatement}}
+      {{else}}
+        CEP/CCP shall be properly defined. Problem statement or description may include at least the following,
+      {{/if}}
+    </div>
+
+    <!-- i. Constraints/Assumptions -->
+    <div class="narrative-item">
+      <span class="narrative-title">i.&nbsp;&nbsp;&nbsp;&nbsp;Constraints/ Assumptions:</span>
+      {{#if constraintsAssumptions}}
+        <div class="narrative-content">{{constraintsAssumptions}}</div>
+      {{/if}}
+    </div>
+
+    <!-- ii. Computational Tools -->
+    <div class="narrative-item">
+      <span class="narrative-title">ii.&nbsp;&nbsp;&nbsp;Identification of areas where use of computational / modern tool is required.</span>
+      {{#if computationalTools}}
+        <div class="narrative-content">{{computationalTools}}</div>
+      {{/if}}
+    </div>
+
+    <!-- iii. Expected Outcomes -->
+    <div class="narrative-item">
+      <span class="narrative-title">iii.&nbsp;&nbsp;Expected Outcomes:</span>
+      {{#if expectedOutcomes}}
+        <div class="narrative-content">{{expectedOutcomes}}</div>
+      {{/if}}
+    </div>
+
+    <!-- Deliverable -->
+    <div class="deliverables-section">
+      <div class="section-heading" style="margin-top: 8pt; margin-bottom: 4pt;">Deliverable:</div>
+      <div class="deliverables-heading">
+        {{#if deliverables.heading}}
+          {{deliverables.heading}}
+        {{else}}
+          Report (must include)
+        {{/if}}
+      </div>
+      <ul class="deliverables-list">
+        {{#each deliverablesItems}}
+          <li>{{this}}</li>
+        {{/each}}
+      </ul>
+    </div>
+  </div>
+
+  <!-- ==================== PAGE BREAK ==================== -->
+  <div class="page-break"></div>
+
+  <!-- ==================== PAGE 2 ==================== -->
+  <div class="page-container">
+    <!-- Header -->
+    <div class="header-section">
+      {{#if logoBase64}}
+        <img src="{{logoBase64}}" alt="Iqra University" class="header-logo">
+      {{/if}}
+      <h2 class="faculty-title">FACULTY OF ENGINEERING SCIENCES AND TECHNOLOGY</h2>
+    </div>
+
+    <!-- WP Table -->
+    <table class="wp-table">
+      <!-- Banner -->
+      <tr>
+        <th colspan="3" class="banner-blue" style="font-size: 11pt; padding: 6px;">
+          CCP/ CEP Attributes mapped
+        </th>
+      </tr>
+      <!-- Sub-headers -->
+      <tr>
+        <th colspan="2" style="text-align: center; padding: 5px;">
+          Attributes of Complex Problem Solving
+        </th>
+        <th style="text-align: center; padding: 5px;">
+          Justification
+        </th>
+      </tr>
+      <!-- WP Rows -->
+      {{#each wpRows}}
+      <tr>
+        <td class="wp-code-cell">{{this.code}}</td>
+        <td class="wp-desc-cell">{{this.title}}</td>
+        <td class="wp-just-cell">{{this.justification}}</td>
+      </tr>
+      {{/each}}
+    </table>
+  </div>
+
+</body>
+</html>
