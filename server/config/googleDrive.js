@@ -31,9 +31,9 @@ const getOAuth2Client = () => {
 
   if (!clientId || !clientSecret) {
     const error = new Error(
-      'Google OAuth Client ID and Secret must be configured via GOOGLE_OAUTH_CLIENT_ID and GOOGLE_OAUTH_CLIENT_SECRET.'
+      'Google OAuth Client ID and Secret must be configured via GOOGLE_OAUTH_CLIENT_ID and GOOGLE_OAUTH_CLIENT_SECRET in the server environment variables.'
     );
-    error.statusCode = 500;
+    error.statusCode = 503;
     throw error;
   }
 
