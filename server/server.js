@@ -38,7 +38,7 @@ const quizRoutes = require('./routes/quiz.routes');
 const assignmentRoutes = require('./routes/assignment.routes');
 const obeRoutes = require('./routes/obe.routes');
 const aiRoutes = require('./routes/ai.routes');
-// Future: const courseFileRoutes = require('./routes/courseFile.routes');
+const courseFileRoutes = require('./routes/courseFile.routes');
 
 /* ── App setup ─────────────────────────────────────────── */
 const app = express();
@@ -87,7 +87,7 @@ app.use('/api/quizzes', quizRoutes);
 app.use('/api/assignments', assignmentRoutes);
 app.use('/api/obe', obeRoutes);
 app.use('/api/ai', aiRoutes);
-// app.use('/api/course-files', courseFileRoutes);
+app.use('/api/course-files', courseFileRoutes);
 
 /* ── Step 5: 404 Handler ────────────────────────────────── */
 app.use((req, res) => {

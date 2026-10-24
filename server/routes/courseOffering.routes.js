@@ -48,6 +48,14 @@ router.get(
   offeringController.listBySemester
 );
 
+/* ── Get single offering details (Auth: Faculty/HOD/Dean) ──────────────── */
+router.get(
+  '/:id',
+  verifyToken,
+  requireDesignation('faculty', 'hod', 'dean'),
+  offeringController.getOffering
+);
+
 /* ── Remove offering (Admin only) ──────────────────────────────────────── */
 router.delete(
   '/:id',

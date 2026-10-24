@@ -10,7 +10,7 @@ const INITIAL_CCC_DATA = {
   endTermReviewFilled: 'Yes',
 };
 
-const CourseCompletionCertificatePage = ({ courseId }) => {
+const CourseCompletionCertificatePage = ({ courseId, offeringId }) => {
   const toast = useToast();
   const { user } = useContext(AuthContext);
 
@@ -28,14 +28,17 @@ const CourseCompletionCertificatePage = ({ courseId }) => {
 
   /* ── Load draft or auto-fill from course ─────────────────── */
   useEffect(() => {
-    if (!courseId) return;
+    if (!offeringId && !courseId) return;
 
     const fetchForm = async () => {
       try {
         setLoading(true);
 
         // 1. Try loading existing draft
-        const { data } = await api.get(`/forms/ccc/${courseId}`);
+        const url = offeringId
+          ? `/forms/ccc/${courseId || 'offering'}?offeringId=${offeringId}`
+          : `/forms/ccc/${courseId}`;
+        const { data } = await api.get(url);
         if (data.data && data.data.form) {
           const form = data.data.form;
           if (form.courseInfo) setCourseInfo(form.courseInfo);
@@ -43,16 +46,32 @@ const CourseCompletionCertificatePage = ({ courseId }) => {
           return; // Draft found — all fields populated, done.
         }
 
-        // 2. No draft — auto-fill read-only fields from the course record
-        const { data: courseRes } = await api.get(`/courses/${courseId}`);
-        if (courseRes.data && courseRes.data.course) {
-          const course = courseRes.data.course;
-          setCourseInfo(prev => ({
-            ...prev,
-            courseTitle: course.courseName || '',
-            courseCode: course.courseCode || '',
-            semesterName: course.semester?.name || prev.semesterName,
-          }));
+        // 2. No draft — auto-fill read-only fields from offering or course
+        if (offeringId) {
+          const { data: offRes } = await api.get(`/offerings/${offeringId}`);
+          const off = offRes.data?.offering || offRes.data?.data?.offering;
+          if (off) {
+            setCourseInfo(prev => ({
+              ...prev,
+              courseTitle: off.course?.courseName || '',
+              courseCode: off.course?.courseCode || '',
+              semesterName: off.semester?.name ? `${off.semester.name} (Sec ${off.section || 'A'})` : prev.semesterName,
+            }));
+            return;
+          }
+        }
+
+        if (courseId) {
+          const { data: courseRes } = await api.get(`/courses/${courseId}`);
+          if (courseRes.data && courseRes.data.course) {
+            const course = courseRes.data.course;
+            setCourseInfo(prev => ({
+              ...prev,
+              courseTitle: course.courseName || '',
+              courseCode: course.courseCode || '',
+              semesterName: course.semester?.name || prev.semesterName,
+            }));
+          }
         }
       } catch (err) {
         console.error('Failed to fetch CCC:', err);
@@ -61,7 +80,8 @@ const CourseCompletionCertificatePage = ({ courseId }) => {
       }
     };
     fetchForm();
-  }, [courseId]);
+  }, [courseId, offeringId]);
+
 
   const handleChange = (field, value) => {
     setCertificateData(prev => ({
@@ -111,6 +131,7 @@ const CourseCompletionCertificatePage = ({ courseId }) => {
       setLoading(true);
       await api.post('/forms/ccc', {
         courseId,
+        offeringId,
         courseInfo,
         certificateData
       });
@@ -135,9 +156,13 @@ const CourseCompletionCertificatePage = ({ courseId }) => {
     try {
       setIsExporting(format);
 
-      const { data } = await api.get(`/forms/ccc/${courseId}/export?format=${format}`, {
+      const exportUrl = offeringId
+        ? `/forms/ccc/${courseId || 'offering'}/export?format=${format}&offeringId=${offeringId}`
+        : `/forms/ccc/${courseId}/export?format=${format}`;
+      const { data } = await api.get(exportUrl, {
         responseType: 'blob',
       });
+
 
       const url = window.URL.createObjectURL(new Blob([data]));
       const link = document.createElement('a');

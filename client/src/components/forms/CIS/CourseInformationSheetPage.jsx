@@ -80,7 +80,7 @@ const INITIAL_GRADING = {
 
 /* ── Main CIS Page Component ─────────────────────────────── */
 
-const CourseInformationSheetPage = ({ courseId }) => {
+const CourseInformationSheetPage = ({ courseId, offeringId }) => {
   const [courseSummary, setCourseSummary] = useState(INITIAL_COURSE_SUMMARY);
   const [basicInfo, setBasicInfo] = useState(INITIAL_BASIC_INFO);
   const [courseObjectives, setCourseObjectives] = useState('');
@@ -190,7 +190,10 @@ const CourseInformationSheetPage = ({ courseId }) => {
     const fetchCIS = async () => {
       try {
         setIsLoading(true);
-        const res = await api.get(`/forms/cis/${courseId}`);
+        const url = offeringId
+          ? `/forms/cis/${courseId || 'offering'}?offeringId=${offeringId}`
+          : `/forms/cis/${courseId}`;
+        const res = await api.get(url);
         
         if (res.data.data && res.data.data.form) {
           const f = res.data.data.form;
@@ -212,7 +215,8 @@ const CourseInformationSheetPage = ({ courseId }) => {
       }
     };
     fetchCIS();
-  }, [courseId]);
+  }, [courseId, offeringId]);
+
 
   /* ── Change Handlers ─────────────────────────────────────── */
 
@@ -339,6 +343,7 @@ const CourseInformationSheetPage = ({ courseId }) => {
 
     const formData = {
       courseId,
+      offeringId,
       courseSummary,
       basicInfo,
       objectives: courseObjectives,
@@ -349,6 +354,7 @@ const CourseInformationSheetPage = ({ courseId }) => {
       weeklyPlan,
       gradingPolicy: grading,
     };
+
 
     try {
       await api.post('/forms/cis', formData);

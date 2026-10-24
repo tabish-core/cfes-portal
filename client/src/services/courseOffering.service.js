@@ -27,3 +27,9 @@ export const getMyDashboardStats = async (semesterId) => {
   const { data } = await api.get(`/offerings/my-stats?semester=${semesterId}`);
   return data.data; // { stats }
 };
+
+export const getOfferingById = async (offeringId) => {
+  const { data } = await api.get(`/offerings/${offeringId}`);
+  return data.data; // { offering }
+};
+

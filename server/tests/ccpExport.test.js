@@ -154,6 +154,16 @@ describe('CCP Export Service & Controller Tests', () => {
         assignedFaculty: facultyId,
       });
       jest.spyOn(CourseOffering, 'exists').mockResolvedValue(true);
+      jest.spyOn(CourseOffering, 'find').mockReturnValue({
+        populate: jest.fn().mockReturnThis(),
+        then(onFulfilled, onRejected) {
+          return Promise.resolve([]).then(onFulfilled, onRejected);
+        },
+        catch(onRejected) {
+          return Promise.resolve([]).catch(onRejected);
+        },
+      });
+      jest.spyOn(CCP, 'countDocuments').mockResolvedValue(1);
       jest.spyOn(Semester, 'findOne').mockResolvedValue(null);
     });
 

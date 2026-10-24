@@ -47,7 +47,8 @@ const INITIAL_CHECKLIST = [
 ];
 
 const CourseFileChecklist = () => {
-  const { courseId } = useParams();
+  const { courseId: paramCourseId, offeringId } = useParams();
+  const [offering, setOffering] = useState(null);
 
   const [courseInfo, setCourseInfo] = useState({
     courseTitle: '',
@@ -68,20 +69,47 @@ const CourseFileChecklist = () => {
 
   // Fetch existing checklist on mount
   useEffect(() => {
-    if (!courseId) return;
+    if (!offeringId && !paramCourseId) return;
 
     const fetchChecklist = async () => {
       try {
         setLoading(true);
-        const { data } = await api.get(`/checklist/${courseId}`);
-        if (data.data && data.data.checklist) {
-          const saved = data.data.checklist;
+
+        let checklistData = null;
+
+        if (offeringId) {
+          // Fetch offering details
+          const offRes = await api.get(`/offerings/${offeringId}`);
+          const currentOffering = offRes.data?.data?.offering || offRes.data?.offering;
+          setOffering(currentOffering);
+
+          const defaultBatch = currentOffering?.semester?.name
+            ? `${currentOffering.semester.name} - Section ${currentOffering.section || 'A'}`
+            : `Section ${currentOffering?.section || 'A'}`;
+
+          setCourseInfo({
+            courseTitle: currentOffering?.course?.courseName || '',
+            courseCode: currentOffering?.course?.courseCode || '',
+            batch: defaultBatch,
+          });
+
+          // Fetch offering-scoped checklist
+          const { data } = await api.get(`/checklist/offering/${offeringId}`);
+          checklistData = data.data?.checklist;
+        } else {
+          // Legacy route by courseId
+          const { data } = await api.get(`/checklist/${paramCourseId}`);
+          checklistData = data.data?.checklist;
+        }
+
+        if (checklistData) {
+          const saved = checklistData;
           if (saved.courseTitle || saved.courseCode || saved.batch) {
-            setCourseInfo({
-              courseTitle: saved.courseTitle || '',
-              courseCode: saved.courseCode || '',
-              batch: saved.batch || '',
-            });
+            setCourseInfo((prev) => ({
+              courseTitle: saved.courseTitle || prev.courseTitle,
+              courseCode: saved.courseCode || prev.courseCode,
+              batch: saved.batch || prev.batch,
+            }));
           }
           if (saved.checklistItems && saved.checklistItems.length > 0) {
             // Merge saved completion states into the UI checklist structure
@@ -106,7 +134,7 @@ const CourseFileChecklist = () => {
       }
     };
     fetchChecklist();
-  }, [courseId]);
+  }, [offeringId, paramCourseId]);
 
   const handleCourseInfoChange = (field, value) => {
     setCourseInfo((prev) => ({ ...prev, [field]: value }));
@@ -133,7 +161,8 @@ const CourseFileChecklist = () => {
         }));
 
       await api.post('/checklist', {
-        courseId,
+        offeringId,
+        courseId: offering?.course?._id || paramCourseId,
         courseTitle: courseInfo.courseTitle,
         courseCode: courseInfo.courseCode,
         batch: courseInfo.batch,
@@ -147,6 +176,9 @@ const CourseFileChecklist = () => {
     }
   };
 
+  // Target ID for links
+  const activeCourseId = offering?.course?._id || paramCourseId;
+
   // Serial number counter for display
   let serialNo = 0;
 
@@ -158,11 +190,15 @@ const CourseFileChecklist = () => {
             ← Back to Courses
           </Link>
           <h1 className="dashboard-heading">Course File Checklist</h1>
-
+          {offering && (
+            <p className="dashboard-sub">
+              {offering.course?.courseCode} - {offering.course?.courseName} ({offering.semester?.name ? `${offering.semester.name} - ` : ''}Section {offering.section || 'A'})
+            </p>
+          )}
         </div>
         <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
           <Link
-            to={`/faculty/course/${courseId}/obe`}
+            to={offeringId ? `/faculty/offering/${offeringId}/obe` : `/faculty/course/${activeCourseId}/obe`}
             style={{
               padding: '0.6rem 1.2rem',
               backgroundColor: '#4338ca',
@@ -181,6 +217,7 @@ const CourseFileChecklist = () => {
       </div>
 
       {loading && <div style={{ textAlign: 'center', marginBottom: '1rem', fontStyle: 'italic', color: '#64748b' }}>Processing...</div>}
+
 
       {/* Course Info Fields */}
       <div className="dashboard-panel" style={{ marginBottom: '1.5rem' }}>
@@ -388,7 +425,7 @@ const CourseFileChecklist = () => {
                         color: '#334155'
                       }}>
                         <Link
-                          to={`/course/${courseId}/form/${item.formType}`}
+                          to={offeringId ? `/offering/${offeringId}/form/${item.formType}` : `/course/${activeCourseId}/form/${item.formType}`}
                           style={{
                             color: '#3949ab',
                             textDecoration: 'none',
@@ -438,7 +475,7 @@ const CourseFileChecklist = () => {
                       color: '#334155'
                     }}>
                       <Link
-                        to={`/course/${courseId}/form/${item.formType}`}
+                        to={offeringId ? `/offering/${offeringId}/form/${item.formType}` : `/course/${activeCourseId}/form/${item.formType}`}
                         style={{
                           color: '#3949ab',
                           textDecoration: 'none',
@@ -447,6 +484,7 @@ const CourseFileChecklist = () => {
                       >
                         {item.name}
                       </Link>
+
                     </td>
                     <td style={{
                       padding: '0.75rem 1rem',

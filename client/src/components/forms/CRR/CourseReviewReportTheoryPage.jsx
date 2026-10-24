@@ -58,7 +58,7 @@ const INITIAL_SIGNATURES = {
   hodDate: ''
 };
 
-const CourseReviewReportTheoryPage = ({ courseId }) => {
+const CourseReviewReportTheoryPage = ({ courseId, offeringId }) => {
   const toast = useToast();
   const { user } = useContext(AuthContext);
   const [loading, setLoading] = useState(false);
@@ -77,14 +77,17 @@ const CourseReviewReportTheoryPage = ({ courseId }) => {
 
   /* ── Load draft or auto-fill from course ─────────────────── */
   useEffect(() => {
-    if (!courseId) return;
+    if (!offeringId && !courseId) return;
 
     const fetchForm = async () => {
       try {
         setLoading(true);
 
         // 1. Try loading existing draft
-        const { data } = await api.get(`/forms/course-review/${courseId}`);
+        const url = offeringId
+          ? `/forms/course-review/${courseId || 'offering'}?offeringId=${offeringId}`
+          : `/forms/course-review/${courseId}`;
+        const { data } = await api.get(url);
         if (data.data && data.data.form) {
           const form = data.data.form;
           if (form.courseInfo) setCourseDetails(form.courseInfo);
@@ -96,19 +99,38 @@ const CourseReviewReportTheoryPage = ({ courseId }) => {
           return; // Draft found — all fields populated, done.
         }
 
-        // 2. No draft — auto-fill from the course record
-        const { data: courseRes } = await api.get(`/courses/${courseId}`);
-        if (courseRes.data && courseRes.data.course) {
-          const course = courseRes.data.course;
-          setCourseDetails(prev => ({
-            ...prev,
-            courseTitle: course.courseName || '',
-            courseCode: course.courseCode || '',
-            semester: course.semester?.name || prev.semester,
-            creditHours: course.creditHours || '',
-            department: course.department?.name || prev.department,
-            noOfStudents: prev.noOfStudents,
-          }));
+        // 2. No draft — auto-fill from offering or course record
+        if (offeringId) {
+          const { data: offRes } = await api.get(`/offerings/${offeringId}`);
+          const off = offRes.data?.offering || offRes.data?.data?.offering;
+          if (off) {
+            setCourseDetails(prev => ({
+              ...prev,
+              courseTitle: off.course?.courseName || '',
+              courseCode: off.course?.courseCode || '',
+              semester: off.semester?.name ? `${off.semester.name} (Sec ${off.section || 'A'})` : prev.semester,
+              creditHours: off.course?.creditHours || '',
+              department: off.course?.department?.name || prev.department,
+              noOfStudents: prev.noOfStudents,
+            }));
+            return;
+          }
+        }
+
+        if (courseId) {
+          const { data: courseRes } = await api.get(`/courses/${courseId}`);
+          if (courseRes.data && courseRes.data.course) {
+            const course = courseRes.data.course;
+            setCourseDetails(prev => ({
+              ...prev,
+              courseTitle: course.courseName || '',
+              courseCode: course.courseCode || '',
+              semester: course.semester?.name || prev.semester,
+              creditHours: course.creditHours || '',
+              department: course.department?.name || prev.department,
+              noOfStudents: prev.noOfStudents,
+            }));
+          }
         }
       } catch (err) {
         console.error('Failed to fetch Course Review Report:', err);
@@ -117,7 +139,8 @@ const CourseReviewReportTheoryPage = ({ courseId }) => {
       }
     };
     fetchForm();
-  }, [courseId]);
+  }, [courseId, offeringId]);
+
 
   const handleCourseDetailsChange = (field, value) => {
     setCourseDetails(prev => ({ ...prev, [field]: value }));
@@ -153,6 +176,7 @@ const CourseReviewReportTheoryPage = ({ courseId }) => {
       setLoading(true);
       await api.post('/forms/course-review', {
         courseId,
+        offeringId,
         courseInfo: courseDetails,
         assessmentSummary,
         gradeSummary,
@@ -197,9 +221,13 @@ const CourseReviewReportTheoryPage = ({ courseId }) => {
     try {
       setIsExporting(format);
 
-      const { data } = await api.get(`/forms/course-review/${courseId}/export?format=${format}`, {
+      const exportUrl = offeringId
+        ? `/forms/course-review/${courseId || 'offering'}/export?format=${format}&offeringId=${offeringId}`
+        : `/forms/course-review/${courseId}/export?format=${format}`;
+      const { data } = await api.get(exportUrl, {
         responseType: 'blob',
       });
+
 
       const url = window.URL.createObjectURL(new Blob([data]));
       const link = document.createElement('a');

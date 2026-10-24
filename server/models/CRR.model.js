@@ -38,6 +38,18 @@ const crrSchema = new mongoose.Schema({
     ref: 'Semester',
     default: null,
   },
+  courseOffering: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'CourseOffering',
+    default: null,
+  },
+  section: {
+    type: String,
+    trim: true,
+    uppercase: true,
+    default: 'A',
+  },
+
   formType: {
     type: String,
     enum: ['CRR'],
@@ -101,7 +113,9 @@ const crrSchema = new mongoose.Schema({
 
 }, { timestamps: true });
 
-// Ensure one CRR per course per faculty (optionally scoped by semester)
-crrSchema.index({ course: 1, faculty: 1, semester: 1, formType: 1 }, { unique: true });
+// Ensure one CRR per course per faculty per semester per section per formType
+crrSchema.index({ course: 1, faculty: 1, semester: 1, section: 1, formType: 1 }, { unique: true });
+crrSchema.index({ courseOffering: 1 });
+
 
 module.exports = mongoose.model('CourseReviewReport', crrSchema);

@@ -74,10 +74,18 @@ function App() {
             <Route element={<DesignationRoute allowedDesignations={['faculty', 'hod']} />}>
               <Route element={<FacultyLayout />}>
                 <Route path="/faculty/dashboard" element={<FacultyDashboard />} />
+                {/* Offering-scoped routes */}
+                <Route path="/faculty/offering/:offeringId" element={<CourseFileChecklist />} />
+                <Route path="/faculty/offering/:offeringId/obe" element={<OBEWorkspace />} />
+                <Route path="/faculty/offering/:offeringId/templates" element={<CourseTemplates />} />
+                <Route path="/offering/:offeringId/form/:formType" element={<CourseForm />} />
+
+                {/* Legacy course-scoped routes (backward compatibility) */}
                 <Route path="/faculty/course/:courseId" element={<CourseFileChecklist />} />
                 <Route path="/faculty/course/:courseId/obe" element={<OBEWorkspace />} />
                 <Route path="/faculty/course/:courseId/templates" element={<CourseTemplates />} />
                 <Route path="/course/:courseId/form/:formType" element={<CourseForm />} />
+
               </Route>
             </Route>
           </Route>

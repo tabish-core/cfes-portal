@@ -192,10 +192,151 @@ const getMyDashboardStats = async (facultyId, semesterId) => {
   return { totalCourses, totalForms, draftForms, submittedForms, pendingForms };
 };
 
+/**
+ * Retrieve a single CourseOffering by ID and verify user authorization.
+ *
+ * Rules:
+ *  - Faculty can only access their own offering.
+ *  - HoD can only access offerings within their department.
+ *  - Dean has global access.
+ */
+const getOfferingById = async (offeringId, user) => {
+  if (!mongoose.Types.ObjectId.isValid(offeringId)) fail('Invalid offering ID', 400);
+
+  const offering = await CourseOffering.findById(offeringId)
+    .populate({
+      path: 'course',
+      select: 'courseCode courseName type creditHours isLab department',
+      populate: { path: 'department', select: 'name code' }
+    })
+    .populate('faculty', 'name email department designation')
+    .populate('semester', 'name status');
+
+  if (!offering) fail('Course offering not found', 404);
+
+  // Authorization enforcement
+  if (user) {
+    if (user.designation === 'faculty') {
+      const offeringFacultyId = offering.faculty?._id ? offering.faculty._id.toString() : offering.faculty?.toString();
+      if (!offeringFacultyId || offeringFacultyId !== user._id.toString()) {
+        fail('You are not authorized to access this course offering.', 403);
+      }
+    } else if (user.designation === 'hod') {
+      const courseDept = offering.course?.department?._id || offering.course?.department;
+      if (!user.department || !courseDept || courseDept.toString() !== user.department.toString()) {
+        fail('You are only authorized to access course offerings belonging to your department.', 403);
+      }
+    }
+  }
+
+  return offering;
+};
+
+/**
+ * Verifies if the requesting user is authorized to access the given course.
+ *
+ * Authorization rules:
+ *   - Dean: universal access across all departments.
+ *   - HoD: allowed if the course belongs to the HoD's assigned department.
+ *   - Faculty: allowed if assigned via CourseOffering or Course.assignedFaculty.
+ *
+ * @param {Object} user - Authenticated user from req.user
+ * @param {string} courseId - Course MongoDB ObjectId string
+ * @returns {Promise<{ authorized: boolean, status?: number, message?: string, course?: Object }>}
+ */
+const checkCourseAccess = async (user, courseId) => {
+  if (!courseId || !mongoose.Types.ObjectId.isValid(courseId)) {
+    return { authorized: false, status: 400, message: 'Invalid or missing Course ID.' };
+  }
+
+  const course = await Course.findById(courseId);
+  if (!course) {
+    return { authorized: false, status: 404, message: 'Course not found.' };
+  }
+
+  if (user.designation === 'dean') {
+    return { authorized: true, course };
+  }
+
+  if (user.designation === 'hod') {
+    if (!user.department || !course.department || course.department.toString() !== user.department.toString()) {
+      return {
+        authorized: false,
+        status: 403,
+        message: 'Forbidden. You are only allowed to access courses belonging to your department.',
+      };
+    }
+    return { authorized: true, course };
+  }
+
+  const isAssigned =
+    (await CourseOffering.exists({ course: courseId, faculty: user._id })) ||
+    (course.assignedFaculty && course.assignedFaculty.toString() === user._id.toString());
+
+  if (!isAssigned) {
+    return {
+      authorized: false,
+      status: 403,
+      message: 'Forbidden. You are not assigned to this course.',
+    };
+  }
+
+  return { authorized: true, course };
+};
+
+/**
+ * Resolves course offerings for a legacy context (where offeringId was not supplied).
+ *
+ * Rules:
+ *  - If multiple offerings match (e.g. Section A and Section B, or multiple semesters),
+ *    the target cannot be established reliably -> { ambiguous: true, count, offerings }
+ *  - If exactly 1 offering matches -> { ambiguous: false, count: 1, offering: offerings[0] }
+ *  - If 0 offerings match -> { ambiguous: false, count: 0, offering: null }
+ *
+ * @param {Object} user - Authenticated user (req.user)
+ * @param {string} courseId - Course ObjectId
+ * @param {string} [semesterId] - Optional semester ObjectId
+ * @param {string} [facultyId=null] - Optional override faculty ObjectId (for Dean/HOD)
+ */
+const resolveOfferingForLegacyContext = async (user, courseId, semesterId, facultyId = null) => {
+  const targetFacultyId = facultyId || user._id;
+  const query = {
+    course: courseId,
+    faculty: targetFacultyId,
+  };
+  if (semesterId && mongoose.Types.ObjectId.isValid(semesterId)) {
+    query.semester = semesterId;
+  }
+
+  const offerings = await CourseOffering.find(query)
+    .populate({
+      path: 'course',
+      select: 'courseCode courseName type creditHours isLab department',
+      populate: { path: 'department', select: 'name code' }
+    })
+    .populate('faculty', 'name email department designation')
+    .populate('semester', 'name status');
+
+  if (offerings.length > 1) {
+    return { ambiguous: true, count: offerings.length, offerings };
+  }
+
+  if (offerings.length === 1) {
+    return { ambiguous: false, count: 1, offering: offerings[0] };
+  }
+
+  return { ambiguous: false, count: 0, offering: null };
+};
+
 module.exports = {
   createOffering,
   removeOffering,
   listOfferingsBySemester,
   getMyOfferings,
   getMyDashboardStats,
+  getOfferingById,
+  checkCourseAccess,
+  resolveOfferingForLegacyContext,
 };
+
+

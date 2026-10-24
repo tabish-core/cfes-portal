@@ -173,15 +173,16 @@ const FacultyDashboard = () => {
             {offerings.map((offering) => (
               <Link
                 key={offering._id}
-                to={`/faculty/course/${offering.course._id}`}
+                to={`/faculty/offering/${offering._id}`}
                 className="course-list-item"
               >
                 <span className="course-list-code">{offering.course.courseCode}</span>
                 <span className="course-list-name">
                   {offering.course.courseName}
-                  {offering.section && offering.section !== 'A' ? ` (Section ${offering.section})` : ''}
+                  {offering.section ? ` (Section ${offering.section})` : ''}
                 </span>
               </Link>
+
             ))}
           </div>
         )}

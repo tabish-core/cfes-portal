@@ -103,4 +103,28 @@ const getMyDashboardStats = async (req, res, next) => {
   }
 };
 
-module.exports = { createOffering, removeOffering, listBySemester, getMyOfferings, getMyDashboardStats };
+/* ── GET /api/offerings/:id ────────────────────────────────────────────── */
+/**
+ * Retrieve details for a specific course offering.
+ * Accessible to assigned faculty, department HOD, or Dean.
+ */
+const getOffering = async (req, res, next) => {
+  try {
+    const offering = await offeringService.getOfferingById(req.params.id, req.user);
+    return sendSuccess(res, { offering }, 'Course offering details fetched');
+  } catch (err) {
+    if (err.statusCode) {
+      return sendError(res, err.message, err.statusCode);
+    }
+    next(err);
+  }
+};
+
+module.exports = {
+  createOffering,
+  removeOffering,
+  listBySemester,
+  getMyOfferings,
+  getMyDashboardStats,
+  getOffering,
+};

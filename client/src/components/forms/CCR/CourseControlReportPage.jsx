@@ -47,7 +47,8 @@ const INITIAL_ALTERNATE_DATA = Array.from({ length: 4 }, (_, i) => ({
   remarks: '',
 }));
 
-const CourseControlReportPage = ({ courseId }) => {
+const CourseControlReportPage = ({ courseId, offeringId }) => {
+
   const toast = useToast();
   const [courseInfo, setCourseInfo] = useState(INITIAL_COURSE_INFO);
   const [weeklyData, setWeeklyData] = useState(INITIAL_WEEKLY_DATA);
@@ -129,12 +130,15 @@ const CourseControlReportPage = ({ courseId }) => {
   };
 
   useEffect(() => {
-    if (!courseId) return;
+    if (!offeringId && !courseId) return;
 
     const fetchForm = async () => {
       try {
         setLoading(true);
-        const { data } = await api.get(`/forms/ccr/${courseId}`);
+        const url = offeringId
+          ? `/forms/ccr/${courseId || 'offering'}?offeringId=${offeringId}`
+          : `/forms/ccr/${courseId}`;
+        const { data } = await api.get(url);
         if (data.data && data.data.form) {
           const form = data.data.form;
           if (form.courseInfo) setCourseInfo(form.courseInfo);
@@ -148,7 +152,8 @@ const CourseControlReportPage = ({ courseId }) => {
       }
     };
     fetchForm();
-  }, [courseId]);
+  }, [courseId, offeringId]);
+
 
   const handleCourseInfoChange = (field, value) => {
     setCourseInfo((prev) => ({
@@ -222,11 +227,13 @@ const CourseControlReportPage = ({ courseId }) => {
       setLoading(true);
       await api.post('/forms/ccr', {
         courseId,
+        offeringId,
         courseInfo,
         weeklyData,
         alternateData
       });
       toast.success('Course Control Report saved successfully!');
+
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) {
       const serverErrors = err.response?.data?.data?.errors;

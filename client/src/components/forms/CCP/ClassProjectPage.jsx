@@ -96,7 +96,7 @@ const DEFAULT_WP_ATTRIBUTES = [
 
 /* ── Main CCP / Class Project Form Component ──────────────── */
 
-const ClassProjectPage = ({ courseId }) => {
+const ClassProjectPage = ({ courseId, offeringId }) => {
   const toast = useToast();
 
   const [headerInfo, setHeaderInfo] = useState(INITIAL_HEADER_INFO);
@@ -121,9 +121,13 @@ const ClassProjectPage = ({ courseId }) => {
   const handleDownload = async (format) => {
     try {
       setIsExporting(format);
-      const res = await api.get(`/forms/ccp/${courseId}/export?format=${format}`, {
+      const exportUrl = offeringId
+        ? `/forms/ccp/${courseId || 'offering'}/export?format=${format}&offeringId=${offeringId}`
+        : `/forms/ccp/${courseId}/export?format=${format}`;
+      const res = await api.get(exportUrl, {
         responseType: 'blob',
       });
+
 
       // Extract filename from header or fallback
       let filename = `CCP_Class_Project_${headerInfo?.courseCode || 'Course'}.${format}`;
@@ -156,11 +160,14 @@ const ClassProjectPage = ({ courseId }) => {
     let isCancelled = false;
 
     const fetchCCP = async () => {
-      if (!courseId) return;
+      if (!courseId && !offeringId) return;
 
       try {
         setIsLoading(true);
-        const res = await api.get(`/forms/ccp/${courseId}`);
+        const url = offeringId
+          ? `/forms/ccp/${courseId || 'offering'}?offeringId=${offeringId}`
+          : `/forms/ccp/${courseId}`;
+        const res = await api.get(url);
 
         if (isCancelled) return;
 
@@ -197,19 +204,37 @@ const ClassProjectPage = ({ courseId }) => {
           });
           setWpAttributes(DEFAULT_WP_ATTRIBUTES.map((attr) => ({ ...attr })));
 
-          // Pre-populate course title and code from catalog if available
-          try {
-            const courseRes = await api.get(`/courses/${courseId}`);
-            if (!isCancelled && courseRes.data?.data?.course) {
-              const c = courseRes.data.data.course;
-              setHeaderInfo((prev) => ({
-                ...prev,
-                courseTitle: c.courseName || '',
-                courseCode: c.courseCode || '',
-              }));
+          // Pre-populate course title, code, and section from offering or course catalog
+          if (offeringId) {
+            try {
+              const offRes = await api.get(`/offerings/${offeringId}`);
+              if (!isCancelled && offRes.data?.data?.offering) {
+                const off = offRes.data.data.offering;
+                setHeaderInfo((prev) => ({
+                  ...prev,
+                  courseTitle: off.course?.courseName || prev.courseTitle || '',
+                  courseCode: off.course?.courseCode || prev.courseCode || '',
+                  section: off.section || prev.section || '',
+                  program: off.course?.department?.name || prev.program || '',
+                }));
+              }
+            } catch {
+              // Non-critical auto-fill fallback
             }
-          } catch {
-            // Non-critical auto-fill fallback
+          } else if (courseId) {
+            try {
+              const courseRes = await api.get(`/courses/${courseId}`);
+              if (!isCancelled && courseRes.data?.data?.course) {
+                const c = courseRes.data.data.course;
+                setHeaderInfo((prev) => ({
+                  ...prev,
+                  courseTitle: c.courseName || '',
+                  courseCode: c.courseCode || '',
+                }));
+              }
+            } catch {
+              // Non-critical auto-fill fallback
+            }
           }
         }
       } catch (err) {
@@ -229,7 +254,7 @@ const ClassProjectPage = ({ courseId }) => {
     return () => {
       isCancelled = true;
     };
-  }, [courseId, toast]);
+  }, [courseId, offeringId, toast]);
 
   /* ── Form Change Handlers ───────────────────────────────── */
   const handleHeaderChange = (field, value) => {
@@ -299,6 +324,7 @@ const ClassProjectPage = ({ courseId }) => {
 
     const payload = {
       courseId,
+      ...(offeringId ? { offeringId } : {}),
       headerInfo,
       mappingTable,
       problemStatement,

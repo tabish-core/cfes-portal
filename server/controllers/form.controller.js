@@ -2,13 +2,108 @@ const CIS = require('../models/CIS.model');
 const CCR = require('../models/CCR.model');
 const CCC = require('../models/CCC.model');
 const CourseReviewReport = require('../models/CRR.model');
+const CourseOffering = require('../models/CourseOffering.model');
 const { sendSuccess, sendError } = require('../utils/response');
+const courseOfferingService = require('../services/courseOffering.service');
+const getOfferingById = (id, user) => courseOfferingService.getOfferingById(id, user);
 const { generateCISWord } = require('../services/documentService/generateCISWord');
 const { generateCISPDF } = require('../services/documentService/generateCISPDF');
 const { generateCCRWord } = require('../services/documentService/generateCCRWord');
 const { generateCCRPDF } = require('../services/documentService/generateCCRPDF');
 const { generateCCCPDF } = require('../services/documentService/generateCCCPDF');
 const { generateCRRPDF } = require('../services/documentService/generateCRRPDF');
+
+/* ── Offering & Form Scoping Helpers ────────────────────────────────────── */
+
+/**
+ * Finds form by offering or legacy query with auto-linking of legacy records.
+ */
+const findFormByOfferingOrQuery = async (Model, offering, legacyQuery, formType) => {
+  if (offering) {
+    // 1. Explicitly linked to this offering
+    const offeringQuery = { courseOffering: offering._id };
+    if (formType) offeringQuery.formType = formType;
+    let form = await Model.findOne(offeringQuery);
+
+    // 2. Unlinked legacy document with EXACT same semester and section
+    if (!form) {
+      const exactUnlinkedQuery = {
+        courseOffering: null,
+        course: offering.course._id || offering.course,
+        faculty: offering.faculty._id || offering.faculty,
+        semester: offering.semester._id || offering.semester,
+        section: offering.section || 'A'
+      };
+      if (formType) exactUnlinkedQuery.formType = formType;
+      form = await Model.findOne(exactUnlinkedQuery);
+    }
+
+    // 3. Unlinked legacy document with semester: null ONLY if EXACTLY 1 offering exists for this course + faculty
+    if (!form) {
+      const offeringCount = await CourseOffering.countDocuments({
+        course: offering.course._id || offering.course,
+        faculty: offering.faculty._id || offering.faculty
+      });
+      if (offeringCount === 1) {
+        const singleLegacyQuery = {
+          courseOffering: null,
+          course: offering.course._id || offering.course,
+          faculty: offering.faculty._id || offering.faculty,
+          semester: null
+        };
+        if (formType) singleLegacyQuery.formType = formType;
+        form = await Model.findOne(singleLegacyQuery);
+      }
+    }
+
+    // Safely link unlinked legacy record
+    if (form && !form.courseOffering) {
+      form.courseOffering = offering._id;
+      if (!form.section) form.section = offering.section || 'A';
+      if (!form.semester) form.semester = offering.semester._id || offering.semester;
+      await form.save();
+    }
+
+    return form;
+  }
+
+  const safeLegacyQuery = { ...legacyQuery, courseOffering: null };
+  const count = await Model.countDocuments(safeLegacyQuery);
+  if (count > 1) {
+    return null;
+  }
+  return Model.findOne(safeLegacyQuery);
+};
+
+/**
+ * Resolves an offering for legacy requests or handles ambiguity safely.
+ */
+const resolveOfferingOrRejectAmbiguity = async (user, courseId, semesterId, res, forSave = false, Model = null, formType = null) => {
+  const offeringRes = await courseOfferingService.resolveOfferingForLegacyContext(user, courseId, semesterId);
+  if (offeringRes.ambiguous) {
+    if (forSave) {
+      sendError(res, 'Multiple course offerings exist for this course. Please provide offeringId to specify the target offering and section.', 409);
+      return { resolved: false, handled: true };
+    }
+    return { resolved: true, offering: null, ambiguous: true };
+  }
+  if (offeringRes.offering) {
+    return { resolved: true, offering: offeringRes.offering, ambiguous: false };
+  }
+  if (forSave && Model) {
+    const query = { course: courseId, faculty: user._id, courseOffering: null };
+    if (semesterId) query.semester = semesterId;
+    if (formType) query.formType = formType;
+    const docCount = await Model.countDocuments(query);
+    if (docCount > 1) {
+      sendError(res, 'Multiple documents exist for this course across different sections. Please provide offeringId to specify the target offering and section.', 409);
+      return { resolved: false, handled: true };
+    }
+  }
+  return { resolved: true, offering: null, ambiguous: false };
+};
+
+
 
 /* ── Validation Helpers ─────────────────────────────────────────────────── */
 
@@ -68,29 +163,49 @@ const validateCIS = ({ courseSummary, basicInfo, objectives }) => {
  * @access  Private (Faculty mostly, though auth ensures valid JWT)
  *
  * Query params:
- *   semester — Semester ObjectId (optional for backward compat; recommended)
+ *   offeringId — CourseOffering ObjectId (recommended)
+ *   semester   — Semester ObjectId (optional for backward compat; recommended)
  */
 const getCCRForm = async (req, res, next) => {
   try {
     const { courseId } = req.params;
-    const facultyId = req.user._id;
-    const { semester: semesterId } = req.query;
+    const { semester: semesterId, offeringId } = req.query;
 
-    if (!courseId) {
-      return sendError(res, 'Course ID is required', 400);
+    let offering = null;
+    if (offeringId) {
+      try {
+        offering = await getOfferingById(offeringId, req.user);
+      } catch (err) {
+        return sendError(res, err.message, err.statusCode || 500);
+      }
     }
 
-    const query = {
+    if (!offering) {
+      if (!courseId) {
+        return sendError(res, 'Course ID or Offering ID is required', 400);
+      }
+      const authCheck = await courseOfferingService.checkCourseAccess(req.user, courseId);
+      if (!authCheck.authorized) {
+        return sendError(res, authCheck.message, authCheck.status);
+      }
+      const resolution = await resolveOfferingOrRejectAmbiguity(req.user, courseId, semesterId, res, false);
+      if (resolution.ambiguous) {
+        return sendSuccess(res, { form: null }, 'Multiple offerings exist for this course. Please specify offeringId.');
+      }
+      if (resolution.offering) {
+        offering = resolution.offering;
+      }
+    }
+
+    const legacyQuery = {
       course: courseId,
-      faculty: facultyId,
+      faculty: req.user._id,
       formType: 'CCR'
     };
-    // Include semester in query if provided
-    if (semesterId) query.semester = semesterId;
+    if (semesterId) legacyQuery.semester = semesterId;
 
-    const form = await CCR.findOne(query);
+    const form = await findFormByOfferingOrQuery(CCR, offering, legacyQuery, 'CCR');
 
-    // Valid constraint: Should return form data if it exists, or null if not.
     return sendSuccess(res, { form: form || null }, 'CCR form fetched successfully');
   } catch (err) {
     next(err);
@@ -102,15 +217,34 @@ const getCCRForm = async (req, res, next) => {
  * @access  Private (Faculty mostly)
  *
  * Body:
- *   courseId, semesterId (optional), courseInfo, weeklyData, alternateData
+ *   offeringId (optional), courseId, semesterId (optional), courseInfo, weeklyData, alternateData
  */
 const saveCCRForm = async (req, res, next) => {
   try {
-    const facultyId = req.user._id;
-    const { courseId, semesterId, courseInfo, weeklyData, alternateData } = req.body;
+    const { courseId, semesterId, courseInfo, weeklyData, alternateData, offeringId } = req.body;
 
-    if (!courseId) {
-      return sendError(res, 'Course ID is required', 400);
+    let offering = null;
+    if (offeringId) {
+      try {
+        offering = await getOfferingById(offeringId, req.user);
+      } catch (err) {
+        return sendError(res, err.message, err.statusCode || 500);
+      }
+    }
+
+    if (!offering) {
+      if (!courseId) {
+        return sendError(res, 'Course ID or Offering ID is required', 400);
+      }
+      const authCheck = await courseOfferingService.checkCourseAccess(req.user, courseId);
+      if (!authCheck.authorized) {
+        return sendError(res, authCheck.message, authCheck.status);
+      }
+      const resolution = await resolveOfferingOrRejectAmbiguity(req.user, courseId, semesterId, res, true, CCR, 'CCR');
+      if (!resolution.resolved) return;
+      if (resolution.offering) {
+        offering = resolution.offering;
+      }
     }
 
     // Validate required fields
@@ -123,23 +257,54 @@ const saveCCRForm = async (req, res, next) => {
       });
     }
 
-    const filter = { course: courseId, faculty: facultyId, formType: 'CCR' };
-    if (semesterId) filter.semester = semesterId;
+    let filter;
+    let updateData;
 
-    const updateData = {
-      course: courseId,
-      faculty: facultyId,
-      formType: 'CCR',
-      courseInfo,
-      weeklyData,
-      alternateData,
-      status: 'draft'
-    };
-    if (semesterId) updateData.semester = semesterId;
+    if (offering) {
+      filter = {
+        $or: [
+          { courseOffering: offering._id },
+          {
+            course: offering.course._id,
+            faculty: offering.faculty._id,
+            semester: offering.semester._id,
+            section: offering.section || 'A',
+            formType: 'CCR'
+          }
+        ]
+      };
+      updateData = {
+        courseOffering: offering._id,
+        course: offering.course._id,
+        faculty: offering.faculty._id,
+        semester: offering.semester._id,
+        section: offering.section || 'A',
+        formType: 'CCR',
+        courseInfo,
+        weeklyData,
+        alternateData,
+        status: 'draft'
+      };
+    } else {
+      const facultyId = req.user._id;
+      filter = { course: courseId, faculty: facultyId, courseOffering: null, formType: 'CCR' };
+      if (semesterId) filter.semester = semesterId;
+      updateData = {
+        courseOffering: null,
+        course: courseId,
+        faculty: facultyId,
+        formType: 'CCR',
+        courseInfo,
+        weeklyData,
+        alternateData,
+        status: 'draft'
+      };
+      if (semesterId) updateData.semester = semesterId;
+    }
 
     const form = await CCR.findOneAndUpdate(
       filter,
-      updateData,
+      { $set: updateData },
       { new: true, upsert: true, setDefaultsOnInsert: true }
     );
 
@@ -154,31 +319,59 @@ const saveCCRForm = async (req, res, next) => {
  * @access  Private
  *
  * Query params:
- *   format   — 'docx' | 'pdf'
- *   semester — Semester ObjectId (optional)
+ *   format     — 'docx' | 'pdf'
+ *   offeringId — CourseOffering ObjectId (optional)
+ *   semester   — Semester ObjectId (optional)
  */
 const exportCCRForm = async (req, res, next) => {
   try {
     const { courseId } = req.params;
-    const facultyId = req.user._id;
-    const { format, semester: semesterId } = req.query;
+    const { format, semester: semesterId, offeringId } = req.query;
 
-    if (!courseId) {
-      return sendError(res, 'Course ID is required', 400);
+    let offering = null;
+    if (offeringId) {
+      try {
+        offering = await getOfferingById(offeringId, req.user);
+      } catch (err) {
+        return sendError(res, err.message, err.statusCode || 500);
+      }
     }
 
-    const query = {
+    if (!offering) {
+      if (!courseId) {
+        return sendError(res, 'Course ID or Offering ID is required', 400);
+      }
+      const authCheck = await courseOfferingService.checkCourseAccess(req.user, courseId);
+      if (!authCheck.authorized) {
+        return sendError(res, authCheck.message, authCheck.status);
+      }
+      const resolution = await resolveOfferingOrRejectAmbiguity(req.user, courseId, semesterId, res, false);
+      if (resolution.ambiguous) {
+        return sendError(
+          res,
+          'Multiple course offerings exist for this course. Please provide offeringId to specify which offering to export.',
+          409
+        );
+      }
+      if (resolution.offering) {
+        offering = resolution.offering;
+      }
+    }
+
+    const legacyQuery = {
       course: courseId,
-      faculty: facultyId,
+      faculty: req.user._id,
       formType: 'CCR'
     };
-    if (semesterId) query.semester = semesterId;
+    if (semesterId) legacyQuery.semester = semesterId;
 
-    const form = await CCR.findOne(query).lean();
+    const form = await findFormByOfferingOrQuery(CCR, offering, legacyQuery, 'CCR');
+
 
     if (!form) {
       return sendError(res, 'CCR form not found. Please save it first.', 404);
     }
+
 
     if (format === 'docx' || format === 'pdf') {
       const exportData = {
@@ -213,26 +406,48 @@ const exportCCRForm = async (req, res, next) => {
  * @access  Private
  *
  * Query params:
- *   semester — Semester ObjectId (optional for backward compat; recommended)
+ *   offeringId — CourseOffering ObjectId (recommended)
+ *   semester   — Semester ObjectId (optional for backward compat; recommended)
  */
 const getCISForm = async (req, res, next) => {
   try {
     const { courseId } = req.params;
-    const facultyId = req.user._id;
-    const { semester: semesterId } = req.query;
+    const { semester: semesterId, offeringId } = req.query;
 
-    if (!courseId) {
-      return sendError(res, 'Course ID is required', 400);
+    let offering = null;
+    if (offeringId) {
+      try {
+        offering = await getOfferingById(offeringId, req.user);
+      } catch (err) {
+        return sendError(res, err.message, err.statusCode || 500);
+      }
     }
 
-    const query = {
+    if (!offering) {
+      if (!courseId) {
+        return sendError(res, 'Course ID or Offering ID is required', 400);
+      }
+      const authCheck = await courseOfferingService.checkCourseAccess(req.user, courseId);
+      if (!authCheck.authorized) {
+        return sendError(res, authCheck.message, authCheck.status);
+      }
+      const resolution = await resolveOfferingOrRejectAmbiguity(req.user, courseId, semesterId, res, false);
+      if (resolution.ambiguous) {
+        return sendSuccess(res, { form: null }, 'Multiple offerings exist for this course. Please specify offeringId.');
+      }
+      if (resolution.offering) {
+        offering = resolution.offering;
+      }
+    }
+
+    const legacyQuery = {
       course: courseId,
-      faculty: facultyId,
+      faculty: req.user._id,
       formType: 'CIS'
     };
-    if (semesterId) query.semester = semesterId;
+    if (semesterId) legacyQuery.semester = semesterId;
 
-    const form = await CIS.findOne(query);
+    const form = await findFormByOfferingOrQuery(CIS, offering, legacyQuery, 'CIS');
 
     return sendSuccess(res, { form: form || null }, 'CIS form fetched successfully');
   } catch (err) {
@@ -245,14 +460,14 @@ const getCISForm = async (req, res, next) => {
  * @access  Private
  *
  * Body:
- *   courseId, semesterId (optional), courseSummary, basicInfo, etc.
+ *   offeringId (optional), courseId, semesterId (optional), courseSummary, basicInfo, etc.
  */
 const saveCISForm = async (req, res, next) => {
   try {
-    const facultyId = req.user._id;
     const {
       courseId,
       semesterId,
+      offeringId,
       courseSummary,
       basicInfo,
       objectives,
@@ -264,8 +479,28 @@ const saveCISForm = async (req, res, next) => {
       gradingPolicy,
     } = req.body;
 
-    if (!courseId) {
-      return sendError(res, 'Course ID is required', 400);
+    let offering = null;
+    if (offeringId) {
+      try {
+        offering = await getOfferingById(offeringId, req.user);
+      } catch (err) {
+        return sendError(res, err.message, err.statusCode || 500);
+      }
+    }
+
+    if (!offering) {
+      if (!courseId) {
+        return sendError(res, 'Course ID or Offering ID is required', 400);
+      }
+      const authCheck = await courseOfferingService.checkCourseAccess(req.user, courseId);
+      if (!authCheck.authorized) {
+        return sendError(res, authCheck.message, authCheck.status);
+      }
+      const resolution = await resolveOfferingOrRejectAmbiguity(req.user, courseId, semesterId, res, true, CIS, 'CIS');
+      if (!resolution.resolved) return;
+      if (resolution.offering) {
+        offering = resolution.offering;
+      }
     }
 
     // Validate required fields
@@ -278,29 +513,66 @@ const saveCISForm = async (req, res, next) => {
       });
     }
 
-    const filter = { course: courseId, faculty: facultyId, formType: 'CIS' };
-    if (semesterId) filter.semester = semesterId;
+    let filter;
+    let updateData;
 
-    const updateData = {
-      course: courseId,
-      faculty: facultyId,
-      formType: 'CIS',
-      courseSummary,
-      basicInfo,
-      courseObjectives: objectives,
-      courseContents: contents,
-      cloTable,
-      textbooks,
-      obaTable,
-      weeklyPlan,
-      gradingPolicy,
-      status: 'draft'
-    };
-    if (semesterId) updateData.semester = semesterId;
+    if (offering) {
+      filter = {
+        $or: [
+          { courseOffering: offering._id },
+          {
+            course: offering.course._id,
+            faculty: offering.faculty._id,
+            semester: offering.semester._id,
+            section: offering.section || 'A',
+            formType: 'CIS'
+          }
+        ]
+      };
+      updateData = {
+        courseOffering: offering._id,
+        course: offering.course._id,
+        faculty: offering.faculty._id,
+        semester: offering.semester._id,
+        section: offering.section || 'A',
+        formType: 'CIS',
+        courseSummary,
+        basicInfo,
+        courseObjectives: objectives,
+        courseContents: contents,
+        cloTable,
+        textbooks,
+        obaTable,
+        weeklyPlan,
+        gradingPolicy,
+        status: 'draft'
+      };
+    } else {
+      const facultyId = req.user._id;
+      filter = { course: courseId, faculty: facultyId, courseOffering: null, formType: 'CIS' };
+      if (semesterId) filter.semester = semesterId;
+      updateData = {
+        courseOffering: null,
+        course: courseId,
+        faculty: facultyId,
+        formType: 'CIS',
+        courseSummary,
+        basicInfo,
+        courseObjectives: objectives,
+        courseContents: contents,
+        cloTable,
+        textbooks,
+        obaTable,
+        weeklyPlan,
+        gradingPolicy,
+        status: 'draft'
+      };
+      if (semesterId) updateData.semester = semesterId;
+    }
 
     const form = await CIS.findOneAndUpdate(
       filter,
-      updateData,
+      { $set: updateData },
       { new: true, upsert: true, setDefaultsOnInsert: true }
     );
 
@@ -315,31 +587,59 @@ const saveCISForm = async (req, res, next) => {
  * @access  Private
  *
  * Query params:
- *   format   — 'docx' | 'pdf'
- *   semester — Semester ObjectId (optional)
+ *   format     — 'docx' | 'pdf'
+ *   offeringId — CourseOffering ObjectId (optional)
+ *   semester   — Semester ObjectId (optional)
  */
 const exportCISForm = async (req, res, next) => {
   try {
     const { courseId } = req.params;
-    const facultyId = req.user._id;
-    const { format, semester: semesterId } = req.query;
+    const { format, semester: semesterId, offeringId } = req.query;
 
-    if (!courseId) {
-      return sendError(res, 'Course ID is required', 400);
+    let offering = null;
+    if (offeringId) {
+      try {
+        offering = await getOfferingById(offeringId, req.user);
+      } catch (err) {
+        return sendError(res, err.message, err.statusCode || 500);
+      }
     }
 
-    const query = {
+    if (!offering) {
+      if (!courseId) {
+        return sendError(res, 'Course ID or Offering ID is required', 400);
+      }
+      const authCheck = await courseOfferingService.checkCourseAccess(req.user, courseId);
+      if (!authCheck.authorized) {
+        return sendError(res, authCheck.message, authCheck.status);
+      }
+      const resolution = await resolveOfferingOrRejectAmbiguity(req.user, courseId, semesterId, res, false);
+      if (resolution.ambiguous) {
+        return sendError(
+          res,
+          'Multiple course offerings exist for this course. Please provide offeringId to specify which offering to export.',
+          409
+        );
+      }
+      if (resolution.offering) {
+        offering = resolution.offering;
+      }
+    }
+
+    const legacyQuery = {
       course: courseId,
-      faculty: facultyId,
+      faculty: req.user._id,
       formType: 'CIS'
     };
-    if (semesterId) query.semester = semesterId;
+    if (semesterId) legacyQuery.semester = semesterId;
 
-    const form = await CIS.findOne(query).lean();
+    const form = await findFormByOfferingOrQuery(CIS, offering, legacyQuery, 'CIS');
+
 
     if (!form) {
       return sendError(res, 'CIS form not found. Please save it first.', 404);
     }
+
 
     if (format === 'docx' || format === 'pdf') {
       const exportData = {
@@ -404,26 +704,48 @@ const validateCCC = ({ certificateData }) => {
  * @access  Private
  *
  * Query params:
- *   semester — Semester ObjectId (optional)
+ *   offeringId — CourseOffering ObjectId (recommended)
+ *   semester   — Semester ObjectId (optional)
  */
 const getCCCForm = async (req, res, next) => {
   try {
     const { courseId } = req.params;
-    const facultyId = req.user._id;
-    const { semester: semesterId } = req.query;
+    const { semester: semesterId, offeringId } = req.query;
 
-    if (!courseId) {
-      return sendError(res, 'Course ID is required', 400);
+    let offering = null;
+    if (offeringId) {
+      try {
+        offering = await getOfferingById(offeringId, req.user);
+      } catch (err) {
+        return sendError(res, err.message, err.statusCode || 500);
+      }
     }
 
-    const query = {
+    if (!offering) {
+      if (!courseId) {
+        return sendError(res, 'Course ID or Offering ID is required', 400);
+      }
+      const authCheck = await courseOfferingService.checkCourseAccess(req.user, courseId);
+      if (!authCheck.authorized) {
+        return sendError(res, authCheck.message, authCheck.status);
+      }
+      const resolution = await resolveOfferingOrRejectAmbiguity(req.user, courseId, semesterId, res, false);
+      if (resolution.ambiguous) {
+        return sendSuccess(res, { form: null }, 'Multiple offerings exist for this course. Please specify offeringId.');
+      }
+      if (resolution.offering) {
+        offering = resolution.offering;
+      }
+    }
+
+    const legacyQuery = {
       course: courseId,
-      faculty: facultyId,
+      faculty: req.user._id,
       formType: 'CCC'
     };
-    if (semesterId) query.semester = semesterId;
+    if (semesterId) legacyQuery.semester = semesterId;
 
-    const form = await CCC.findOne(query);
+    const form = await findFormByOfferingOrQuery(CCC, offering, legacyQuery, 'CCC');
 
     return sendSuccess(res, { form: form || null }, 'CCC form fetched successfully');
   } catch (err) {
@@ -436,15 +758,34 @@ const getCCCForm = async (req, res, next) => {
  * @access  Private
  *
  * Body:
- *   courseId, semesterId (optional), courseInfo, certificateData
+ *   offeringId (optional), courseId, semesterId (optional), courseInfo, certificateData
  */
 const saveCCCForm = async (req, res, next) => {
   try {
-    const facultyId = req.user._id;
-    const { courseId, semesterId, courseInfo, certificateData } = req.body;
+    const { courseId, semesterId, courseInfo, certificateData, offeringId } = req.body;
 
-    if (!courseId) {
-      return sendError(res, 'Course ID is required', 400);
+    let offering = null;
+    if (offeringId) {
+      try {
+        offering = await getOfferingById(offeringId, req.user);
+      } catch (err) {
+        return sendError(res, err.message, err.statusCode || 500);
+      }
+    }
+
+    if (!offering) {
+      if (!courseId) {
+        return sendError(res, 'Course ID or Offering ID is required', 400);
+      }
+      const authCheck = await courseOfferingService.checkCourseAccess(req.user, courseId);
+      if (!authCheck.authorized) {
+        return sendError(res, authCheck.message, authCheck.status);
+      }
+      const resolution = await resolveOfferingOrRejectAmbiguity(req.user, courseId, semesterId, res, true, CCC, 'CCC');
+      if (!resolution.resolved) return;
+      if (resolution.offering) {
+        offering = resolution.offering;
+      }
     }
 
     // Validate required fields
@@ -457,22 +798,52 @@ const saveCCCForm = async (req, res, next) => {
       });
     }
 
-    const filter = { course: courseId, faculty: facultyId, formType: 'CCC' };
-    if (semesterId) filter.semester = semesterId;
+    let filter;
+    let updateData;
 
-    const updateData = {
-      course: courseId,
-      faculty: facultyId,
-      formType: 'CCC',
-      courseInfo,
-      certificateData,
-      status: 'draft'
-    };
-    if (semesterId) updateData.semester = semesterId;
+    if (offering) {
+      filter = {
+        $or: [
+          { courseOffering: offering._id },
+          {
+            course: offering.course._id,
+            faculty: offering.faculty._id,
+            semester: offering.semester._id,
+            section: offering.section || 'A',
+            formType: 'CCC'
+          }
+        ]
+      };
+      updateData = {
+        courseOffering: offering._id,
+        course: offering.course._id,
+        faculty: offering.faculty._id,
+        semester: offering.semester._id,
+        section: offering.section || 'A',
+        formType: 'CCC',
+        courseInfo,
+        certificateData,
+        status: 'draft'
+      };
+    } else {
+      const facultyId = req.user._id;
+      filter = { course: courseId, faculty: facultyId, courseOffering: null, formType: 'CCC' };
+      if (semesterId) filter.semester = semesterId;
+      updateData = {
+        courseOffering: null,
+        course: courseId,
+        faculty: facultyId,
+        formType: 'CCC',
+        courseInfo,
+        certificateData,
+        status: 'draft'
+      };
+      if (semesterId) updateData.semester = semesterId;
+    }
 
     const form = await CCC.findOneAndUpdate(
       filter,
-      updateData,
+      { $set: updateData },
       { new: true, upsert: true, setDefaultsOnInsert: true }
     );
 
@@ -487,27 +858,55 @@ const saveCCCForm = async (req, res, next) => {
  * @access  Private
  *
  * Query params:
- *   format   — 'pdf'
- *   semester — Semester ObjectId (optional)
+ *   format     — 'pdf'
+ *   offeringId — CourseOffering ObjectId (optional)
+ *   semester   — Semester ObjectId (optional)
  */
 const exportCCCForm = async (req, res, next) => {
   try {
     const { courseId } = req.params;
-    const facultyId = req.user._id;
-    const { format, semester: semesterId } = req.query;
+    const { format, semester: semesterId, offeringId } = req.query;
 
-    if (!courseId) {
-      return sendError(res, 'Course ID is required', 400);
+    let offering = null;
+    if (offeringId) {
+      try {
+        offering = await getOfferingById(offeringId, req.user);
+      } catch (err) {
+        return sendError(res, err.message, err.statusCode || 500);
+      }
     }
 
-    const query = {
+    if (!offering) {
+      if (!courseId) {
+        return sendError(res, 'Course ID or Offering ID is required', 400);
+      }
+      const authCheck = await courseOfferingService.checkCourseAccess(req.user, courseId);
+      if (!authCheck.authorized) {
+        return sendError(res, authCheck.message, authCheck.status);
+      }
+      const resolution = await resolveOfferingOrRejectAmbiguity(req.user, courseId, semesterId, res, false);
+      if (resolution.ambiguous) {
+        return sendError(
+          res,
+          'Multiple course offerings exist for this course. Please provide offeringId to specify which offering to export.',
+          409
+        );
+      }
+      if (resolution.offering) {
+        offering = resolution.offering;
+      }
+    }
+
+    const legacyQuery = {
       course: courseId,
-      faculty: facultyId,
+      faculty: req.user._id,
       formType: 'CCC'
     };
-    if (semesterId) query.semester = semesterId;
+    if (semesterId) legacyQuery.semester = semesterId;
 
-    const form = await CCC.findOne(query).lean();
+    const form = await findFormByOfferingOrQuery(CCC, offering, legacyQuery, 'CCC');
+
+
 
     if (!form) {
       return sendError(res, 'CCC form not found. Please save it first.', 404);
@@ -556,26 +955,48 @@ const validateCRR = ({ courseInfo }) => {
  * @access  Private
  *
  * Query params:
- *   semester — Semester ObjectId (optional)
+ *   offeringId — CourseOffering ObjectId (recommended)
+ *   semester   — Semester ObjectId (optional)
  */
 const getCourseReviewForm = async (req, res, next) => {
   try {
     const { courseId } = req.params;
-    const facultyId = req.user._id;
-    const { semester: semesterId } = req.query;
+    const { semester: semesterId, offeringId } = req.query;
 
-    if (!courseId) {
-      return sendError(res, 'Course ID is required', 400);
+    let offering = null;
+    if (offeringId) {
+      try {
+        offering = await getOfferingById(offeringId, req.user);
+      } catch (err) {
+        return sendError(res, err.message, err.statusCode || 500);
+      }
     }
 
-    const query = {
+    if (!offering) {
+      if (!courseId) {
+        return sendError(res, 'Course ID or Offering ID is required', 400);
+      }
+      const authCheck = await courseOfferingService.checkCourseAccess(req.user, courseId);
+      if (!authCheck.authorized) {
+        return sendError(res, authCheck.message, authCheck.status);
+      }
+      const resolution = await resolveOfferingOrRejectAmbiguity(req.user, courseId, semesterId, res, false);
+      if (resolution.ambiguous) {
+        return sendSuccess(res, { form: null }, 'Multiple offerings exist for this course. Please specify offeringId.');
+      }
+      if (resolution.offering) {
+        offering = resolution.offering;
+      }
+    }
+
+    const legacyQuery = {
       course: courseId,
-      faculty: facultyId,
+      faculty: req.user._id,
       formType: 'CRR'
     };
-    if (semesterId) query.semester = semesterId;
+    if (semesterId) legacyQuery.semester = semesterId;
 
-    const form = await CourseReviewReport.findOne(query);
+    const form = await findFormByOfferingOrQuery(CourseReviewReport, offering, legacyQuery, 'CRR');
 
     return sendSuccess(res, { form: form || null }, 'Course Review Report fetched successfully');
   } catch (err) {
@@ -588,15 +1009,15 @@ const getCourseReviewForm = async (req, res, next) => {
  * @access  Private
  *
  * Body:
- *   courseId, semesterId (optional), courseInfo, assessmentSummary,
+ *   offeringId (optional), courseId, semesterId (optional), courseInfo, assessmentSummary,
  *   gradeSummary, courseLearningOutcomes, courseEnhancement, signatureInfo
  */
 const saveCourseReviewForm = async (req, res, next) => {
   try {
-    const facultyId = req.user._id;
     const {
       courseId,
       semesterId,
+      offeringId,
       courseInfo,
       assessmentSummary,
       gradeSummary,
@@ -605,8 +1026,28 @@ const saveCourseReviewForm = async (req, res, next) => {
       signatureInfo
     } = req.body;
 
-    if (!courseId) {
-      return sendError(res, 'Course ID is required', 400);
+    let offering = null;
+    if (offeringId) {
+      try {
+        offering = await getOfferingById(offeringId, req.user);
+      } catch (err) {
+        return sendError(res, err.message, err.statusCode || 500);
+      }
+    }
+
+    if (!offering) {
+      if (!courseId) {
+        return sendError(res, 'Course ID or Offering ID is required', 400);
+      }
+      const authCheck = await courseOfferingService.checkCourseAccess(req.user, courseId);
+      if (!authCheck.authorized) {
+        return sendError(res, authCheck.message, authCheck.status);
+      }
+      const resolution = await resolveOfferingOrRejectAmbiguity(req.user, courseId, semesterId, res, true, CourseReviewReport, 'CRR');
+      if (!resolution.resolved) return;
+      if (resolution.offering) {
+        offering = resolution.offering;
+      }
     }
 
     // Validate required fields
@@ -619,26 +1060,60 @@ const saveCourseReviewForm = async (req, res, next) => {
       });
     }
 
-    const filter = { course: courseId, faculty: facultyId, formType: 'CRR' };
-    if (semesterId) filter.semester = semesterId;
+    let filter;
+    let updateData;
 
-    const updateData = {
-      course: courseId,
-      faculty: facultyId,
-      formType: 'CRR',
-      courseInfo,
-      assessmentSummary,
-      gradeSummary,
-      courseLearningOutcomes,
-      courseEnhancement,
-      signatureInfo,
-      status: 'draft'
-    };
-    if (semesterId) updateData.semester = semesterId;
+    if (offering) {
+      filter = {
+        $or: [
+          { courseOffering: offering._id },
+          {
+            course: offering.course._id,
+            faculty: offering.faculty._id,
+            semester: offering.semester._id,
+            section: offering.section || 'A',
+            formType: 'CRR'
+          }
+        ]
+      };
+      updateData = {
+        courseOffering: offering._id,
+        course: offering.course._id,
+        faculty: offering.faculty._id,
+        semester: offering.semester._id,
+        section: offering.section || 'A',
+        formType: 'CRR',
+        courseInfo,
+        assessmentSummary,
+        gradeSummary,
+        courseLearningOutcomes,
+        courseEnhancement,
+        signatureInfo,
+        status: 'draft'
+      };
+    } else {
+      const facultyId = req.user._id;
+      filter = { course: courseId, faculty: facultyId, courseOffering: null, formType: 'CRR' };
+      if (semesterId) filter.semester = semesterId;
+      updateData = {
+        courseOffering: null,
+        course: courseId,
+        faculty: facultyId,
+        formType: 'CRR',
+        courseInfo,
+        assessmentSummary,
+        gradeSummary,
+        courseLearningOutcomes,
+        courseEnhancement,
+        signatureInfo,
+        status: 'draft'
+      };
+      if (semesterId) updateData.semester = semesterId;
+    }
 
     const form = await CourseReviewReport.findOneAndUpdate(
       filter,
-      updateData,
+      { $set: updateData },
       { new: true, upsert: true, setDefaultsOnInsert: true }
     );
 
@@ -653,27 +1128,55 @@ const saveCourseReviewForm = async (req, res, next) => {
  * @access  Private
  *
  * Query params:
- *   format   — 'pdf'
- *   semester — Semester ObjectId (optional)
+ *   format     — 'pdf'
+ *   offeringId — CourseOffering ObjectId (optional)
+ *   semester   — Semester ObjectId (optional)
  */
 const exportCourseReviewForm = async (req, res, next) => {
   try {
     const { courseId } = req.params;
-    const facultyId = req.user._id;
-    const { format, semester: semesterId } = req.query;
+    const { format, semester: semesterId, offeringId } = req.query;
 
-    if (!courseId) {
-      return sendError(res, 'Course ID is required', 400);
+    let offering = null;
+    if (offeringId) {
+      try {
+        offering = await getOfferingById(offeringId, req.user);
+      } catch (err) {
+        return sendError(res, err.message, err.statusCode || 500);
+      }
     }
 
-    const query = {
+    if (!offering) {
+      if (!courseId) {
+        return sendError(res, 'Course ID or Offering ID is required', 400);
+      }
+      const authCheck = await courseOfferingService.checkCourseAccess(req.user, courseId);
+      if (!authCheck.authorized) {
+        return sendError(res, authCheck.message, authCheck.status);
+      }
+      const resolution = await resolveOfferingOrRejectAmbiguity(req.user, courseId, semesterId, res, false);
+      if (resolution.ambiguous) {
+        return sendError(
+          res,
+          'Multiple course offerings exist for this course. Please provide offeringId to specify which offering to export.',
+          409
+        );
+      }
+      if (resolution.offering) {
+        offering = resolution.offering;
+      }
+    }
+
+    const legacyQuery = {
       course: courseId,
-      faculty: facultyId,
+      faculty: req.user._id,
       formType: 'CRR'
     };
-    if (semesterId) query.semester = semesterId;
+    if (semesterId) legacyQuery.semester = semesterId;
 
-    const form = await CourseReviewReport.findOne(query).lean();
+    const form = await findFormByOfferingOrQuery(CourseReviewReport, offering, legacyQuery, 'CRR');
+
+
 
     if (!form) {
       return sendError(res, 'Course Review Report not found. Please save it first.', 404);
