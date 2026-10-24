@@ -121,11 +121,20 @@ const verifyFolderAccess = async (folderId = googleDriveConfig.DESTINATION_FOLDE
 const getConnectionStatus = async () => {
   const tokenInfo = await googleDriveConfig.getStoredRefreshToken();
 
+  const clientConfig = googleDriveConfig.getClientConfigStatus
+    ? googleDriveConfig.getClientConfigStatus()
+    : { isConfigured: true, hasClientId: true, hasClientSecret: true };
+
   return {
     isConfigured: Boolean(tokenInfo && tokenInfo.refreshToken),
     source: tokenInfo ? tokenInfo.source : null,
     authorizedEmail: tokenInfo?.email || null,
     destinationFolderId: googleDriveConfig.DESTINATION_FOLDER_ID,
+    oauthClientReady: clientConfig.isConfigured,
+    clientConfig: {
+      hasClientId: clientConfig.hasClientId,
+      hasClientSecret: clientConfig.hasClientSecret,
+    },
   };
 };
 
