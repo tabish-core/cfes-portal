@@ -38,7 +38,8 @@ const getOAuth2Client = () => {
 
   const clientSecret =
     cleanEnv(process.env.GOOGLE_OAUTH_CLIENT_SECRET) ||
-    cleanEnv(process.env.GOOGLE_CLIENT_SECRET);
+    cleanEnv(process.env.GOOGLE_CLIENT_SECRET) ||
+    cleanEnv(process.env.OOGLE_OAUTH_CLIENT_SECRET);
 
   const redirectUri =
     cleanEnv(process.env.GOOGLE_OAUTH_REDIRECT_URI) ||
@@ -67,7 +68,8 @@ const getClientConfigStatus = () => {
 
   const clientSecret =
     cleanEnv(process.env.GOOGLE_OAUTH_CLIENT_SECRET) ||
-    cleanEnv(process.env.GOOGLE_CLIENT_SECRET);
+    cleanEnv(process.env.GOOGLE_CLIENT_SECRET) ||
+    cleanEnv(process.env.OOGLE_OAUTH_CLIENT_SECRET);
 
   return {
     hasClientId: Boolean(clientId),
