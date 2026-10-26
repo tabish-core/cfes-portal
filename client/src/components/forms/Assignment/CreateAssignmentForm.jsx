@@ -3,7 +3,7 @@ import api from '../../../api/axios';
 import useToast from '../../../hooks/useToast';
 import AIQuestionGenerator from '../../common/AIQuestionGenerator';
 
-const CreateAssignmentForm = ({ courseId, assignmentId, onBack }) => {
+const CreateAssignmentForm = ({ courseId, offeringId, assignmentId, onBack }) => {
   const toast = useToast();
   const [loading, setLoading] = useState(false);
   const isEditMode = !!assignmentId;
@@ -38,7 +38,7 @@ const CreateAssignmentForm = ({ courseId, assignmentId, onBack }) => {
 
   /* ── Load existing assignment or auto-fill course info ── */
   useEffect(() => {
-    if (!courseId) return;
+    if (!courseId && !offeringId) return;
 
     const loadData = async () => {
       try {
@@ -67,15 +67,34 @@ const CreateAssignmentForm = ({ courseId, assignmentId, onBack }) => {
           return;
         }
 
-        // Create mode — auto-fill course info
-        const { data } = await api.get(`/courses/${courseId}`);
-        if (data.data && data.data.course) {
-          const course = data.data.course;
-          setCourseInfo({
-            department: course.department?.name || '',
-            program: course.program || '',
-            courseTitle: course.courseName || ''
-          });
+        // Create mode — auto-fill course info from offering or course
+        if (offeringId) {
+          try {
+            const { data } = await api.get(`/offerings/${offeringId}`);
+            const off = data.data?.offering || data.offering;
+            if (off && off.course) {
+              setCourseInfo({
+                department: off.course.department?.name || '',
+                program: off.course.program || '',
+                courseTitle: off.course.courseName || '',
+              });
+              return;
+            }
+          } catch (offErr) {
+            console.warn('Could not load offering details for course info auto-fill:', offErr);
+          }
+        }
+
+        if (courseId) {
+          const { data } = await api.get(`/courses/${courseId}`);
+          if (data.data && data.data.course) {
+            const course = data.data.course;
+            setCourseInfo({
+              department: course.department?.name || '',
+              program: course.program || '',
+              courseTitle: course.courseName || ''
+            });
+          }
         }
       } catch (err) {
         console.error('Failed to load assignment data:', err);
@@ -84,7 +103,8 @@ const CreateAssignmentForm = ({ courseId, assignmentId, onBack }) => {
       }
     };
     loadData();
-  }, [courseId, assignmentId]);
+  }, [courseId, offeringId, assignmentId]);
+
 
   // ── Styles (reused from CCC/CRR/Quiz) ───────────────────────
   const sectionHeaderStyle = {
@@ -183,6 +203,7 @@ const CreateAssignmentForm = ({ courseId, assignmentId, onBack }) => {
 
       const payload = {
         courseId,
+        offeringId,
         assignmentInfo,
         courseInfo,
         cloMappings: cloMappings.map(({ mappedCLO, mappedGA, mappedLearningLevel, sdg }) => ({
@@ -196,6 +217,7 @@ const CreateAssignmentForm = ({ courseId, assignmentId, onBack }) => {
         evaluationCriteria: criteria.map(c => c.text).filter(t => t.trim()),
         tipsForSuccess: tips.map(t => t.text).filter(t => t.trim())
       };
+
 
       if (isEditMode) {
         await api.put(`/assignments/${assignmentId}`, payload);

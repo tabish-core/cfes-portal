@@ -3,7 +3,7 @@ import api from '../../../api/axios';
 import useToast from '../../../hooks/useToast';
 import CreateQuizForm from './CreateQuizForm';
 
-const QuizManagementPage = ({ courseId }) => {
+const QuizManagementPage = ({ courseId, offeringId }) => {
   const toast = useToast();
   const [view, setView] = useState('list'); // 'list' | 'create' | 'edit'
   const [editQuizId, setEditQuizId] = useState(null);
@@ -11,13 +11,20 @@ const QuizManagementPage = ({ courseId }) => {
   const [loading, setLoading] = useState(false);
   const [isExporting, setIsExporting] = useState('');
 
-  /* ── Fetch quizzes for this course ─────────────────────── */
+  /* ── Fetch quizzes for this course / offering ───────────── */
   const fetchQuizzes = async () => {
     try {
       setLoading(true);
-      const { data } = await api.get(`/quizzes/course/${courseId}`);
-      if (data.data && data.data.quizzes) {
-        setQuizzes(data.data.quizzes);
+      let res;
+      if (offeringId) {
+        res = await api.get(`/quizzes/offering/${offeringId}`);
+      } else if (courseId && courseId !== 'undefined') {
+        res = await api.get(`/quizzes/course/${courseId}`);
+      } else {
+        return;
+      }
+      if (res.data?.data?.quizzes) {
+        setQuizzes(res.data.data.quizzes);
       }
     } catch (err) {
       console.error('Failed to fetch quizzes:', err);
@@ -28,8 +35,11 @@ const QuizManagementPage = ({ courseId }) => {
   };
 
   useEffect(() => {
-    if (courseId) fetchQuizzes();
-  }, [courseId]);
+    if (offeringId || (courseId && courseId !== 'undefined')) {
+      fetchQuizzes();
+    }
+  }, [courseId, offeringId]);
+
 
   /* ── Delete quiz ───────────────────────────────────────── */
   const handleDelete = async (quizId) => {
@@ -274,6 +284,7 @@ const QuizManagementPage = ({ courseId }) => {
   return (
     <CreateQuizForm
       courseId={courseId}
+      offeringId={offeringId}
       quizId={editQuizId}
       onBack={handleBack}
     />
@@ -281,3 +292,4 @@ const QuizManagementPage = ({ courseId }) => {
 };
 
 export default QuizManagementPage;
+

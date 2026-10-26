@@ -46,6 +46,11 @@ const assignmentSchema = new mongoose.Schema({
     ref: 'Semester',
     default: null,
   },
+  courseOffering: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'CourseOffering',
+    default: null,
+  },
 
   /* ── Assignment Metadata ────────────────────────────────── */
   assignmentInfo: {
@@ -85,7 +90,9 @@ const assignmentSchema = new mongoose.Schema({
 
 }, { timestamps: true });
 
-// Index for fast lookups: all assignments for a course by a faculty member
+// Indexes for fast lookups
+assignmentSchema.index({ courseOffering: 1 });
 assignmentSchema.index({ course: 1, faculty: 1 });
 
 module.exports = mongoose.model('Assignment', assignmentSchema);
+

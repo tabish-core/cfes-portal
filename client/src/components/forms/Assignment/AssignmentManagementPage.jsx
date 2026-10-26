@@ -3,7 +3,7 @@ import api from '../../../api/axios';
 import useToast from '../../../hooks/useToast';
 import CreateAssignmentForm from './CreateAssignmentForm';
 
-const AssignmentManagementPage = ({ courseId }) => {
+const AssignmentManagementPage = ({ courseId, offeringId }) => {
   const toast = useToast();
   const [view, setView] = useState('list'); // 'list' | 'create' | 'edit'
   const [editAssignmentId, setEditAssignmentId] = useState(null);
@@ -11,13 +11,20 @@ const AssignmentManagementPage = ({ courseId }) => {
   const [loading, setLoading] = useState(false);
   const [isExporting, setIsExporting] = useState('');
 
-  /* ── Fetch assignments for this course ─────────────────── */
+  /* ── Fetch assignments for this course / offering ───────── */
   const fetchAssignments = async () => {
     try {
       setLoading(true);
-      const { data } = await api.get(`/assignments/course/${courseId}`);
-      if (data.data && data.data.assignments) {
-        setAssignments(data.data.assignments);
+      let res;
+      if (offeringId) {
+        res = await api.get(`/assignments/offering/${offeringId}`);
+      } else if (courseId && courseId !== 'undefined') {
+        res = await api.get(`/assignments/course/${courseId}`);
+      } else {
+        return;
+      }
+      if (res.data?.data?.assignments) {
+        setAssignments(res.data.data.assignments);
       }
     } catch (err) {
       console.error('Failed to fetch assignments:', err);
@@ -28,8 +35,11 @@ const AssignmentManagementPage = ({ courseId }) => {
   };
 
   useEffect(() => {
-    if (courseId) fetchAssignments();
-  }, [courseId]);
+    if (offeringId || (courseId && courseId !== 'undefined')) {
+      fetchAssignments();
+    }
+  }, [courseId, offeringId]);
+
 
   /* ── Delete assignment ─────────────────────────────────── */
   const handleDelete = async (assignmentId) => {
@@ -274,6 +284,7 @@ const AssignmentManagementPage = ({ courseId }) => {
   return (
     <CreateAssignmentForm
       courseId={courseId}
+      offeringId={offeringId}
       assignmentId={editAssignmentId}
       onBack={handleBack}
     />
@@ -281,3 +292,4 @@ const AssignmentManagementPage = ({ courseId }) => {
 };
 
 export default AssignmentManagementPage;
+

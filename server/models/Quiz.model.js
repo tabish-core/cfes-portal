@@ -46,6 +46,11 @@ const quizSchema = new mongoose.Schema({
     ref: 'Semester',
     default: null,
   },
+  courseOffering: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'CourseOffering',
+    default: null,
+  },
 
   /* ── Quiz Metadata ──────────────────────────────────────── */
   quizInfo: {
@@ -77,7 +82,9 @@ const quizSchema = new mongoose.Schema({
 
 }, { timestamps: true });
 
-// Index for fast lookups: all quizzes for a course by a faculty member
+// Indexes for fast lookups
+quizSchema.index({ courseOffering: 1 });
 quizSchema.index({ course: 1, faculty: 1 });
 
 module.exports = mongoose.model('Quiz', quizSchema);
+

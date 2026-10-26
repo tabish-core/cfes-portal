@@ -8,6 +8,7 @@ const CourseOffering   = require('../models/CourseOffering.model');
 const Course           = require('../models/Course.model');
 const User             = require('../models/User.model');
 const Semester         = require('../models/Semester.model');
+const Department       = require('../models/Department.model');
 
 /* ── helpers ───────────────────────────────────────────────────────────── */
 const fail = (message, statusCode = 400) => {
@@ -52,7 +53,8 @@ const createOffering = async (facultyId, courseId, semesterId, section = 'A', us
 
   // If HoD, restrict to their department
   if (user && user.designation === 'hod') {
-    if (course.department.toString() !== user.department.toString()) {
+    const courseDept = course.department?._id || course.department;
+    if (!user.department || !courseDept || courseDept.toString() !== user.department.toString()) {
       fail('You are only allowed to assign courses belonging to your department.', 403);
     }
   }
@@ -95,7 +97,8 @@ const removeOffering = async (offeringId, user) => {
   if (!offering) fail('Course offering not found', 404);
 
   if (user && user.designation === 'hod') {
-    if (offering.course.department.toString() !== user.department.toString()) {
+    const courseDept = offering.course?.department?._id || offering.course?.department;
+    if (!user.department || !courseDept || courseDept.toString() !== user.department.toString()) {
       fail('You are only allowed to remove offerings belonging to your department.', 403);
     }
   }
@@ -216,16 +219,30 @@ const getOfferingById = async (offeringId, user) => {
 
   // Authorization enforcement
   if (user) {
-    if (user.designation === 'faculty') {
-      const offeringFacultyId = offering.faculty?._id ? offering.faculty._id.toString() : offering.faculty?.toString();
-      if (!offeringFacultyId || offeringFacultyId !== user._id.toString()) {
-        fail('You are not authorized to access this course offering.', 403);
-      }
-    } else if (user.designation === 'hod') {
+    if (user.designation === 'dean') {
+      // Dean has universal access across all departments and offerings
+      return offering;
+    }
+
+    const offeringFacultyId = offering.faculty?._id
+      ? offering.faculty._id.toString()
+      : offering.faculty?.toString();
+    const isAssignedFaculty = Boolean(offeringFacultyId && offeringFacultyId === user._id.toString());
+
+    // If the authenticated user (faculty or HoD) is assigned to teach this offering,
+    // grant instructor access unconditionally.
+    if (isAssignedFaculty) {
+      return offering;
+    }
+
+    // If not the assigned instructor, check designation permissions (HoD departmental access)
+    if (user.designation === 'hod') {
       const courseDept = offering.course?.department?._id || offering.course?.department;
       if (!user.department || !courseDept || courseDept.toString() !== user.department.toString()) {
         fail('You are only authorized to access course offerings belonging to your department.', 403);
       }
+    } else {
+      fail('You are not authorized to access this course offering.', 403);
     }
   }
 
@@ -259,11 +276,12 @@ const checkCourseAccess = async (user, courseId) => {
   }
 
   if (user.designation === 'hod') {
-    if (!user.department || !course.department || course.department.toString() !== user.department.toString()) {
+    const courseDept = course.department?._id || course.department;
+    if (!user.department || !courseDept || courseDept.toString() !== user.department.toString()) {
       return {
         authorized: false,
         status: 403,
-        message: 'Forbidden. You are only allowed to access courses belonging to your department.',
+        message: 'Forbidden. As HoD, you are only allowed to access courses belonging to your department.',
       };
     }
     return { authorized: true, course };

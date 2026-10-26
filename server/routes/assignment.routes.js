@@ -6,6 +6,7 @@ const router = express.Router();
 
 // All assignment routes require authentication
 router.get('/course/:courseId', verifyToken, assignmentController.getAssignmentsForCourse);
+router.get('/offering/:offeringId', verifyToken, assignmentController.getAssignmentsForOffering);
 router.get('/:assignmentId', verifyToken, assignmentController.getAssignment);
 router.post('/', verifyToken, assignmentController.createAssignment);
 router.put('/:assignmentId', verifyToken, assignmentController.updateAssignment);
@@ -13,3 +14,4 @@ router.delete('/:assignmentId', verifyToken, assignmentController.deleteAssignme
 router.get('/:assignmentId/export', verifyToken, assignmentController.exportAssignmentWord);
 
 module.exports = router;
+

@@ -17,15 +17,19 @@ import LecturesPage from '../../components/forms/Lectures/LecturesPage';
 const CourseForm = () => {
   const { courseId: paramCourseId, offeringId, formType } = useParams();
   const [offering, setOffering] = useState(null);
+  const [loadingOffering, setLoadingOffering] = useState(Boolean(offeringId));
 
   useEffect(() => {
     if (!offeringId) return;
     const loadOffering = async () => {
       try {
+        setLoadingOffering(true);
         const { data } = await api.get(`/offerings/${offeringId}`);
         setOffering(data.data?.offering || data.offering);
       } catch (err) {
         console.error('Failed to load offering details:', err);
+      } finally {
+        setLoadingOffering(false);
       }
     };
     loadOffering();
@@ -62,7 +66,11 @@ const CourseForm = () => {
       </div>
 
       <div className="dashboard-panel">
-        {formType === 'CCR' ? (
+        {loadingOffering ? (
+          <div style={{ textAlign: 'center', padding: '3rem', color: '#64748b', fontStyle: 'italic' }}>
+            Loading course offering details...
+          </div>
+        ) : formType === 'CCR' ? (
           <CourseControlReportPage courseId={activeCourseId} offeringId={offeringId} />
         ) : formType === 'CIS' ? (
           <CourseInformationSheetPage courseId={activeCourseId} offeringId={offeringId} />

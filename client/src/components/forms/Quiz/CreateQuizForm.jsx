@@ -3,7 +3,7 @@ import api from '../../../api/axios';
 import useToast from '../../../hooks/useToast';
 import AIQuestionGenerator from '../../common/AIQuestionGenerator';
 
-const CreateQuizForm = ({ courseId, quizId, onBack }) => {
+const CreateQuizForm = ({ courseId, offeringId, quizId, onBack }) => {
   const toast = useToast();
   const [loading, setLoading] = useState(false);
   const isEditMode = !!quizId;
@@ -31,7 +31,7 @@ const CreateQuizForm = ({ courseId, quizId, onBack }) => {
 
   /* ── Load existing quiz (edit mode) or auto-fill course info ── */
   useEffect(() => {
-    if (!courseId) return;
+    if (!courseId && !offeringId) return;
 
     const loadData = async () => {
       try {
@@ -58,15 +58,34 @@ const CreateQuizForm = ({ courseId, quizId, onBack }) => {
           return;
         }
 
-        // Create mode — auto-fill course info
-        const { data } = await api.get(`/courses/${courseId}`);
-        if (data.data && data.data.course) {
-          const course = data.data.course;
-          setCourseInfo({
-            department: course.department?.name || '',
-            program: course.program || '',
-            courseTitle: course.courseName || ''
-          });
+        // Create mode — auto-fill course info from offering or course
+        if (offeringId) {
+          try {
+            const { data } = await api.get(`/offerings/${offeringId}`);
+            const off = data.data?.offering || data.offering;
+            if (off && off.course) {
+              setCourseInfo({
+                department: off.course.department?.name || '',
+                program: off.course.program || '',
+                courseTitle: off.course.courseName || '',
+              });
+              return;
+            }
+          } catch (offErr) {
+            console.warn('Could not load offering details for course info auto-fill:', offErr);
+          }
+        }
+
+        if (courseId) {
+          const { data } = await api.get(`/courses/${courseId}`);
+          if (data.data && data.data.course) {
+            const course = data.data.course;
+            setCourseInfo({
+              department: course.department?.name || '',
+              program: course.program || '',
+              courseTitle: course.courseName || ''
+            });
+          }
         }
       } catch (err) {
         console.error('Failed to load quiz data:', err);
@@ -75,7 +94,7 @@ const CreateQuizForm = ({ courseId, quizId, onBack }) => {
       }
     };
     loadData();
-  }, [courseId, quizId]);
+  }, [courseId, offeringId, quizId]);
 
   /* ── Save (Create or Update) ───────────────────────────── */
   const handleSaveDraft = async (e) => {
@@ -86,6 +105,7 @@ const CreateQuizForm = ({ courseId, quizId, onBack }) => {
 
       const payload = {
         courseId,
+        offeringId,
         quizInfo,
         courseInfo,
         cloMappings: cloMappings.map(({ mappedCLO, mappedGA, mappedLearningLevel, sdg }) => ({
@@ -96,6 +116,7 @@ const CreateQuizForm = ({ courseId, quizId, onBack }) => {
           marks: q.marks
         }))
       };
+
 
       if (isEditMode) {
         await api.put(`/quizzes/${quizId}`, payload);
