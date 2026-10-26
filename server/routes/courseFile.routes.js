@@ -60,7 +60,10 @@ router.get('/offering/:offeringId', flexibleAuth, courseFileController.listOffer
 // 6. Generate and synchronize CIS (Course Information Sheet) to Google Drive
 router.post('/sync/cis/:offeringId', flexibleAuth, courseFileController.syncCISDocument);
 
-// 7. Direct document upload for an offering (multipart 'file' or base64)
+// 7. Generate and synchronize CCR (Course Control Report) to Google Drive
+router.post('/sync/ccr/:offeringId', flexibleAuth, courseFileController.syncCCRDocument);
+
+// 8. Direct document upload for an offering (multipart 'file' or base64)
 router.post('/upload/:offeringId', flexibleAuth, upload.single('file'), courseFileController.uploadOfferingDocument);
 
 // 8. View course file metadata / redirect to Google Drive web view

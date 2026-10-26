@@ -19,6 +19,9 @@ const driveService = require('./drive.service');
 const googleDriveConfig = require('../config/googleDrive');
 const cisWordService = require('./documentService/generateCISWord');
 const cisPdfService = require('./documentService/generateCISPDF');
+const CCR = require('../models/CCR.model');
+const ccrWordService = require('./documentService/generateCCRWord');
+const ccrPdfService = require('./documentService/generateCCRPDF');
 
 /**
  * Maps common file extensions to standard MIME types.
@@ -283,6 +286,83 @@ const generateAndSyncCIS = async ({ offeringId, fileFormat = 'pdf', user }) => {
 };
 
 /**
+ * Generates the Course Control Report (CCR) from saved form data and uploads it to Google Drive.
+ *
+ * @param {Object} params
+ * @param {string} params.offeringId - CourseOffering ID
+ * @param {string} [params.fileFormat='pdf'] - 'pdf' | 'docx'
+ * @param {Object} params.user - Authenticated user
+ * @returns {Promise<Object>} Persisted CourseFile document
+ */
+const generateAndSyncCCR = async ({ offeringId, fileFormat = 'pdf', user }) => {
+  // 1. Verify offering access & authorization
+  const offering = await courseOfferingService.getOfferingById(offeringId, user);
+
+  // 2. Validate requested file format (pdf or docx)
+  const rawFormat = (fileFormat || 'pdf').toLowerCase().trim();
+  if (rawFormat !== 'pdf' && rawFormat !== 'docx') {
+    const error = new Error(`Invalid file format: '${fileFormat}'. Supported formats: pdf, docx`);
+    error.statusCode = 400;
+    throw error;
+  }
+  const normalizedFormat = rawFormat;
+
+  // 3. Locate saved CCR document (prefer courseOffering, fallback to course/faculty/semester/section)
+  let form = await CCR.findOne({ courseOffering: offering._id });
+  if (!form) {
+    form = await CCR.findOne({
+      course: offering.course._id || offering.course,
+      faculty: offering.faculty._id || offering.faculty,
+      semester: offering.semester._id || offering.semester,
+      section: offering.section || 'A',
+      formType: 'CCR',
+    });
+  }
+
+  if (!form) {
+    const error = new Error(
+      'Course Control Report (CCR) form has not been saved for this course offering. Please fill and save the CCR form first.'
+    );
+    error.statusCode = 404;
+    throw error;
+  }
+
+  // 4. Build export data structure expected by CCR generators
+  const exportData = {
+    courseInfo: form.courseInfo?.toObject ? form.courseInfo.toObject() : form.courseInfo || {},
+    weeklyData: form.weeklyData?.toObject ? form.weeklyData.toObject() : form.weeklyData || [],
+    alternateData: form.alternateData?.toObject ? form.alternateData.toObject() : form.alternateData || [],
+  };
+
+  // 5. Generate document buffer
+  let buffer;
+  try {
+    if (normalizedFormat === 'docx') {
+      buffer = await ccrWordService.generateCCRWord(exportData);
+    } else {
+      buffer = await ccrPdfService.generateCCRPDF(exportData);
+    }
+  } catch (genErr) {
+    console.error(`CCR ${normalizedFormat.toUpperCase()} generation failed:`, genErr);
+    const error = new Error(
+      `Failed to generate Course Control Report (${normalizedFormat.toUpperCase()}): ${genErr.message}`
+    );
+    error.statusCode = 500;
+    throw error;
+  }
+
+  // 6. Delegate to generic offering synchronizer
+  return await module.exports.syncOfferingDocument({
+    offeringId: offering._id,
+    documentType: 'CCR',
+    fileFormat: normalizedFormat,
+    instanceName: '',
+    buffer,
+    user,
+  });
+};
+
+/**
  * Lists all course files associated with a CourseOffering.
  *
  * @param {string} offeringId - CourseOffering ID
@@ -347,6 +427,7 @@ const downloadCourseFile = async (fileId, user) => {
 module.exports = {
   syncOfferingDocument,
   generateAndSyncCIS,
+  generateAndSyncCCR,
   listOfferingFiles,
   getCourseFileById,
   downloadCourseFile,

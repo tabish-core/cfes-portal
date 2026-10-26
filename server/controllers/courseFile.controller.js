@@ -240,6 +240,31 @@ const syncCISDocument = async (req, res, next) => {
 };
 
 /**
+ * Generates and synchronizes the Course Control Report (CCR) to Google Drive.
+ *
+ * @route   POST /api/course-files/sync/ccr/:offeringId
+ * @access  Private
+ */
+const syncCCRDocument = async (req, res, next) => {
+  try {
+    const { offeringId } = req.params;
+    const format = req.query.format || req.body?.format || 'pdf';
+    const result = await courseFileService.generateAndSyncCCR({
+      offeringId,
+      fileFormat: format,
+      user: req.user,
+    });
+    return sendSuccess(
+      res,
+      result,
+      `Course Control Report (${result.fileFormat.toUpperCase()}) synchronized to Google Drive successfully.`
+    );
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
  * Uploads an arbitrary course document buffer to Google Drive for an offering.
  * Supports multipart/form-data upload (via multer) or base64 JSON payload.
  *
@@ -477,6 +502,7 @@ module.exports = {
   verifyGoogleDriveAccess,
   listOfferingFiles,
   syncCISDocument,
+  syncCCRDocument,
   uploadOfferingDocument,
   viewCourseFile,
   downloadCourseFile,

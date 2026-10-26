@@ -3,6 +3,7 @@ import api from '../../../api/axios';
 import useToast from '../../../hooks/useToast';
 import CourseInfoSection from './CourseInfoSection';
 import ReportTable from './ReportTable';
+import { syncCCRDocument, getOfferingFiles } from '../../../services/courseFile.service';
 
 const INITIAL_COURSE_INFO = {
   facultyName: '',
@@ -60,6 +61,11 @@ const CourseControlReportPage = ({ courseId, offeringId }) => {
   const [isImporting, setIsImporting] = useState(false);
   const [importSummary, setImportSummary] = useState(null);
   const fileInputRef = useRef(null);
+
+  // Stage 4A Google Drive state
+  const [isSyncingDrive, setIsSyncingDrive] = useState(false);
+  const [driveFileLink, setDriveFileLink] = useState('');
+  const [driveFileVersion, setDriveFileVersion] = useState(1);
 
   const handleImportClick = () => {
     if (fileInputRef.current) {
@@ -152,7 +158,45 @@ const CourseControlReportPage = ({ courseId, offeringId }) => {
       }
     };
     fetchForm();
+
+    // Check existing Google Drive sync status for this offering
+    if (offeringId) {
+      getOfferingFiles(offeringId)
+        .then((files) => {
+          const ccrFile = files?.find((f) => f.documentType === 'CCR' && f.status === 'synced');
+          if (ccrFile?.googleDriveWebViewLink) {
+            setDriveFileLink(ccrFile.googleDriveWebViewLink);
+            setDriveFileVersion(ccrFile.version || 1);
+          }
+        })
+        .catch(() => {});
+    }
   }, [courseId, offeringId]);
+
+  const handleSyncToDrive = async () => {
+    if (!offeringId) {
+      toast.error('Google Drive synchronization requires an offering-scoped view.');
+      return;
+    }
+    try {
+      setIsSyncingDrive(true);
+      const res = await syncCCRDocument(offeringId, 'pdf');
+      toast.success(
+        res.message || 'Course Control Report (PDF) synchronized to Google Drive successfully!'
+      );
+      if (res.data?.googleDriveWebViewLink) {
+        setDriveFileLink(res.data.googleDriveWebViewLink);
+        setDriveFileVersion(res.data.version || 1);
+      }
+    } catch (err) {
+      console.error('Failed to sync CCR to Google Drive:', err);
+      toast.error(
+        err.response?.data?.message || 'Failed to synchronize CCR with Google Drive.'
+      );
+    } finally {
+      setIsSyncingDrive(false);
+    }
+  };
 
 
   const handleCourseInfoChange = (field, value) => {
@@ -522,6 +566,62 @@ const CourseControlReportPage = ({ courseId, offeringId }) => {
           >
             {isExporting === 'pdf' ? 'Generating...' : 'Download PDF'}
           </button>
+
+          {offeringId && (
+            <button
+              type="button"
+              onClick={handleSyncToDrive}
+              disabled={isSyncingDrive || loading || isExporting}
+              style={{
+                padding: '0.75rem 1.4rem',
+                backgroundColor: '#eff6ff',
+                color: '#1d4ed8',
+                border: '1px solid #bfdbfe',
+                borderRadius: '4px',
+                fontSize: '0.95rem',
+                cursor: isSyncingDrive ? 'wait' : 'pointer',
+                fontWeight: '600',
+                transition: 'all 0.2s',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+              }}
+              onMouseOver={(e) => {
+                if (!isSyncingDrive) e.currentTarget.style.backgroundColor = '#dbeafe';
+              }}
+              onMouseOut={(e) => {
+                if (!isSyncingDrive) e.currentTarget.style.backgroundColor = '#eff6ff';
+              }}
+              title="Save and synchronize CCR to Google Drive"
+            >
+              {isSyncingDrive ? 'Syncing to Drive...' : '⚡ Sync to Google Drive'}
+            </button>
+          )}
+
+          {driveFileLink && (
+            <a
+              href={driveFileLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                padding: '0.75rem 1.25rem',
+                backgroundColor: '#f0fdf4',
+                color: '#166534',
+                border: '1px solid #bbf7d0',
+                borderRadius: '4px',
+                fontSize: '0.95rem',
+                fontWeight: '600',
+                textDecoration: 'none',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.35rem',
+              }}
+              title="Open synchronized document in Google Drive"
+            >
+              <span>View in Drive{driveFileVersion > 1 ? ` (v${driveFileVersion})` : ''}</span>
+              <span style={{ fontSize: '0.8rem' }}>↗</span>
+            </a>
+          )}
 
           <button
             type="submit"
