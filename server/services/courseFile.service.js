@@ -22,6 +22,10 @@ const cisPdfService = require('./documentService/generateCISPDF');
 const CCR = require('../models/CCR.model');
 const ccrWordService = require('./documentService/generateCCRWord');
 const ccrPdfService = require('./documentService/generateCCRPDF');
+const { Timetable } = require('../models/Timetable.model');
+const timetableWordService = require('./documentService/generateTimetableWord');
+const timetablePdfService = require('./documentService/generateTimetablePDF');
+
 
 /**
  * Maps common file extensions to standard MIME types.
@@ -29,9 +33,16 @@ const ccrPdfService = require('./documentService/generateCCRPDF');
 const MIME_TYPES = {
   pdf: 'application/pdf',
   docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  doc: 'application/msword',
+  pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  ppt: 'application/vnd.ms-powerpoint',
   xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   other: 'application/octet-stream',
 };
+
+const ALLOWED_LECTURE_FORMATS = ['ppt', 'pptx', 'pdf', 'doc', 'docx'];
+const MAX_LECTURE_FILE_SIZE = 25 * 1024 * 1024; // 25 MB
+
 
 /**
  * Synchronizes an arbitrary document buffer to Google Drive and persists its CourseFile metadata.
@@ -363,16 +374,384 @@ const generateAndSyncCCR = async ({ offeringId, fileFormat = 'pdf', user }) => {
 };
 
 /**
- * Lists all course files associated with a CourseOffering.
+ * Generates and synchronizes the Timetable with Consulting Hours to Google Drive.
+ *
+ * Scoping:
+ * The timetable is shared by a faculty member across their offerings for a semester.
+ * Timetable data is stored in the database scoped strictly to { faculty, semester }
+ * and does NOT store courseOffering. However, each sync operation is authorized
+ * against the requested offering, uses that offering's metadata/filename, and marks
+ * the offering's checklist item as completed.
+ *
+ * @param {Object} params
+ * @param {string} params.offeringId - CourseOffering ID
+ * @param {string} [params.fileFormat='pdf'] - 'pdf' | 'docx'
+ * @param {Object} params.user - Authenticated user
+ * @returns {Promise<Object>} Persisted CourseFile document
+ */
+const generateAndSyncTimetable = async ({ offeringId, fileFormat = 'pdf', user }) => {
+  // 1. Validate requested file format (pdf or docx)
+  const rawFormat = (fileFormat || 'pdf').toLowerCase().trim();
+  if (rawFormat !== 'pdf' && rawFormat !== 'docx') {
+    const error = new Error(`Invalid file format: '${fileFormat}'. Supported formats: pdf, docx`);
+    error.statusCode = 400;
+    throw error;
+  }
+  const normalizedFormat = rawFormat;
+
+  // 2. Verify offering access & authorization
+  const offering = await courseOfferingService.getOfferingById(offeringId, user);
+
+  // 3. Resolve faculty and semester from authorized offering
+  const facultyId = offering.faculty?._id || offering.faculty;
+  const semesterId = offering.semester?._id || offering.semester;
+
+  // 4. Retrieve saved timetable strictly using faculty and semester
+  const timetable = await Timetable.findOne({
+    faculty: facultyId,
+    semester: semesterId,
+  });
+
+  // 5. Reject if no saved timetable exists
+  if (!timetable) {
+    const error = new Error(
+      'Class Schedule and Counseling Hours (Timetable) has not been saved for this faculty member in this semester. Please configure and save the timetable first.'
+    );
+    error.statusCode = 404;
+    throw error;
+  }
+
+  // 6. Generate document buffer
+  let buffer;
+  try {
+    if (normalizedFormat === 'docx') {
+      buffer = await timetableWordService.generateTimetableWord(timetable);
+    } else {
+      buffer = await timetablePdfService.generateTimetablePDF(timetable);
+    }
+  } catch (genErr) {
+    console.error(`Timetable ${normalizedFormat.toUpperCase()} generation failed:`, genErr);
+    const error = new Error(
+      `Failed to generate Timetable (${normalizedFormat.toUpperCase()}): ${genErr.message}`
+    );
+    error.statusCode = 500;
+    throw error;
+  }
+
+  // 7. Delegate to generic offering synchronizer
+  return await module.exports.syncOfferingDocument({
+    offeringId: offering._id,
+    documentType: 'TIMETABLE',
+    fileFormat: normalizedFormat,
+    instanceName: '',
+    buffer,
+    user,
+  });
+};
+
+
+/**
+ * Resolves or creates an offering-scoped Lectures folder in Google Drive.
+ *
+ * @param {Object} offering
+ * @returns {Promise<string>} Folder ID
+ */
+const getLecturesFolderForOffering = async (offering) => {
+  const courseCode = offering.course?.courseCode || 'COURSE';
+  const section = offering.section || 'A';
+  const folderName = `${courseCode}_Sec${section}_Lectures`;
+  try {
+    return await driveService.getOrCreateFolder(
+      folderName,
+      googleDriveConfig.DESTINATION_FOLDER_ID
+    );
+  } catch (err) {
+    console.warn(`Could not resolve Lectures subfolder '${folderName}':`, err.message);
+    return googleDriveConfig.DESTINATION_FOLDER_ID;
+  }
+};
+
+/**
+ * Uploads a single lecture material file to Google Drive and creates CourseFile metadata.
+ *
+ * @param {Object} params
+ * @param {string} params.offeringId - CourseOffering ID
+ * @param {Object} params.file - Multer file object ({ originalname, buffer, size, mimetype })
+ * @param {Object} params.user - Authenticated user
+ * @param {Object} [params.offering] - Pre-authorized offering object (optional)
+ * @returns {Promise<Object>} Created CourseFile document
+ */
+const uploadLectureFile = async ({ offeringId, file, user, offering = null }) => {
+  if (!file || !file.buffer || !Buffer.isBuffer(file.buffer)) {
+    const error = new Error('A valid file Buffer is required for lecture upload.');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  // 1. Authorize offering access
+  const authorizedOffering =
+    offering || (await courseOfferingService.getOfferingById(offeringId, user));
+
+  // 2. Validate file size (25 MB limit)
+  const fileSize = file.size || file.buffer.length;
+  if (fileSize > MAX_LECTURE_FILE_SIZE) {
+    const error = new Error(
+      `File '${file.originalname}' exceeds the maximum allowed size of 25 MB.`
+    );
+    error.statusCode = 400;
+    throw error;
+  }
+
+  // 3. Validate file extension
+  const rawFilename = file.originalname || 'lecture_document';
+  const ext = rawFilename.split('.').pop()?.toLowerCase() || '';
+  if (!ALLOWED_LECTURE_FORMATS.includes(ext)) {
+    const error = new Error(
+      `Unsupported file format: '.${ext}'. Supported formats for lectures: .ppt, .pptx, .pdf, .doc, .docx`
+    );
+    error.statusCode = 400;
+    throw error;
+  }
+
+  // 4. Duplicate prevention for this offering
+  const safeFilename = rawFilename.trim();
+  const existingFile = await CourseFile.findOne({
+    courseOffering: authorizedOffering._id,
+    documentType: 'LECTURES',
+    filename: safeFilename,
+  });
+
+  if (existingFile) {
+    const error = new Error(
+      `A lecture file named "${safeFilename}" already exists for this course offering. Please delete the existing file or rename the file.`
+    );
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const mimeType = MIME_TYPES[ext] || file.mimetype || 'application/octet-stream';
+
+  // 5. Resolve Drive destination folder (offering-specific Lectures subfolder or destination folder)
+  const folderId = await module.exports.getLecturesFolderForOffering(authorizedOffering);
+
+  // 6. Upload file buffer to Google Drive
+  let uploadResult;
+  try {
+    uploadResult = await driveService.uploadDocumentBuffer({
+      buffer: file.buffer,
+      filename: safeFilename,
+      mimeType,
+      folderId,
+    });
+  } catch (driveErr) {
+    const error = new Error(`Google Drive upload failed: ${driveErr.message}`);
+    error.statusCode = 500;
+    throw error;
+  }
+
+  // 7. Persist CourseFile record in MongoDB
+  let courseFile;
+  try {
+    courseFile = await CourseFile.create({
+      courseOffering: authorizedOffering._id,
+      course: authorizedOffering.course._id || authorizedOffering.course,
+      faculty: authorizedOffering.faculty._id || authorizedOffering.faculty,
+      semester: authorizedOffering.semester._id || authorizedOffering.semester,
+      section: authorizedOffering.section || 'A',
+      documentType: 'LECTURES',
+      fileFormat: ext,
+      filename: safeFilename,
+      googleDriveFileId: uploadResult.fileId,
+      googleDriveFolderId: folderId,
+      googleDriveWebViewLink: uploadResult.webViewLink,
+      googleDriveWebContentLink: uploadResult.webContentLink,
+      mimeType: uploadResult.mimeType || mimeType,
+      sizeBytes: uploadResult.sizeBytes || fileSize,
+      version: 1,
+      isCanonical: false,
+      instanceName: safeFilename,
+      status: 'synced',
+      uploadedBy: user._id,
+    });
+  } catch (createErr) {
+    createErr.driveFileId = uploadResult.fileId;
+    createErr.driveFileName = uploadResult.name;
+    console.error(
+      `CRITICAL: File uploaded to Google Drive (${uploadResult.fileId}) but CourseFile database creation failed: ${createErr.message}`
+    );
+    try {
+      await driveService.deleteFile(uploadResult.fileId);
+    } catch (cleanupErr) {
+      console.warn(`Could not clean up orphaned Drive file ${uploadResult.fileId}: ${cleanupErr.message}`);
+    }
+    const error = new Error(`Failed to save lecture file metadata: ${createErr.message}`);
+    error.statusCode = 500;
+    throw error;
+  }
+
+  // 8. Update CourseChecklist completion status for LECTURES
+  try {
+    let checklist = await CourseChecklist.findOne({ courseOffering: authorizedOffering._id });
+    if (!checklist) {
+      checklist = await CourseChecklist.findOne({
+        course: authorizedOffering.course._id || authorizedOffering.course,
+        faculty: authorizedOffering.faculty._id || authorizedOffering.faculty,
+        semester: authorizedOffering.semester._id || authorizedOffering.semester,
+        section: authorizedOffering.section || 'A',
+      });
+    }
+
+    if (checklist && Array.isArray(checklist.checklistItems)) {
+      const item = checklist.checklistItems.find((i) => i.type === 'LECTURES');
+      if (item && !item.completed) {
+        item.completed = true;
+        await checklist.save();
+      }
+    }
+  } catch (err) {
+    console.warn('Could not update checklist status for LECTURES:', err.message);
+  }
+
+  return courseFile;
+};
+
+/**
+ * Uploads multiple lecture material files for a CourseOffering.
+ *
+ * @param {Object} params
+ * @param {string} params.offeringId - CourseOffering ID
+ * @param {Array<Object>} params.files - Array of Multer file objects
+ * @param {Object} params.user - Authenticated user
+ * @returns {Promise<Array<Object>>} Array of created CourseFile records
+ */
+const uploadLectureFiles = async ({ offeringId, files, user }) => {
+  if (!files || !Array.isArray(files) || files.length === 0) {
+    const error = new Error('At least one file is required for lecture upload.');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  // Pre-authorize offering once
+  const offering = await courseOfferingService.getOfferingById(offeringId, user);
+
+  const results = [];
+  for (const file of files) {
+    const record = await module.exports.uploadLectureFile({
+      offeringId,
+      file,
+      user,
+      offering,
+    });
+    results.push(record);
+  }
+
+  return results;
+};
+
+/**
+ * Deletes a course file from Google Drive and removes its database record.
+ * If deleting a lecture file and no lecture files remain, sets checklist LECTURES completed to false.
+ *
+ * @param {string} fileId - CourseFile ObjectId
+ * @param {Object} user - Authenticated user
+ * @returns {Promise<Object>} Deletion summary
+ */
+const deleteCourseFile = async (fileId, user) => {
+  if (!fileId || !mongoose.Types.ObjectId.isValid(fileId)) {
+    const error = new Error('Invalid CourseFile ID.');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const courseFile = await CourseFile.findById(fileId).populate('courseOffering');
+  if (!courseFile) {
+    const error = new Error('Course file record not found.');
+    error.statusCode = 404;
+    throw error;
+  }
+
+  // Authorize against offering
+  const offeringId = courseFile.courseOffering?._id || courseFile.courseOffering;
+  if (!offeringId) {
+    const error = new Error('Course offering associated with this file no longer exists.');
+    error.statusCode = 404;
+    throw error;
+  }
+  await courseOfferingService.getOfferingById(offeringId, user);
+
+  // 1. Delete from Google Drive
+  if (courseFile.googleDriveFileId) {
+    try {
+      await driveService.deleteFile(courseFile.googleDriveFileId);
+    } catch (driveErr) {
+      console.warn(
+        `Warning: Could not delete file ${courseFile.googleDriveFileId} from Google Drive: ${driveErr.message}`
+      );
+    }
+  }
+
+  // 2. Remove CourseFile record from MongoDB
+  await CourseFile.findByIdAndDelete(fileId);
+
+  let remainingLecturesCount = null;
+  // 3. Update CourseChecklist if this was a lecture file and 0 lectures remain
+  if (courseFile.documentType === 'LECTURES') {
+    remainingLecturesCount = await CourseFile.countDocuments({
+      courseOffering: offeringId,
+      documentType: 'LECTURES',
+      status: 'synced',
+    });
+
+    if (remainingLecturesCount === 0) {
+      try {
+        let checklist = await CourseChecklist.findOne({ courseOffering: offeringId });
+        if (!checklist) {
+          checklist = await CourseChecklist.findOne({
+            course: courseFile.course?._id || courseFile.course,
+            faculty: courseFile.faculty?._id || courseFile.faculty,
+            semester: courseFile.semester?._id || courseFile.semester,
+            section: courseFile.section || 'A',
+          });
+        }
+        if (checklist && Array.isArray(checklist.checklistItems)) {
+          const item = checklist.checklistItems.find((i) => i.type === 'LECTURES');
+          if (item && item.completed) {
+            item.completed = false;
+            await checklist.save();
+          }
+        }
+      } catch (err) {
+        console.warn('Could not reset checklist status for LECTURES:', err.message);
+      }
+    }
+  }
+
+  return {
+    deleted: true,
+    deletedFileId: fileId,
+    filename: courseFile.filename,
+    documentType: courseFile.documentType,
+    ...(remainingLecturesCount !== null && { remainingLecturesCount }),
+  };
+};
+
+/**
+ * Lists course files associated with a CourseOffering, with optional documentType filtering.
  *
  * @param {string} offeringId - CourseOffering ID
  * @param {Object} user - Authenticated user
+ * @param {string} [documentType] - Optional documentType filter (e.g. 'LECTURES')
  * @returns {Promise<Array<Object>>}
  */
-const listOfferingFiles = async (offeringId, user) => {
+const listOfferingFiles = async (offeringId, user, documentType = null) => {
   await courseOfferingService.getOfferingById(offeringId, user);
 
-  return CourseFile.find({ courseOffering: offeringId })
+  const query = { courseOffering: offeringId };
+  if (documentType) {
+    query.documentType = documentType;
+  }
+
+  return CourseFile.find(query)
     .populate('uploadedBy', 'name email designation')
     .sort({ documentType: 1, createdAt: -1 });
 };
@@ -428,8 +807,15 @@ module.exports = {
   syncOfferingDocument,
   generateAndSyncCIS,
   generateAndSyncCCR,
+  generateAndSyncTimetable,
+  uploadLectureFile,
+  uploadLectureFiles,
+  deleteCourseFile,
+  getLecturesFolderForOffering,
   listOfferingFiles,
   getCourseFileById,
   downloadCourseFile,
   MIME_TYPES,
+  ALLOWED_LECTURE_FORMATS,
+  MAX_LECTURE_FILE_SIZE,
 };

@@ -6,6 +6,7 @@ import FacultyInfoSection from './FacultyInfoSection';
 import TimeSlotManager from './TimeSlotManager';
 import WeeklyScheduleGrid from './WeeklyScheduleGrid';
 import DayActivityEditor from './DayActivityEditor';
+import { syncTimetableDocument, getOfferingFiles } from '../../../services/courseFile.service';
 import './Timetable.css';
 
 const DEFAULT_DAYS = [
@@ -26,7 +27,7 @@ const INITIAL_FACULTY_INFO = {
   academicTerm: ''
 };
 
-const TimetablePage = ({ courseId }) => {
+const TimetablePage = ({ courseId, offeringId }) => {
   const toast = useToast();
   const { user } = useContext(AuthContext);
 
@@ -42,6 +43,12 @@ const TimetablePage = ({ courseId }) => {
   const [isExporting, setIsExporting] = useState(''); // 'pdf' | 'docx' | ''
   const [isDirty, setIsDirty] = useState(false);
   const [validationErrors, setValidationErrors] = useState([]);
+
+  // Stage 4B Google Drive state
+  const [isSyncingDrive, setIsSyncingDrive] = useState(false);
+  const [driveFileLink, setDriveFileLink] = useState('');
+  const [driveFileVersion, setDriveFileVersion] = useState(1);
+
 
   // Active day tab in the daily activity editor
   const [activeDayTab, setActiveDayTab] = useState('Monday');
@@ -114,10 +121,27 @@ const TimetablePage = ({ courseId }) => {
 
     loadData();
 
+    // Check existing Google Drive sync status for this offering
+    if (offeringId) {
+      getOfferingFiles(offeringId)
+        .then((files) => {
+          if (!isMounted) return;
+          const timetableFile = files?.find(
+            (f) => f.documentType === 'TIMETABLE' && f.status === 'synced'
+          );
+          if (timetableFile?.googleDriveWebViewLink) {
+            setDriveFileLink(timetableFile.googleDriveWebViewLink);
+            setDriveFileVersion(timetableFile.version || 1);
+          }
+        })
+        .catch(() => {});
+    }
+
     return () => {
       isMounted = false;
     };
-  }, [courseId, user, toast]);
+  }, [courseId, offeringId, user, toast]);
+
 
   /* ── Field Change Handlers ───────────────────────────────── */
   const handleFacultyInfoChange = (field, value) => {
@@ -296,6 +320,32 @@ const TimetablePage = ({ courseId }) => {
     }
   };
 
+  /* ── Google Drive Sync Handler ───────────────────────────── */
+  const handleSyncToDrive = async () => {
+    if (!offeringId) {
+      toast.error('Google Drive synchronization requires an offering-scoped view.');
+      return;
+    }
+    try {
+      setIsSyncingDrive(true);
+      const res = await syncTimetableDocument(offeringId, 'pdf');
+      toast.success(
+        res.message || 'Timetable and Consulting Hours (PDF) synchronized to Google Drive successfully!'
+      );
+      if (res.data?.googleDriveWebViewLink) {
+        setDriveFileLink(res.data.googleDriveWebViewLink);
+        setDriveFileVersion(res.data.version || 1);
+      }
+    } catch (err) {
+      console.error('Failed to sync Timetable to Google Drive:', err);
+      toast.error(
+        err.response?.data?.message || 'Failed to synchronize Timetable with Google Drive.'
+      );
+    } finally {
+      setIsSyncingDrive(false);
+    }
+  };
+
   /* ── Clear Form ──────────────────────────────────────────── */
   const handleClearForm = () => {
     if (!window.confirm('This will clear all current form data and cannot be undone. Continue?')) return;
@@ -471,6 +521,63 @@ const TimetablePage = ({ courseId }) => {
         >
           {isExporting === 'pdf' ? 'Generating...' : 'Download PDF'}
         </button>
+
+        {offeringId && (
+          <button
+            type="button"
+            onClick={handleSyncToDrive}
+            disabled={isSyncingDrive || loading || isSaving || Boolean(isExporting)}
+            style={{
+              padding: '0.75rem 1.4rem',
+              backgroundColor: '#eff6ff',
+              color: '#1d4ed8',
+              border: '1px solid #bfdbfe',
+              borderRadius: '4px',
+              fontSize: '0.95rem',
+              cursor: isSyncingDrive ? 'wait' : 'pointer',
+              fontWeight: '600',
+              transition: 'all 0.2s',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+            }}
+            onMouseOver={(e) => {
+              if (!isSyncingDrive) e.currentTarget.style.backgroundColor = '#dbeafe';
+            }}
+            onMouseOut={(e) => {
+              if (!isSyncingDrive) e.currentTarget.style.backgroundColor = '#eff6ff';
+            }}
+            title="Save and synchronize Timetable with Consulting Hours to Google Drive"
+          >
+            {isSyncingDrive ? 'Syncing to Drive...' : '⚡ Sync to Google Drive'}
+          </button>
+        )}
+
+        {driveFileLink && (
+          <a
+            href={driveFileLink}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              padding: '0.75rem 1.25rem',
+              backgroundColor: '#f0fdf4',
+              color: '#166534',
+              border: '1px solid #bbf7d0',
+              borderRadius: '4px',
+              fontSize: '0.95rem',
+              fontWeight: '600',
+              textDecoration: 'none',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.35rem',
+            }}
+            title="Open synchronized document in Google Drive"
+          >
+            <span>View in Drive{driveFileVersion > 1 ? ` (v${driveFileVersion})` : ''}</span>
+            <span style={{ fontSize: '0.8rem' }}>↗</span>
+          </a>
+        )}
+
 
         <button
           type="button"

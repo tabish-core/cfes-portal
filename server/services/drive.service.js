@@ -299,6 +299,84 @@ const getFileMetadata = async (fileId) => {
   return response.data;
 };
 
+/**
+ * Deletes a file from Google Drive.
+ *
+ * @param {string} fileId - Google Drive file ID
+ * @returns {Promise<boolean>} True if deleted or already gone
+ */
+const deleteFile = async (fileId) => {
+  if (!fileId) {
+    const error = new Error('File ID is required to delete file.');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const drive = await module.exports.getDriveClient();
+
+  try {
+    await drive.files.delete({
+      fileId,
+      supportsAllDrives: true,
+    });
+    return true;
+  } catch (err) {
+    // If the file does not exist (404), treat as safely removed
+    if (err.code === 404 || err.status === 404) {
+      console.warn(`File '${fileId}' not found in Google Drive (already deleted).`);
+      return true;
+    }
+    throw err;
+  }
+};
+
+/**
+ * Finds or creates a subfolder in Google Drive under a specified parent folder.
+ *
+ * @param {string} folderName - Name of the folder
+ * @param {string} [parentFolderId] - Parent folder ID (defaults to DESTINATION_FOLDER_ID)
+ * @returns {Promise<string>} Folder ID
+ */
+const getOrCreateFolder = async (
+  folderName,
+  parentFolderId = googleDriveConfig.DESTINATION_FOLDER_ID
+) => {
+  if (!folderName) return parentFolderId;
+
+  const drive = await module.exports.getDriveClient();
+  const safeName = folderName.replace(/['\\]/g, '');
+  const query = `mimeType='application/vnd.google-apps.folder' and name='${safeName}' and '${parentFolderId}' in parents and trashed=false`;
+
+  try {
+    const res = await drive.files.list({
+      q: query,
+      supportsAllDrives: true,
+      includeItemsFromAllDrives: true,
+      fields: 'files(id, name)',
+    });
+
+    if (res.data.files && res.data.files.length > 0) {
+      return res.data.files[0].id;
+    }
+
+    const created = await drive.files.create({
+      requestBody: {
+        name: safeName,
+        mimeType: 'application/vnd.google-apps.folder',
+        parents: [parentFolderId],
+      },
+      supportsAllDrives: true,
+      fields: 'id, name',
+    });
+
+    return created.data.id;
+  } catch (err) {
+    console.warn(`Error resolving or creating folder '${safeName}' in Google Drive: ${err.message}`);
+    // Graceful fallback to parent destination folder
+    return parentFolderId;
+  }
+};
+
 module.exports = {
   getDriveClient,
   verifyFolderAccess,
@@ -306,4 +384,7 @@ module.exports = {
   uploadDocumentBuffer,
   getFileStream,
   getFileMetadata,
+  deleteFile,
+  getOrCreateFolder,
 };
+

@@ -207,7 +207,8 @@ const verifyGoogleDriveAccess = async (req, res, next) => {
 const listOfferingFiles = async (req, res, next) => {
   try {
     const { offeringId } = req.params;
-    const files = await courseFileService.listOfferingFiles(offeringId, req.user);
+    const documentType = req.query?.documentType;
+    const files = await courseFileService.listOfferingFiles(offeringId, req.user, documentType);
     return sendSuccess(res, files, 'Course files retrieved successfully.');
   } catch (err) {
     next(err);
@@ -265,6 +266,32 @@ const syncCCRDocument = async (req, res, next) => {
 };
 
 /**
+ * Generates and synchronizes the Timetable with Consulting Hours to Google Drive.
+ *
+ * @route   POST /api/course-files/sync/timetable/:offeringId
+ * @access  Private
+ */
+const syncTimetableDocument = async (req, res, next) => {
+  try {
+    const { offeringId } = req.params;
+    const format = req.query.format || req.body?.format || 'pdf';
+    const result = await courseFileService.generateAndSyncTimetable({
+      offeringId,
+      fileFormat: format,
+      user: req.user,
+    });
+    return sendSuccess(
+      res,
+      result,
+      `Timetable and Consulting Hours (${result.fileFormat.toUpperCase()}) synchronized to Google Drive successfully.`
+    );
+  } catch (err) {
+    next(err);
+  }
+};
+
+
+/**
  * Uploads an arbitrary course document buffer to Google Drive for an offering.
  * Supports multipart/form-data upload (via multer) or base64 JSON payload.
  *
@@ -278,6 +305,32 @@ const uploadOfferingDocument = async (req, res, next) => {
 
     if (!documentType) {
       return sendError(res, 'Document type is required.', 400);
+    }
+
+    // Special handling for LECTURES: supports multi-file uploads and preserves original filenames
+    if (documentType === 'LECTURES') {
+      const filesToUpload =
+        req.files && req.files.length > 0 ? req.files : req.file ? [req.file] : [];
+      if (filesToUpload.length === 0) {
+        return sendError(res, 'At least one lecture file is required for upload.', 400);
+      }
+
+      const results = await courseFileService.uploadLectureFiles({
+        offeringId,
+        files: filesToUpload,
+        user: req.user,
+      });
+
+      const message =
+        results.length === 1
+          ? 'Lecture file uploaded to Google Drive successfully.'
+          : `${results.length} lecture files uploaded to Google Drive successfully.`;
+
+      return sendSuccess(
+        res,
+        results.length === 1 ? results[0] : { files: results, count: results.length },
+        message
+      );
     }
 
     let buffer = null;
@@ -311,6 +364,22 @@ const uploadOfferingDocument = async (req, res, next) => {
     });
 
     return sendSuccess(res, result, 'Document synchronized to Google Drive successfully.');
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * Deletes a CourseFile record and removes the file from Google Drive.
+ *
+ * @route   DELETE /api/course-files/:id
+ * @access  Private
+ */
+const deleteCourseFile = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const result = await courseFileService.deleteCourseFile(id, req.user);
+    return sendSuccess(res, result, 'File deleted successfully.');
   } catch (err) {
     next(err);
   }
@@ -503,7 +572,9 @@ module.exports = {
   listOfferingFiles,
   syncCISDocument,
   syncCCRDocument,
+  syncTimetableDocument,
   uploadOfferingDocument,
+  deleteCourseFile,
   viewCourseFile,
   downloadCourseFile,
 };

@@ -11,6 +11,8 @@ import AssignmentManagementPage from '../../components/forms/Assignment/Assignme
 import TimetablePage from '../../components/forms/Timetable/TimetablePage';
 import AttendanceRecordPage from '../../components/forms/Attendance/AttendanceRecordPage';
 import ClassProjectPage from '../../components/forms/CCP/ClassProjectPage';
+import LecturesPage from '../../components/forms/Lectures/LecturesPage';
+
 
 const CourseForm = () => {
   const { courseId: paramCourseId, offeringId, formType } = useParams();
@@ -32,6 +34,7 @@ const CourseForm = () => {
   const activeCourseId = offering?.course?._id || paramCourseId;
   const isAttendance = formType === 'AR';
   const isProject = formType === 'ASSESS_PROJECT';
+  const isLectures = formType === 'LECTURES';
 
   return (
     <div className="dashboard">
@@ -43,7 +46,13 @@ const CourseForm = () => {
           ← Back to Checklist
         </Link>
         <h1 className="dashboard-heading">
-          {isAttendance ? 'Attendance Record' : isProject ? 'CCP / Class Project' : `Submit ${formType}`}
+          {isAttendance
+            ? 'Attendance Record'
+            : isProject
+            ? 'CCP / Class Project'
+            : isLectures
+            ? 'Lectures'
+            : `Submit ${formType}`}
         </h1>
         {offering && (
           <p className="dashboard-sub">
@@ -71,6 +80,8 @@ const CourseForm = () => {
           <ClassProjectPage courseId={activeCourseId} offeringId={offeringId} />
         ) : isAttendance ? (
           <AttendanceRecordPage courseId={activeCourseId} offeringId={offeringId} />
+        ) : isLectures ? (
+          <LecturesPage courseId={activeCourseId} offeringId={offeringId} />
         ) : (
           <>
             <p>Multi-step form will be implemented in Phase 2.</p>

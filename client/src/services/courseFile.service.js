@@ -4,13 +4,17 @@
 import api from '../api/axios';
 
 /**
- * Fetch all synchronized course files for an offering.
+ * Fetch all synchronized course files for an offering, optionally filtered by documentType.
  * @param {string} offeringId
+ * @param {string} [documentType] - e.g. 'LECTURES'
  * @returns {Promise<Array>} Array of CourseFile documents
  */
-export const getOfferingFiles = async (offeringId) => {
+export const getOfferingFiles = async (offeringId, documentType = null) => {
   if (!offeringId) return [];
-  const { data } = await api.get(`/course-files/offering/${offeringId}`);
+  const url = documentType
+    ? `/course-files/offering/${offeringId}?documentType=${documentType}`
+    : `/course-files/offering/${offeringId}`;
+  const { data } = await api.get(url);
   return data.data || [];
 };
 
@@ -37,6 +41,18 @@ export const syncCCRDocument = async (offeringId, format = 'pdf') => {
 };
 
 /**
+ * Synchronize Timetable with Consulting Hours to Google Drive.
+ * @param {string} offeringId
+ * @param {string} [format='pdf'] - 'pdf' | 'docx'
+ * @returns {Promise<Object>} { success, data, message }
+ */
+export const syncTimetableDocument = async (offeringId, format = 'pdf') => {
+  const { data } = await api.post(`/course-files/sync/timetable/${offeringId}?format=${format}`);
+  return data;
+};
+
+
+/**
  * Upload an arbitrary document to Google Drive for an offering.
  * Supports File object or FormData payload.
  * @param {string} offeringId
@@ -58,9 +74,42 @@ export const uploadOfferingDocument = async (offeringId, payload) => {
     if (payload.format) formData.append('format', payload.format);
     body = formData;
     headers['Content-Type'] = 'multipart/form-data';
+  } else if (payload && payload.files && Array.isArray(payload.files)) {
+    const formData = new FormData();
+    payload.files.forEach((f) => formData.append('files', f));
+    if (payload.documentType) formData.append('documentType', payload.documentType);
+    body = formData;
+    headers['Content-Type'] = 'multipart/form-data';
   }
 
   const { data } = await api.post(`/course-files/upload/${offeringId}`, body, { headers });
+  return data;
+};
+
+/**
+ * Upload one or more lecture files for a CourseOffering.
+ * @param {string} offeringId
+ * @param {Array<File>|File} files
+ * @returns {Promise<Object>} { success, data, message }
+ */
+export const uploadLectureFiles = async (offeringId, files) => {
+  const formData = new FormData();
+  formData.append('documentType', 'LECTURES');
+  const fileList = Array.isArray(files) ? files : [files];
+  fileList.forEach((f) => formData.append('files', f));
+  const { data } = await api.post(`/course-files/upload/${offeringId}`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return data;
+};
+
+/**
+ * Delete a CourseFile from Google Drive and remove its metadata.
+ * @param {string} fileId
+ * @returns {Promise<Object>} { success, data, message }
+ */
+export const deleteCourseFile = async (fileId) => {
+  const { data } = await api.delete(`/course-files/${fileId}`);
   return data;
 };
 

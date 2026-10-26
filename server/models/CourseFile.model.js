@@ -33,7 +33,8 @@ const DOCUMENT_TYPES = [
   'OTHER',
 ];
 
-const FILE_FORMATS = ['docx', 'pdf', 'xlsx', 'other'];
+const FILE_FORMATS = ['docx', 'pdf', 'xlsx', 'ppt', 'pptx', 'doc', 'other'];
+
 
 const courseFileSchema = new mongoose.Schema(
   {
@@ -171,11 +172,15 @@ const courseFileSchema = new mongoose.Schema(
 
 /* ── Indexes ─────────────────────────────────────────────────────────────── */
 
-// Canonical & multi-instance document uniqueness per offering:
-// Exactly one record per offering + documentType + fileFormat + instanceName
+// Canonical document uniqueness per offering:
+// Exactly one record per offering + documentType + fileFormat + instanceName for canonical documents
+// Non-canonical documents (such as LECTURES with isCanonical: false) are exempted to allow multiple files
 courseFileSchema.index(
   { courseOffering: 1, documentType: 1, fileFormat: 1, instanceName: 1 },
-  { unique: true }
+  {
+    unique: true,
+    partialFilterExpression: { isCanonical: true },
+  }
 );
 
 courseFileSchema.index({ course: 1, semester: 1 });

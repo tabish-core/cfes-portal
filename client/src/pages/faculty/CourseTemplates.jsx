@@ -12,12 +12,15 @@ const formTemplates = [
 ];
 
 const CourseTemplates = () => {
-  const { courseId } = useParams();
+  const { courseId, offeringId } = useParams();
 
   return (
     <div className="dashboard">
       <div className="dashboard-header-container">
-        <Link to="/faculty/dashboard" className="back-link">
+        <Link
+          to={offeringId ? `/faculty/offering/${offeringId}` : '/faculty/dashboard'}
+          className="back-link"
+        >
           ← Back to Courses
         </Link>
         <h1 className="dashboard-heading">Select Form Template</h1>
@@ -30,7 +33,11 @@ const CourseTemplates = () => {
           {formTemplates.map((form) => (
             <Link
               key={form.formType}
-              to={`/course/${courseId}/form/${form.formType}`}
+              to={
+                offeringId
+                  ? `/offering/${offeringId}/form/${form.formType}`
+                  : `/course/${courseId}/form/${form.formType}`
+              }
               className="course-list-item"
             >
               <span className="course-list-code">{form.formType}</span>

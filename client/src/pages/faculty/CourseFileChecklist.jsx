@@ -6,6 +6,7 @@ import {
   getOfferingFiles,
   syncCISDocument,
   syncCCRDocument,
+  syncTimetableDocument,
   uploadOfferingDocument,
   verifyGoogleDriveAccess,
 } from '../../services/courseFile.service';
@@ -77,6 +78,7 @@ const CourseFileChecklist = () => {
   const [driveFolder, setDriveFolder] = useState(null);
   const [syncingCIS, setSyncingCIS] = useState(false);
   const [syncingCCR, setSyncingCCR] = useState(false);
+  const [syncingTimetable, setSyncingTimetable] = useState(false);
   const [uploadingDocType, setUploadingDocType] = useState(null);
   const [rowErrors, setRowErrors] = useState({});
 
@@ -320,6 +322,33 @@ const CourseFileChecklist = () => {
       setSyncingCCR(false);
     }
   };
+
+  // Trigger Timetable Generation and Google Drive Synchronization
+  const handleSyncTimetable = async () => {
+    if (!offeringId) {
+      toast.error('Google Drive synchronization requires an offering-scoped course view.');
+      return;
+    }
+    try {
+      setSyncingTimetable(true);
+      setRowErrors((prev) => ({ ...prev, TIMETABLE: null }));
+      const res = await syncTimetableDocument(offeringId, 'pdf');
+      toast.success(
+        res.message || 'Timetable and Consulting Hours (PDF) synchronized to Google Drive successfully!'
+      );
+      await refreshFilesAndChecklist();
+    } catch (err) {
+      console.error('Timetable synchronization failed:', err);
+      const message =
+        err.response?.data?.message ||
+        'Failed to synchronize Timetable with Google Drive.';
+      setRowErrors((prev) => ({ ...prev, TIMETABLE: message }));
+      toast.error(message);
+    } finally {
+      setSyncingTimetable(false);
+    }
+  };
+
 
   // Open the Upload Modal for a document item
   const openUploadModal = (item) => {
@@ -847,7 +876,9 @@ const CourseFileChecklist = () => {
                 const rowErrorMessage = rowErrors[item.formType] || primaryFile?.syncError || '';
                 const isItemUploading = uploadingDocType === item.formType;
                 const isItemSyncing =
-                  (item.formType === 'CIS' && syncingCIS) || (item.formType === 'CCR' && syncingCCR);
+                  (item.formType === 'CIS' && syncingCIS) ||
+                  (item.formType === 'CCR' && syncingCCR) ||
+                  (item.formType === 'TIMETABLE' && syncingTimetable);
 
                 return (
                   <tr
@@ -922,10 +953,10 @@ const CourseFileChecklist = () => {
                         </div>
                       )}
 
-                      {/* Display multiple assessment instances if present */}
+                      {/* Display multiple assessment or lecture instances if present */}
                       {matchingFiles.length > 1 && (
                         <div style={{ marginTop: '0.4rem', fontSize: '0.78rem' }}>
-                          <span style={{ color: '#64748b' }}>Files: </span>
+                          <span style={{ color: '#64748b' }}>Files ({matchingFiles.length}): </span>
                           {matchingFiles.map((f, idx) => (
                             <span key={f._id || idx} style={{ marginRight: '0.5rem' }}>
                               {f.googleDriveWebViewLink ? (
@@ -935,10 +966,10 @@ const CourseFileChecklist = () => {
                                   rel="noopener noreferrer"
                                   style={{ color: '#2563eb', textDecoration: 'none' }}
                                 >
-                                  {f.instanceName || `File ${idx + 1}`} ↗
+                                  {f.filename || f.instanceName || `File ${idx + 1}`} ↗
                                 </a>
                               ) : (
-                                <span>{f.instanceName || `File ${idx + 1}`}</span>
+                                <span>{f.filename || f.instanceName || `File ${idx + 1}`}</span>
                               )}
                             </span>
                           ))}
@@ -1009,7 +1040,14 @@ const CourseFileChecklist = () => {
                           }}
                         >
                           <span>✓</span>
-                          <span>Synced{primaryFile.version > 1 ? ` v${primaryFile.version}` : ''}</span>
+                          <span>
+                            Synced
+                            {item.formType === 'LECTURES' && matchingFiles.length > 0
+                              ? ` (${matchingFiles.length} file${matchingFiles.length > 1 ? 's' : ''})`
+                              : primaryFile.version > 1
+                              ? ` v${primaryFile.version}`
+                              : ''}
+                          </span>
                         </span>
                       ) : hasRowError ? (
                         <span
@@ -1124,6 +1162,68 @@ const CourseFileChecklist = () => {
                           </button>
                         )}
 
+                        {/* Timetable Sync Action */}
+                        {item.formType === 'TIMETABLE' && (
+                          <button
+                            type="button"
+                            onClick={handleSyncTimetable}
+                            disabled={isItemSyncing || !offeringId}
+                            style={{
+                              padding: '0.35rem 0.75rem',
+                              backgroundColor: isSynced ? '#eff6ff' : '#2563eb',
+                              color: isSynced ? '#1d4ed8' : '#ffffff',
+                              border: isSynced ? '1px solid #bfdbfe' : 'none',
+                              borderRadius: '6px',
+                              fontSize: '0.82rem',
+                              fontWeight: '600',
+                              cursor: isItemSyncing ? 'wait' : 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '0.3rem',
+                              transition: 'all 0.15s',
+                              opacity: isItemSyncing ? 0.75 : 1,
+                            }}
+                            title="Generate and synchronize Timetable document to Google Drive"
+                          >
+                            {isItemSyncing ? (
+                              <span>Syncing...</span>
+                            ) : isSynced ? (
+                              <span>Re-sync Timetable</span>
+                            ) : (
+                              <span>⚡ Sync to Drive</span>
+                            )}
+                          </button>
+                        )}
+
+
+                        {/* Lectures Action: Manage Lectures */}
+                        {item.formType === 'LECTURES' && (
+                          <Link
+                            to={
+                              offeringId
+                                ? `/offering/${offeringId}/form/LECTURES`
+                                : `/course/${activeCourseId}/form/LECTURES`
+                            }
+                            style={{
+                              padding: '0.35rem 0.75rem',
+                              backgroundColor: isSynced ? '#eff6ff' : '#2563eb',
+                              color: isSynced ? '#1d4ed8' : '#ffffff',
+                              border: isSynced ? '1px solid #bfdbfe' : 'none',
+                              borderRadius: '6px',
+                              fontSize: '0.82rem',
+                              fontWeight: '600',
+                              textDecoration: 'none',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '0.3rem',
+                              transition: 'all 0.15s',
+                            }}
+                            title="Open Lectures File Manager to upload and manage lecture files"
+                          >
+                            <span>📂 Manage Lectures{matchingFiles.length > 0 ? ` (${matchingFiles.length})` : ''}</span>
+                          </Link>
+                        )}
+
                         {/* View in Google Drive Button */}
                         {primaryFile?.googleDriveWebViewLink ? (
                           <a
@@ -1152,28 +1252,30 @@ const CourseFileChecklist = () => {
                         ) : null}
 
                         {/* Upload File Action */}
-                        <button
-                          type="button"
-                          onClick={() => openUploadModal(item)}
-                          disabled={isItemUploading || !offeringId}
-                          style={{
-                            padding: '0.35rem 0.75rem',
-                            backgroundColor: '#ffffff',
-                            color: '#334155',
-                            border: '1px solid #cbd5e1',
-                            borderRadius: '6px',
-                            fontSize: '0.82rem',
-                            fontWeight: '600',
-                            cursor: 'pointer',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '0.3rem',
-                            transition: 'all 0.15s',
-                          }}
-                          title={`Upload ${item.name} to Google Drive`}
-                        >
-                          <span>{isSynced ? 'Update File' : 'Upload File'}</span>
-                        </button>
+                        {item.formType !== 'LECTURES' && (
+                          <button
+                            type="button"
+                            onClick={() => openUploadModal(item)}
+                            disabled={isItemUploading || !offeringId}
+                            style={{
+                              padding: '0.35rem 0.75rem',
+                              backgroundColor: '#ffffff',
+                              color: '#334155',
+                              border: '1px solid #cbd5e1',
+                              borderRadius: '6px',
+                              fontSize: '0.82rem',
+                              fontWeight: '600',
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '0.3rem',
+                              transition: 'all 0.15s',
+                            }}
+                            title={`Upload ${item.name} to Google Drive`}
+                          >
+                            <span>{isSynced ? 'Update File' : 'Upload File'}</span>
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>

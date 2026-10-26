@@ -63,13 +63,39 @@ router.post('/sync/cis/:offeringId', flexibleAuth, courseFileController.syncCISD
 // 7. Generate and synchronize CCR (Course Control Report) to Google Drive
 router.post('/sync/ccr/:offeringId', flexibleAuth, courseFileController.syncCCRDocument);
 
-// 8. Direct document upload for an offering (multipart 'file' or base64)
-router.post('/upload/:offeringId', flexibleAuth, upload.single('file'), courseFileController.uploadOfferingDocument);
+// 8. Generate and synchronize Timetable with Consulting Hours to Google Drive
+router.post('/sync/timetable/:offeringId', flexibleAuth, courseFileController.syncTimetableDocument);
 
-// 8. View course file metadata / redirect to Google Drive web view
+
+// Middleware to handle both single and multiple file uploads seamlessly
+const uploadFilesMiddleware = (req, res, next) => {
+  upload.any()(req, res, (err) => {
+    if (err) {
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        const error = new Error('File size exceeds the 25 MB limit.');
+        error.statusCode = 400;
+        return next(error);
+      }
+      return next(err);
+    }
+    if (req.files && req.files.length > 0 && !req.file) {
+      req.file = req.files.find((f) => f.fieldname === 'file') || req.files[0];
+    }
+    next();
+  });
+};
+
+// 9. Direct document upload for an offering (single or multiple files, or base64)
+router.post('/upload/:offeringId', flexibleAuth, uploadFilesMiddleware, courseFileController.uploadOfferingDocument);
+
+// 10. View course file metadata / redirect to Google Drive web view
 router.get('/:id/view', flexibleAuth, courseFileController.viewCourseFile);
 
-// 9. Download / stream course file directly from Google Drive
+// 11. Download / stream course file directly from Google Drive
 router.get('/:id/download', flexibleAuth, courseFileController.downloadCourseFile);
 
+// 12. Delete course file and remove from Google Drive
+router.delete('/:id', flexibleAuth, courseFileController.deleteCourseFile);
+
 module.exports = router;
+
