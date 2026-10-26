@@ -138,8 +138,172 @@ const getConnectionStatus = async () => {
   };
 };
 
+const { Readable } = require('node:stream');
+
+/**
+ * Uploads a document buffer to Google Drive.
+ *
+ * If `existingFileId` is provided, attempts in-place update of file content and metadata.
+ * If the file is not found (404), falls back to creating a new file in destination folder.
+ *
+ * Security: Files are never made public.
+ *
+ * @param {Object} params
+ * @param {Buffer} params.buffer - Document file buffer
+ * @param {string} params.filename - Desired filename in Google Drive
+ * @param {string} params.mimeType - Document MIME type (e.g. application/pdf)
+ * @param {string} [params.folderId] - Destination folder ID (defaults to configured folder)
+ * @param {string} [params.existingFileId] - Optional Drive file ID for canonical updates
+ * @returns {Promise<Object>} Uploaded file metadata
+ */
+const uploadDocumentBuffer = async ({
+  buffer,
+  filename,
+  mimeType,
+  folderId = googleDriveConfig.DESTINATION_FOLDER_ID,
+  existingFileId = null,
+}) => {
+  if (!buffer || !Buffer.isBuffer(buffer)) {
+    const error = new Error('A valid file Buffer is required for document upload.');
+    error.statusCode = 400;
+    throw error;
+  }
+  if (!filename) {
+    const error = new Error('Filename is required for document upload.');
+    error.statusCode = 400;
+    throw error;
+  }
+  if (!mimeType) {
+    const error = new Error('MIME type is required for document upload.');
+    error.statusCode = 400;
+    throw error;
+  }
+  if (!folderId) {
+    const error = new Error('Google Drive destination folder ID is not configured.');
+    error.statusCode = 500;
+    throw error;
+  }
+
+  const drive = await module.exports.getDriveClient();
+
+  // 1. In-place update if existingFileId is supplied
+  if (existingFileId) {
+    try {
+      const response = await drive.files.update({
+        fileId: existingFileId,
+        requestBody: {
+          name: filename,
+        },
+        media: {
+          mimeType,
+          body: Readable.from(buffer),
+        },
+        supportsAllDrives: true,
+        fields: 'id, name, mimeType, size, webViewLink, webContentLink, modifiedTime',
+      });
+
+      return {
+        fileId: response.data.id,
+        name: response.data.name,
+        mimeType: response.data.mimeType,
+        sizeBytes: Number(response.data.size) || buffer.length,
+        webViewLink: response.data.webViewLink || null,
+        webContentLink: response.data.webContentLink || null,
+        isUpdated: true,
+      };
+    } catch (err) {
+      // If file was deleted in Drive (404), log warning and proceed to re-create
+      if (err.code === 404 || err.status === 404) {
+        console.warn(
+          `File ${existingFileId} not found in Google Drive; creating a new file in ${folderId}`
+        );
+      } else {
+        throw err;
+      }
+    }
+  }
+
+  // 2. Fresh file creation
+  const fileMetadata = {
+    name: filename,
+    parents: [folderId],
+  };
+
+  const media = {
+    mimeType,
+    body: Readable.from(buffer),
+  };
+
+  const response = await drive.files.create({
+    requestBody: fileMetadata,
+    media,
+    supportsAllDrives: true,
+    fields: 'id, name, mimeType, size, webViewLink, webContentLink, createdTime, modifiedTime',
+  });
+
+  return {
+    fileId: response.data.id,
+    name: response.data.name,
+    mimeType: response.data.mimeType,
+    sizeBytes: Number(response.data.size) || buffer.length,
+    webViewLink: response.data.webViewLink || null,
+    webContentLink: response.data.webContentLink || null,
+    isUpdated: false,
+  };
+};
+
+/**
+ * Streams a file's raw content directly from Google Drive API.
+ *
+ * @param {string} fileId - Google Drive file ID
+ * @returns {Promise<import('stream').Readable>}
+ */
+const getFileStream = async (fileId) => {
+  if (!fileId) {
+    const error = new Error('File ID is required to retrieve file stream.');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const drive = await module.exports.getDriveClient();
+
+  const response = await drive.files.get(
+    { fileId, alt: 'media', supportsAllDrives: true },
+    { responseType: 'stream' }
+  );
+
+  return response.data;
+};
+
+/**
+ * Retrieves file metadata from Google Drive without downloading media.
+ *
+ * @param {string} fileId - Google Drive file ID
+ * @returns {Promise<Object>}
+ */
+const getFileMetadata = async (fileId) => {
+  if (!fileId) {
+    const error = new Error('File ID is required to retrieve file metadata.');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const drive = await module.exports.getDriveClient();
+
+  const response = await drive.files.get({
+    fileId,
+    supportsAllDrives: true,
+    fields: 'id, name, mimeType, size, webViewLink, webContentLink, trashed',
+  });
+
+  return response.data;
+};
+
 module.exports = {
   getDriveClient,
   verifyFolderAccess,
   getConnectionStatus,
+  uploadDocumentBuffer,
+  getFileStream,
+  getFileMetadata,
 };

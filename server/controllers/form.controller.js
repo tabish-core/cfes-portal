@@ -12,6 +12,7 @@ const { generateCCRWord } = require('../services/documentService/generateCCRWord
 const { generateCCRPDF } = require('../services/documentService/generateCCRPDF');
 const { generateCCCPDF } = require('../services/documentService/generateCCCPDF');
 const { generateCRRPDF } = require('../services/documentService/generateCRRPDF');
+const courseFileService = require('../services/courseFile.service');
 
 /* ── Offering & Form Scoping Helpers ────────────────────────────────────── */
 
@@ -660,6 +661,19 @@ const exportCISForm = async (req, res, next) => {
 
       if (format === 'docx') {
         const buffer = await generateCISWord(exportData);
+        if (offering && req.query.syncToDrive === 'true') {
+          try {
+            await courseFileService.syncOfferingDocument({
+              offeringId: offering._id,
+              documentType: 'CIS',
+              fileFormat: 'docx',
+              buffer,
+              user: req.user,
+            });
+          } catch (syncErr) {
+            console.error('Failed to sync exported CIS (DOCX) to Google Drive:', syncErr.message);
+          }
+        }
         res.setHeader('Content-Disposition', `attachment; filename=CIS_${form.courseSummary?.courseCode || 'Course'}.docx`);
         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
         return res.send(buffer);
@@ -667,6 +681,19 @@ const exportCISForm = async (req, res, next) => {
 
       if (format === 'pdf') {
         const buffer = await generateCISPDF(exportData);
+        if (offering && req.query.syncToDrive === 'true') {
+          try {
+            await courseFileService.syncOfferingDocument({
+              offeringId: offering._id,
+              documentType: 'CIS',
+              fileFormat: 'pdf',
+              buffer,
+              user: req.user,
+            });
+          } catch (syncErr) {
+            console.error('Failed to sync exported CIS (PDF) to Google Drive:', syncErr.message);
+          }
+        }
         res.setHeader('Content-Disposition', `attachment; filename=CIS_${form.courseSummary?.courseCode || 'Course'}.pdf`);
         res.setHeader('Content-Type', 'application/pdf');
         return res.send(buffer);

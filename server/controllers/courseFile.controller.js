@@ -12,6 +12,7 @@ const jwt = require('jsonwebtoken');
 const crypto = require('node:crypto');
 const googleDriveConfig = require('../config/googleDrive');
 const driveService = require('../services/drive.service');
+const courseFileService = require('../services/courseFile.service');
 const { sendSuccess, sendError } = require('../utils/response');
 
 /**
@@ -198,6 +199,154 @@ const verifyGoogleDriveAccess = async (req, res, next) => {
 };
 
 /**
+ * Lists all course files for a CourseOffering.
+ *
+ * @route   GET /api/course-files/offering/:offeringId
+ * @access  Private
+ */
+const listOfferingFiles = async (req, res, next) => {
+  try {
+    const { offeringId } = req.params;
+    const files = await courseFileService.listOfferingFiles(offeringId, req.user);
+    return sendSuccess(res, files, 'Course files retrieved successfully.');
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * Generates and synchronizes the Course Information Sheet (CIS) to Google Drive.
+ *
+ * @route   POST /api/course-files/sync/cis/:offeringId
+ * @access  Private
+ */
+const syncCISDocument = async (req, res, next) => {
+  try {
+    const { offeringId } = req.params;
+    const format = req.query.format || req.body?.format || 'pdf';
+    const result = await courseFileService.generateAndSyncCIS({
+      offeringId,
+      fileFormat: format,
+      user: req.user,
+    });
+    return sendSuccess(
+      res,
+      result,
+      `Course Information Sheet (${result.fileFormat.toUpperCase()}) synchronized to Google Drive successfully.`
+    );
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * Uploads an arbitrary course document buffer to Google Drive for an offering.
+ * Supports multipart/form-data upload (via multer) or base64 JSON payload.
+ *
+ * @route   POST /api/course-files/upload/:offeringId
+ * @access  Private
+ */
+const uploadOfferingDocument = async (req, res, next) => {
+  try {
+    const { offeringId } = req.params;
+    const { documentType, instanceName, format } = req.body;
+
+    if (!documentType) {
+      return sendError(res, 'Document type is required.', 400);
+    }
+
+    let buffer = null;
+    let fileFormat = format;
+
+    if (req.file) {
+      buffer = req.file.buffer;
+      if (!fileFormat) {
+        const ext = req.file.originalname.split('.').pop()?.toLowerCase();
+        fileFormat = ['pdf', 'docx', 'xlsx'].includes(ext) ? ext : 'other';
+      }
+    } else if (req.body.bufferBase64) {
+      buffer = Buffer.from(req.body.bufferBase64, 'base64');
+    }
+
+    if (!buffer) {
+      return sendError(
+        res,
+        'File content is required (either as multipart file upload or bufferBase64).',
+        400
+      );
+    }
+
+    const result = await courseFileService.syncOfferingDocument({
+      offeringId,
+      documentType,
+      fileFormat: fileFormat || 'pdf',
+      instanceName: instanceName || '',
+      buffer,
+      user: req.user,
+    });
+
+    return sendSuccess(res, result, 'Document synchronized to Google Drive successfully.');
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * Retrieves CourseFile metadata and Google Drive link.
+ * If ?redirect=true is passed, redirects browser directly to webViewLink.
+ *
+ * @route   GET /api/course-files/:id/view
+ * @access  Private
+ */
+const viewCourseFile = async (req, res, next) => {
+  try {
+    const courseFile = await courseFileService.getCourseFileById(req.params.id, req.user);
+
+    if (req.query.redirect === 'true' && courseFile.googleDriveWebViewLink) {
+      return res.redirect(courseFile.googleDriveWebViewLink);
+    }
+
+    return sendSuccess(res, courseFile, 'Course file metadata retrieved successfully.');
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * Streams the file content directly from Google Drive API to the browser.
+ * Validates offering authorization before streaming.
+ *
+ * @route   GET /api/course-files/:id/download
+ * @access  Private
+ */
+const downloadCourseFile = async (req, res, next) => {
+  try {
+    const { stream, courseFile } = await courseFileService.downloadCourseFile(
+      req.params.id,
+      req.user
+    );
+
+    res.setHeader('Content-Type', courseFile.mimeType || 'application/octet-stream');
+    const safeFilename = (courseFile.filename || 'course_file').replace(/["\r\n]/g, '');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="${safeFilename}"`
+    );
+
+    stream.on('error', (err) => {
+      console.error('Error streaming file from Google Drive:', err);
+      if (!res.headersSent) {
+        return sendError(res, 'Failed to stream file from Google Drive.', 500);
+      }
+    });
+
+    return stream.pipe(res);
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
  * Helper to render a clean, branded HTML response for the OAuth callback.
  */
 const renderCallbackHtml = ({ success, title, message, email, folderId }) => {
@@ -287,6 +436,8 @@ const renderCallbackHtml = ({ success, title, message, email, folderId }) => {
       font-weight: 500;
       font-size: 0.9rem;
       transition: background 0.15s;
+      cursor: pointer;
+      border: none;
     }
     .btn:hover {
       background: #1d4ed8;
@@ -305,7 +456,13 @@ const renderCallbackHtml = ({ success, title, message, email, folderId }) => {
         ${folderId ? `<div><strong>Destination Folder ID:</strong> <code>${folderId}</code></div>` : ''}
         <div><strong>Token Status:</strong> Securely encrypted & stored server-side</div>
       </div>
-      <a href="/api/course-files/google/verify" class="btn">Verify Destination Folder Access</a>`
+      <button onclick="verifyAccess()" class="btn">Verify Destination Folder Access</button>
+      <script>
+        function verifyAccess() {
+          var token = localStorage.getItem('token') || localStorage.getItem('cfes_token') || sessionStorage.getItem('token');
+          window.location.href = '/api/course-files/google/verify' + (token ? '?token=' + encodeURIComponent(token) : '');
+        }
+      </script>`
         : `<a href="/api/course-files/google/auth" class="btn">Try Authorizing Again</a>`
     }
   </div>
@@ -318,4 +475,9 @@ module.exports = {
   handleGoogleCallback,
   getGoogleAuthStatus,
   verifyGoogleDriveAccess,
+  listOfferingFiles,
+  syncCISDocument,
+  uploadOfferingDocument,
+  viewCourseFile,
+  downloadCourseFile,
 };
