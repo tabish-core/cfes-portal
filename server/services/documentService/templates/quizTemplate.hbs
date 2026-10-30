@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>{{courseInfo.courseTitle}} - {{quizTitleHeader}}</title>
+  <style>
+    @page {
+      size: A4 portrait;
+      margin: 18mm 16mm;
+    }
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      font-family: "Times New Roman", Times, Georgia, serif;
+      font-size: 11pt;
+      line-height: 1.35;
+      color: #000000;
+      margin: 0;
+      padding: 0;
+    }
+
+    /* 1. Header Section */
+    .header-container {
+      text-align: center;
+      margin-bottom: 8px;
+    }
+    .logo-img {
+      max-width: 280px;
+      max-height: 65px;
+      object-fit: contain;
+      display: inline-block;
+      margin-bottom: 4px;
+    }
+    .logo-fallback {
+      font-size: 18pt;
+      font-weight: bold;
+      color: #1a56db;
+      margin-bottom: 4px;
+    }
+    .faculty-title {
+      font-size: 13.5pt;
+      font-weight: bold;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-top: 4px;
+      margin-bottom: 4px;
+    }
+    .version-tag {
+      text-align: right;
+      font-size: 9.5pt;
+      color: #6b7280;
+      margin-bottom: 8px;
+    }
+
+    /* 2. Tables & Meta */
+    .no-border-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 6px 0;
+    }
+    .no-border-table td {
+      border: none;
+      padding: 3px 0;
+      font-size: 11pt;
+    }
+    .label {
+      color: #111827;
+    }
+
+    /* Course Title Box */
+    .course-title-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 8px 0;
+    }
+    .course-title-cell {
+      background-color: #b4c6e7;
+      text-align: center;
+      font-weight: bold;
+      font-size: 12pt;
+      padding: 6px 10px;
+      color: #000000;
+      border: 1.5pt solid #000000;
+      text-transform: uppercase;
+    }
+
+    /* CLO Mapping Table */
+    .bordered-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 10px 0 16px 0;
+      border: 1pt solid #000000;
+    }
+    .bordered-table th, .bordered-table td {
+      border: 1pt solid #000000;
+      padding: 5px 8px;
+      font-size: 10pt;
+    }
+    .clo-header-cell {
+      background-color: #b4c6e7;
+      text-align: center;
+      font-size: 12pt;
+      font-weight: bold;
+      padding: 6px 8px;
+      border: 1pt solid #000000;
+    }
+    .bordered-table th {
+      text-align: center;
+      font-weight: bold;
+      background-color: #ffffff;
+    }
+    .text-center {
+      text-align: center;
+    }
+
+    /* 3. Questions Section */
+    .questions-section {
+      margin-top: 12px;
+    }
+    .question-container {
+      margin-top: 14px;
+      margin-bottom: 22px;
+      page-break-inside: avoid;
+    }
+    .question-header-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 4px;
+    }
+    .question-header-table td {
+      border: none;
+      padding: 0;
+    }
+    .question-number {
+      font-size: 12pt;
+      font-weight: bold;
+      text-align: left;
+    }
+    .question-marks {
+      font-size: 12pt;
+      font-weight: bold;
+      text-align: right;
+    }
+    .question-text {
+      font-size: 11.5pt;
+      line-height: 1.45;
+      margin-top: 6px;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header Section -->
+  <div class="header-container">
+    {{#if logoBase64}}
+      <img src="{{logoBase64}}" alt="Logo" class="logo-img" />
+    {{else}}
+      <div class="logo-fallback">IQRA UNIVERSITY IU</div>
+    {{/if}}
+    <div class="faculty-title">FACULTY OF ENGINEERING SCIENCES AND TECHNOLOGY</div>
+    <div class="version-tag">BS(CS)V1.0</div>
+  </div>
+
+  <!-- Department & Program -->
+  <table class="no-border-table">
+    <tr>
+      <td style="width: 50%; text-align: left;">
+        <span class="label">Department:</span> <strong>{{courseInfo.department}}</strong>
+      </td>
+      <td style="width: 50%; text-align: right;">
+        <span class="label">Program:</span> <strong>{{courseInfo.program}}</strong>
+      </td>
+    </tr>
+  </table>
+
+  <!-- Course Title Box -->
+  <table class="course-title-table">
+    <tr>
+      <td class="course-title-cell">
+        {{upperCourseTitle}}
+      </td>
+    </tr>
+  </table>
+
+  <!-- Date, Duration, Max Marks -->
+  <table class="no-border-table">
+    <tr>
+      <td style="width: 33%; text-align: left;">
+        <span class="label">Date:</span> {{quizInfo.date}}
+      </td>
+      <td style="width: 34%; text-align: center;">
+        <span class="label">Duration:</span> {{quizInfo.duration}}
+      </td>
+      <td style="width: 33%; text-align: right;">
+        <span class="label">Max Marks:</span> {{quizInfo.maxMarks}}
+      </td>
+    </tr>
+  </table>
+
+  <!-- CLO Mapping Table -->
+  <table class="bordered-table">
+    <thead>
+      <tr>
+        <th colspan="4" class="clo-header-cell">{{quizTitleHeader}}</th>
+      </tr>
+      <tr>
+        <th style="width: 25%;">Mapped CLO</th>
+        <th style="width: 25%;">Mapped GA</th>
+        <th style="width: 25%;">Mapped Learning Level</th>
+        <th style="width: 25%;">SDG</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{#if cloMappings.length}}
+        {{#each cloMappings}}
+          <tr>
+            <td class="text-center">{{this.mappedCLO}}</td>
+            <td class="text-center">{{this.mappedGA}}</td>
+            <td class="text-center">{{this.mappedLearningLevel}}</td>
+            <td class="text-center">{{this.sdg}}</td>
+          </tr>
+        {{/each}}
+      {{else}}
+        <tr>
+          <td colspan="4" class="text-center" style="color: #64748b; font-style: italic;">No CLO mappings defined</td>
+        </tr>
+      {{/if}}
+    </tbody>
+  </table>
+
+  <!-- Questions Section -->
+  <div class="questions-section">
+    {{#if questions.length}}
+      {{#each questions}}
+        <div class="question-container">
+          <table class="question-header-table">
+            <tr>
+              <td class="question-number">Q{{this.questionNumber}}:</td>
+              <td class="question-marks">(Marks {{this.marks}})</td>
+            </tr>
+          </table>
+          <div class="question-text">{{this.questionText}}</div>
+        </div>
+      {{/each}}
+    {{else}}
+      <div style="font-style: italic; color: #64748b; text-align: center; margin-top: 20px;">
+        No questions added yet.
+      </div>
+    {{/if}}
+  </div>
+
+</body>
+</html>

@@ -16,6 +16,7 @@ const Quiz = require('../models/Quiz.model');
 const Assignment = require('../models/Assignment.model');
 const CourseOffering = require('../models/CourseOffering.model');
 const CourseChecklist = require('../models/CourseChecklist.model');
+const CourseFile = require('../models/CourseFile.model');
 const courseOfferingService = require('../services/courseOffering.service');
 const quizController = require('../controllers/quiz.controller');
 const assignmentController = require('../controllers/assignment.controller');
@@ -89,6 +90,7 @@ describe('ASSESS_QUIZ & ASSESS_ASSIGN CourseOffering Integration Suite', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    jest.spyOn(CourseFile, 'findOne').mockResolvedValue(null);
   });
 
   describe('1. Creating records associated with an offering', () => {

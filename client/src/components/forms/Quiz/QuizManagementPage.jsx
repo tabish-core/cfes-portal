@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import api from '../../../api/axios';
 import useToast from '../../../hooks/useToast';
 import CreateQuizForm from './CreateQuizForm';
+import { syncQuizDocument, getOfferingFiles } from '../../../services/courseFile.service';
 
 const QuizManagementPage = ({ courseId, offeringId }) => {
   const toast = useToast();
@@ -10,6 +11,8 @@ const QuizManagementPage = ({ courseId, offeringId }) => {
   const [quizzes, setQuizzes] = useState([]);
   const [loading, setLoading] = useState(false);
   const [isExporting, setIsExporting] = useState('');
+  const [courseFiles, setCourseFiles] = useState([]);
+  const [syncingQuizId, setSyncingQuizId] = useState(null);
 
   /* ── Fetch quizzes for this course / offering ───────────── */
   const fetchQuizzes = async () => {
@@ -34,9 +37,23 @@ const QuizManagementPage = ({ courseId, offeringId }) => {
     }
   };
 
+  /* ── Fetch synchronized course files for offering ──────── */
+  const fetchCourseFiles = async () => {
+    if (!offeringId) return;
+    try {
+      const files = await getOfferingFiles(offeringId, 'ASSESS_QUIZ');
+      setCourseFiles(files || []);
+    } catch (err) {
+      console.warn('Could not load course files for quizzes:', err);
+    }
+  };
+
   useEffect(() => {
     if (offeringId || (courseId && courseId !== 'undefined')) {
       fetchQuizzes();
+    }
+    if (offeringId) {
+      fetchCourseFiles();
     }
   }, [courseId, offeringId]);
 
@@ -48,9 +65,38 @@ const QuizManagementPage = ({ courseId, offeringId }) => {
       await api.delete(`/quizzes/${quizId}`);
       toast.success('Quiz deleted successfully.');
       setQuizzes(prev => prev.filter(q => q._id !== quizId));
+      setCourseFiles(prev => prev.filter(f => f.instanceName !== quizId.toString()));
     } catch (err) {
       console.error('Failed to delete quiz:', err);
-      toast.error('Failed to delete quiz.');
+      toast.error(err.response?.data?.message || 'Failed to delete quiz.');
+    }
+  };
+
+  /* ── Synchronize Quiz to Google Drive ──────────────────── */
+  const handleSyncToDrive = async (quizId) => {
+    if (!offeringId) {
+      toast.error('Google Drive synchronization requires an offering-scoped view.');
+      return;
+    }
+    try {
+      setSyncingQuizId(quizId);
+      const res = await syncQuizDocument(offeringId, quizId);
+      toast.success(res.message || 'Quiz document synchronized to Google Drive successfully!');
+      if (res.data) {
+        setCourseFiles((prev) => {
+          const filtered = prev.filter(
+            (f) => f.instanceName !== quizId.toString()
+          );
+          return [...filtered, res.data];
+        });
+      }
+    } catch (err) {
+      console.error('Failed to sync quiz to Google Drive:', err);
+      toast.error(
+        err.response?.data?.message || err.message || 'Failed to synchronize quiz with Google Drive.'
+      );
+    } finally {
+      setSyncingQuizId(null);
     }
   };
 
@@ -59,6 +105,9 @@ const QuizManagementPage = ({ courseId, offeringId }) => {
     setView('list');
     setEditQuizId(null);
     fetchQuizzes(); // Refresh list after create/edit
+    if (offeringId) {
+      fetchCourseFiles();
+    }
   };
 
   /* ── Edit quiz ─────────────────────────────────────────── */
@@ -212,6 +261,16 @@ const QuizManagementPage = ({ courseId, offeringId }) => {
     borderColor: '#cbd5e1'
   };
 
+  const syncBtnStyle = {
+    ...btnBaseStyle,
+    backgroundColor: '#eff6ff',
+    color: '#1d4ed8',
+    borderColor: '#bfdbfe',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '0.35rem'
+  };
+
   const emptyStateStyle = {
     textAlign: 'center',
     padding: '3rem 1rem',
@@ -244,36 +303,136 @@ const QuizManagementPage = ({ courseId, offeringId }) => {
               No quizzes created yet
             </div>
           ) : (
-            quizzes.map((quiz) => (
-              <div key={quiz._id} style={cardStyle}>
-                <div style={cardInfoStyle}>
-                  <div>
-                    <div style={labelStyle}>Quiz Number</div>
-                    <div style={valueStyle}>{quiz.quizInfo?.quizNumber || '—'}</div>
-                  </div>
-                  <div>
-                    <div style={labelStyle}>Date</div>
-                    <div style={valueStyle}>{quiz.quizInfo?.date || '—'}</div>
-                  </div>
-                  <div>
-                    <div style={labelStyle}>Duration</div>
-                    <div style={valueStyle}>{quiz.quizInfo?.duration || '—'}</div>
-                  </div>
-                  <div>
-                    <div style={labelStyle}>Max Marks</div>
-                    <div style={valueStyle}>{quiz.quizInfo?.maxMarks || '—'}</div>
-                  </div>
-                </div>
+            quizzes.map((quiz) => {
+              const quizFile = courseFiles.find(
+                (cf) =>
+                  (cf.instanceName === quiz._id?.toString() || cf.instanceName === quiz._id) &&
+                  cf.fileFormat === 'pdf'
+              );
+              const isSynced = quizFile?.status === 'synced';
 
-                <div style={actionContainerStyle}>
-                  <button type="button" style={editBtnStyle} onClick={() => handleEdit(quiz._id)}>Edit</button>
-                  <button type="button" style={generateBtnStyle} onClick={() => handleDownload(quiz)} disabled={isExporting === quiz._id}>
-                    {isExporting === quiz._id ? 'Exporting...' : 'Export Word'}
-                  </button>
-                  <button type="button" style={deleteBtnStyle} onClick={() => handleDelete(quiz._id)}>Delete</button>
+              return (
+                <div key={quiz._id} style={cardStyle}>
+                  <div style={cardInfoStyle}>
+                    <div>
+                      <div style={labelStyle}>Quiz Number</div>
+                      <div style={valueStyle}>{quiz.quizInfo?.quizNumber || '—'}</div>
+                    </div>
+                    <div>
+                      <div style={labelStyle}>Date</div>
+                      <div style={valueStyle}>{quiz.quizInfo?.date || '—'}</div>
+                    </div>
+                    <div>
+                      <div style={labelStyle}>Duration</div>
+                      <div style={valueStyle}>{quiz.quizInfo?.duration || '—'}</div>
+                    </div>
+                    <div>
+                      <div style={labelStyle}>Max Marks</div>
+                      <div style={valueStyle}>{quiz.quizInfo?.maxMarks || '—'}</div>
+                    </div>
+                    <div>
+                      <div style={labelStyle}>Google Drive PDF</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', marginTop: '0.2rem' }}>
+                        {isSynced ? (
+                          <>
+                            <span
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '0.25rem',
+                                padding: '0.2rem 0.55rem',
+                                borderRadius: '9999px',
+                                fontSize: '0.75rem',
+                                fontWeight: '600',
+                                backgroundColor: '#ecfdf5',
+                                color: '#047857',
+                                border: '1px solid #a7f3d0',
+                              }}
+                            >
+                              ● PDF Synced{quizFile.version > 1 ? ` v${quizFile.version}` : ''}
+                            </span>
+                            {quizFile.googleDriveWebViewLink && (
+                              <a
+                                href={quizFile.googleDriveWebViewLink}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style={{
+                                  fontSize: '0.75rem',
+                                  color: '#2563eb',
+                                  textDecoration: 'none',
+                                  fontWeight: '600',
+                                }}
+                                onMouseOver={(e) => (e.currentTarget.style.textDecoration = 'underline')}
+                                onMouseOut={(e) => (e.currentTarget.style.textDecoration = 'none')}
+                                title="Open PDF in Google Drive"
+                              >
+                                View PDF in Drive ↗
+                              </a>
+                            )}
+                          </>
+                        ) : (
+                          <span
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              padding: '0.2rem 0.55rem',
+                              borderRadius: '9999px',
+                              fontSize: '0.75rem',
+                              fontWeight: '600',
+                              backgroundColor: '#f1f5f9',
+                              color: '#64748b',
+                              border: '1px solid #e2e8f0',
+                            }}
+                          >
+                            PDF Not Synced
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ ...actionContainerStyle, flexWrap: 'wrap' }}>
+                    <button type="button" style={editBtnStyle} onClick={() => handleEdit(quiz._id)}>
+                      Edit
+                    </button>
+                    <button
+                      type="button"
+                      style={generateBtnStyle}
+                      onClick={() => handleDownload(quiz)}
+                      disabled={isExporting === quiz._id}
+                    >
+                      {isExporting === quiz._id ? 'Exporting...' : 'Export Word'}
+                    </button>
+                    <button
+                      type="button"
+                      style={{
+                        ...syncBtnStyle,
+                        cursor: syncingQuizId ? 'wait' : (!offeringId ? 'not-allowed' : 'pointer'),
+                        opacity: (syncingQuizId || !offeringId) ? 0.7 : 1,
+                      }}
+                      onClick={() => handleSyncToDrive(quiz._id)}
+                      disabled={Boolean(syncingQuizId) || !offeringId}
+                      title={
+                        !offeringId
+                          ? 'Google Drive synchronization requires an offering-scoped view'
+                          : isSynced
+                          ? 'Update existing PDF in Google Drive'
+                          : 'Synchronize PDF to Google Drive'
+                      }
+                    >
+                      {syncingQuizId === quiz._id
+                        ? 'Syncing...'
+                        : isSynced
+                        ? 'Re-sync PDF'
+                        : 'Sync PDF'}
+                    </button>
+                    <button type="button" style={deleteBtnStyle} onClick={() => handleDelete(quiz._id)}>
+                      Delete
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       </div>

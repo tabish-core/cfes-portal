@@ -7,6 +7,8 @@ import {
   syncCISDocument,
   syncCCRDocument,
   syncTimetableDocument,
+  syncQuizDocument,
+  syncAssignmentDocument,
   uploadOfferingDocument,
   verifyGoogleDriveAccess,
 } from '../../services/courseFile.service';
@@ -79,6 +81,10 @@ const CourseFileChecklist = () => {
   const [syncingCIS, setSyncingCIS] = useState(false);
   const [syncingCCR, setSyncingCCR] = useState(false);
   const [syncingTimetable, setSyncingTimetable] = useState(false);
+  const [offeringQuizzes, setOfferingQuizzes] = useState([]);
+  const [offeringAssignments, setOfferingAssignments] = useState([]);
+  const [syncingQuizId, setSyncingQuizId] = useState(null);
+  const [syncingAssignmentId, setSyncingAssignmentId] = useState(null);
   const [uploadingDocType, setUploadingDocType] = useState(null);
   const [rowErrors, setRowErrors] = useState({});
 
@@ -124,11 +130,19 @@ const CourseFileChecklist = () => {
     if (!offeringId) return;
     try {
       setLoadingFiles(true);
-      const [files, checklistRes] = await Promise.all([
+      const [files, checklistRes, quizRes, assignRes] = await Promise.all([
         getOfferingFiles(offeringId),
         api.get(`/checklist/offering/${offeringId}`),
+        api.get(`/quizzes/offering/${offeringId}`).catch(() => ({ data: { data: { quizzes: [] } } })),
+        api.get(`/assignments/offering/${offeringId}`).catch(() => ({ data: { data: { assignments: [] } } })),
       ]);
       setCourseFiles(files || []);
+      if (quizRes.data?.data?.quizzes) {
+        setOfferingQuizzes(quizRes.data.data.quizzes);
+      }
+      if (assignRes.data?.data?.assignments) {
+        setOfferingAssignments(assignRes.data.data.assignments);
+      }
 
       const saved = checklistRes.data?.data?.checklist;
       if (saved?.checklistItems && saved.checklistItems.length > 0) {
@@ -179,19 +193,37 @@ const CourseFileChecklist = () => {
           });
 
           // Fetch offering-scoped checklist and files concurrently
-          const [checklistRes, files, folderInfo] = await Promise.all([
+          const [checklistRes, files, folderInfo, quizRes, assignRes] = await Promise.all([
             api.get(`/checklist/offering/${offeringId}`),
             getOfferingFiles(offeringId).catch(() => []),
             verifyGoogleDriveAccess().catch(() => null),
+            api.get(`/quizzes/offering/${offeringId}`).catch(() => ({ data: { data: { quizzes: [] } } })),
+            api.get(`/assignments/offering/${offeringId}`).catch(() => ({ data: { data: { assignments: [] } } })),
           ]);
 
           checklistData = checklistRes.data?.data?.checklist;
           setCourseFiles(files || []);
           if (folderInfo) setDriveFolder(folderInfo);
+          if (quizRes.data?.data?.quizzes) {
+            setOfferingQuizzes(quizRes.data.data.quizzes);
+          }
+          if (assignRes.data?.data?.assignments) {
+            setOfferingAssignments(assignRes.data.data.assignments);
+          }
         } else {
           // Legacy route by courseId
-          const { data } = await api.get(`/checklist/${paramCourseId}`);
-          checklistData = data.data?.checklist;
+          const [checkRes, quizRes, assignRes] = await Promise.all([
+            api.get(`/checklist/${paramCourseId}`),
+            api.get(`/quizzes/course/${paramCourseId}`).catch(() => ({ data: { data: { quizzes: [] } } })),
+            api.get(`/assignments/course/${paramCourseId}`).catch(() => ({ data: { data: { assignments: [] } } })),
+          ]);
+          checklistData = checkRes.data.data?.checklist;
+          if (quizRes.data?.data?.quizzes) {
+            setOfferingQuizzes(quizRes.data.data.quizzes);
+          }
+          if (assignRes.data?.data?.assignments) {
+            setOfferingAssignments(assignRes.data.data.assignments);
+          }
         }
 
         if (checklistData) {
@@ -349,6 +381,59 @@ const CourseFileChecklist = () => {
     }
   };
 
+  // Trigger Quiz Synchronization to Google Drive
+  const handleSyncQuiz = async (quizId) => {
+    if (!offeringId) {
+      toast.error('Google Drive synchronization requires an offering-scoped course view.');
+      return;
+    }
+    try {
+      setSyncingQuizId(quizId);
+      setRowErrors((prev) => ({ ...prev, ASSESS_QUIZ: null }));
+      const res = await syncQuizDocument(offeringId, quizId);
+      toast.success(
+        res.message || 'Quiz PDF synchronized to Google Drive successfully!'
+      );
+      await refreshFilesAndChecklist();
+    } catch (err) {
+      console.error('Quiz synchronization failed:', err);
+      const message =
+        err.response?.data?.message ||
+        err.message ||
+        'Failed to synchronize Quiz PDF with Google Drive.';
+      setRowErrors((prev) => ({ ...prev, ASSESS_QUIZ: message }));
+      toast.error(message);
+    } finally {
+      setSyncingQuizId(null);
+    }
+  };
+
+  // Trigger Assignment Synchronization to Google Drive
+  const handleSyncAssignment = async (assignmentId) => {
+    if (!offeringId) {
+      toast.error('Google Drive synchronization requires an offering-scoped course view.');
+      return;
+    }
+    try {
+      setSyncingAssignmentId(assignmentId);
+      setRowErrors((prev) => ({ ...prev, ASSESS_ASSIGN: null }));
+      const res = await syncAssignmentDocument(offeringId, assignmentId);
+      toast.success(
+        res.message || 'Assignment PDF synchronized to Google Drive successfully!'
+      );
+      await refreshFilesAndChecklist();
+    } catch (err) {
+      console.error('Assignment synchronization failed:', err);
+      const message =
+        err.response?.data?.message ||
+        err.message ||
+        'Failed to synchronize Assignment PDF with Google Drive.';
+      setRowErrors((prev) => ({ ...prev, ASSESS_ASSIGN: message }));
+      toast.error(message);
+    } finally {
+      setSyncingAssignmentId(null);
+    }
+  };
 
   // Open the Upload Modal for a document item
   const openUploadModal = (item) => {
@@ -871,14 +956,62 @@ const CourseFileChecklist = () => {
                 const matchingFiles = filesByDocType[item.formType] || [];
                 const primaryFile = matchingFiles[0];
                 const hasDriveFile = Boolean(primaryFile);
-                const isSynced = primaryFile?.status === 'synced';
-                const hasRowError = Boolean(rowErrors[item.formType] || primaryFile?.status === 'failed');
-                const rowErrorMessage = rowErrors[item.formType] || primaryFile?.syncError || '';
+
+                const isQuizItem = item.formType === 'ASSESS_QUIZ';
+                const isAssignItem = item.formType === 'ASSESS_ASSIGN';
+                const quizCount = isQuizItem ? offeringQuizzes.length : 0;
+                const assignCount = isAssignItem ? offeringAssignments.length : 0;
+
+                const singleQuiz = isQuizItem && quizCount === 1 ? offeringQuizzes[0] : null;
+                const singleAssign = isAssignItem && assignCount === 1 ? offeringAssignments[0] : null;
+
+                const singleQuizFile = singleQuiz
+                  ? matchingFiles.find((f) => f.instanceName === singleQuiz._id?.toString() && f.fileFormat === 'pdf')
+                  : null;
+                const singleAssignFile = singleAssign
+                  ? matchingFiles.find((f) => f.instanceName === singleAssign._id?.toString() && f.fileFormat === 'pdf')
+                  : null;
+
+                const isSingleQuizSynced = singleQuizFile?.status === 'synced';
+                const isSingleAssignSynced = singleAssignFile?.status === 'synced';
+
+                const assessmentSyncedCount = isQuizItem
+                  ? offeringQuizzes.filter((q) =>
+                      matchingFiles.some((f) => f.instanceName === q._id?.toString() && f.fileFormat === 'pdf' && f.status === 'synced')
+                    ).length
+                  : isAssignItem
+                  ? offeringAssignments.filter((a) =>
+                      matchingFiles.some((f) => f.instanceName === a._id?.toString() && f.fileFormat === 'pdf' && f.status === 'synced')
+                    ).length
+                  : 0;
+
+                const primaryPdfFile = matchingFiles.find((f) => f.fileFormat === 'pdf' && f.status === 'synced');
+
+                const isSynced = isQuizItem
+                  ? (quizCount === 1 ? isSingleQuizSynced : quizCount > 1 ? assessmentSyncedCount > 0 : Boolean(primaryPdfFile))
+                  : isAssignItem
+                  ? (assignCount === 1 ? isSingleAssignSynced : assignCount > 1 ? assessmentSyncedCount > 0 : Boolean(primaryPdfFile))
+                  : primaryFile?.status === 'synced';
+
+                const hasRowError = Boolean(
+                  rowErrors[item.formType] ||
+                  (isQuizItem && singleQuizFile?.status === 'failed') ||
+                  (isAssignItem && singleAssignFile?.status === 'failed') ||
+                  primaryFile?.status === 'failed'
+                );
+                const rowErrorMessage =
+                  rowErrors[item.formType] ||
+                  (isQuizItem ? singleQuizFile?.syncError : '') ||
+                  (isAssignItem ? singleAssignFile?.syncError : '') ||
+                  primaryFile?.syncError ||
+                  '';
                 const isItemUploading = uploadingDocType === item.formType;
                 const isItemSyncing =
                   (item.formType === 'CIS' && syncingCIS) ||
                   (item.formType === 'CCR' && syncingCCR) ||
-                  (item.formType === 'TIMETABLE' && syncingTimetable);
+                  (item.formType === 'TIMETABLE' && syncingTimetable) ||
+                  (item.formType === 'ASSESS_QUIZ' && Boolean(syncingQuizId)) ||
+                  (item.formType === 'ASSESS_ASSIGN' && Boolean(syncingAssignmentId));
 
                 return (
                   <tr
@@ -1041,12 +1174,21 @@ const CourseFileChecklist = () => {
                         >
                           <span>✓</span>
                           <span>
-                            Synced
-                            {item.formType === 'LECTURES' && matchingFiles.length > 0
-                              ? ` (${matchingFiles.length} file${matchingFiles.length > 1 ? 's' : ''})`
-                              : primaryFile.version > 1
-                              ? ` v${primaryFile.version}`
-                              : ''}
+                            {isQuizItem && quizCount > 1
+                              ? `PDF Synced (${assessmentSyncedCount}/${quizCount})`
+                              : isAssignItem && assignCount > 1
+                              ? `PDF Synced (${assessmentSyncedCount}/${assignCount})`
+                              : isQuizItem && quizCount === 1
+                              ? `PDF Synced${singleQuizFile?.version > 1 ? ` v${singleQuizFile.version}` : ''}`
+                              : isAssignItem && assignCount === 1
+                              ? `PDF Synced${singleAssignFile?.version > 1 ? ` v${singleAssignFile.version}` : ''}`
+                              : (isQuizItem || isAssignItem)
+                              ? `PDF Synced${primaryPdfFile?.version > 1 ? ` v${primaryPdfFile.version}` : ''}`
+                              : item.formType === 'LECTURES' && matchingFiles.length > 0
+                              ? `Synced (${matchingFiles.length} file${matchingFiles.length > 1 ? 's' : ''})`
+                              : primaryFile?.version > 1
+                              ? `Synced v${primaryFile.version}`
+                              : 'Synced'}
                           </span>
                         </span>
                       ) : hasRowError ? (
@@ -1066,7 +1208,7 @@ const CourseFileChecklist = () => {
                           title={rowErrorMessage}
                         >
                           <span>✗</span>
-                          <span>Upload failed</span>
+                          <span>{rowErrors[item.formType] ? 'Sync failed' : 'Upload failed'}</span>
                         </span>
                       ) : (
                         <span
@@ -1083,7 +1225,15 @@ const CourseFileChecklist = () => {
                             border: '1px solid #e2e8f0',
                           }}
                         >
-                          <span>Not uploaded</span>
+                          <span>
+                            {isQuizItem && quizCount === 0
+                              ? 'Not created'
+                              : isAssignItem && assignCount === 0
+                              ? 'Not created'
+                              : isQuizItem || isAssignItem
+                              ? 'PDF Not Synced'
+                              : 'Not uploaded'}
+                          </span>
                         </span>
                       )}
                     </td>
@@ -1224,32 +1374,223 @@ const CourseFileChecklist = () => {
                           </Link>
                         )}
 
+                        {/* Quiz Sync / Manage Actions */}
+                        {item.formType === 'ASSESS_QUIZ' && (
+                          <>
+                            {quizCount === 0 ? (
+                              <Link
+                                to={
+                                  offeringId
+                                    ? `/offering/${offeringId}/form/ASSESS_QUIZ`
+                                    : `/course/${activeCourseId}/form/ASSESS_QUIZ`
+                                }
+                                style={{
+                                  padding: '0.35rem 0.75rem',
+                                  backgroundColor: '#f8fafc',
+                                  color: '#475569',
+                                  border: '1px dashed #cbd5e1',
+                                  borderRadius: '6px',
+                                  fontSize: '0.82rem',
+                                  fontWeight: '600',
+                                  textDecoration: 'none',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '0.3rem',
+                                  transition: 'all 0.15s',
+                                }}
+                                title="No quizzes created for this offering. Click to create a quiz."
+                              >
+                                <span>+ Create Quiz</span>
+                              </Link>
+                            ) : quizCount === 1 ? (
+                              <button
+                                type="button"
+                                onClick={() => handleSyncQuiz(singleQuiz._id)}
+                                disabled={isItemSyncing || !offeringId}
+                                style={{
+                                  padding: '0.35rem 0.75rem',
+                                  backgroundColor: isSingleQuizSynced ? '#eff6ff' : '#2563eb',
+                                  color: isSingleQuizSynced ? '#1d4ed8' : '#ffffff',
+                                  border: isSingleQuizSynced ? '1px solid #bfdbfe' : 'none',
+                                  borderRadius: '6px',
+                                  fontSize: '0.82rem',
+                                  fontWeight: '600',
+                                  cursor: isItemSyncing ? 'wait' : 'pointer',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '0.3rem',
+                                  transition: 'all 0.15s',
+                                  opacity: isItemSyncing ? 0.75 : 1,
+                                }}
+                                title={
+                                  isSingleQuizSynced
+                                    ? 'Re-synchronize quiz PDF to Google Drive'
+                                    : 'Generate and synchronize quiz PDF to Google Drive'
+                                }
+                              >
+                                {isItemSyncing ? (
+                                  <span>Syncing...</span>
+                                ) : isSingleQuizSynced ? (
+                                  <span>Re-sync PDF</span>
+                                ) : (
+                                  <span>⚡ Sync PDF</span>
+                                )}
+                              </button>
+                            ) : (
+                              <Link
+                                to={
+                                  offeringId
+                                    ? `/offering/${offeringId}/form/ASSESS_QUIZ`
+                                    : `/course/${activeCourseId}/form/ASSESS_QUIZ`
+                                }
+                                style={{
+                                  padding: '0.35rem 0.75rem',
+                                  backgroundColor: '#eff6ff',
+                                  color: '#1d4ed8',
+                                  border: '1px solid #bfdbfe',
+                                  borderRadius: '6px',
+                                  fontSize: '0.82rem',
+                                  fontWeight: '600',
+                                  textDecoration: 'none',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '0.3rem',
+                                  transition: 'all 0.15s',
+                                }}
+                                title="Open Quiz Management to view and synchronize individual quiz PDFs"
+                              >
+                                <span>📂 Manage & Sync Quizzes ({quizCount})</span>
+                              </Link>
+                            )}
+                          </>
+                        )}
+
+                        {/* Assignment Sync / Manage Actions */}
+                        {item.formType === 'ASSESS_ASSIGN' && (
+                          <>
+                            {assignCount === 0 ? (
+                              <Link
+                                to={
+                                  offeringId
+                                    ? `/offering/${offeringId}/form/ASSESS_ASSIGN`
+                                    : `/course/${activeCourseId}/form/ASSESS_ASSIGN`
+                                }
+                                style={{
+                                  padding: '0.35rem 0.75rem',
+                                  backgroundColor: '#f8fafc',
+                                  color: '#475569',
+                                  border: '1px dashed #cbd5e1',
+                                  borderRadius: '6px',
+                                  fontSize: '0.82rem',
+                                  fontWeight: '600',
+                                  textDecoration: 'none',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '0.3rem',
+                                  transition: 'all 0.15s',
+                                }}
+                                title="No assignments created for this offering. Click to create an assignment."
+                              >
+                                <span>+ Create Assignment</span>
+                              </Link>
+                            ) : assignCount === 1 ? (
+                              <button
+                                type="button"
+                                onClick={() => handleSyncAssignment(singleAssign._id)}
+                                disabled={isItemSyncing || !offeringId}
+                                style={{
+                                  padding: '0.35rem 0.75rem',
+                                  backgroundColor: isSingleAssignSynced ? '#eff6ff' : '#2563eb',
+                                  color: isSingleAssignSynced ? '#1d4ed8' : '#ffffff',
+                                  border: isSingleAssignSynced ? '1px solid #bfdbfe' : 'none',
+                                  borderRadius: '6px',
+                                  fontSize: '0.82rem',
+                                  fontWeight: '600',
+                                  cursor: isItemSyncing ? 'wait' : 'pointer',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '0.3rem',
+                                  transition: 'all 0.15s',
+                                  opacity: isItemSyncing ? 0.75 : 1,
+                                }}
+                                title={
+                                  isSingleAssignSynced
+                                    ? 'Re-synchronize assignment PDF to Google Drive'
+                                    : 'Generate and synchronize assignment PDF to Google Drive'
+                                }
+                              >
+                                {isItemSyncing ? (
+                                  <span>Syncing...</span>
+                                ) : isSingleAssignSynced ? (
+                                  <span>Re-sync PDF</span>
+                                ) : (
+                                  <span>⚡ Sync PDF</span>
+                                )}
+                              </button>
+                            ) : (
+                              <Link
+                                to={
+                                  offeringId
+                                    ? `/offering/${offeringId}/form/ASSESS_ASSIGN`
+                                    : `/course/${activeCourseId}/form/ASSESS_ASSIGN`
+                                }
+                                style={{
+                                  padding: '0.35rem 0.75rem',
+                                  backgroundColor: '#eff6ff',
+                                  color: '#1d4ed8',
+                                  border: '1px solid #bfdbfe',
+                                  borderRadius: '6px',
+                                  fontSize: '0.82rem',
+                                  fontWeight: '600',
+                                  textDecoration: 'none',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '0.3rem',
+                                  transition: 'all 0.15s',
+                                }}
+                                title="Open Assignment Management to view and synchronize individual assignment PDFs"
+                              >
+                                <span>📂 Manage & Sync Assignments ({assignCount})</span>
+                              </Link>
+                            )}
+                          </>
+                        )}
+
                         {/* View in Google Drive Button */}
-                        {primaryFile?.googleDriveWebViewLink ? (
-                          <a
-                            href={primaryFile.googleDriveWebViewLink}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            style={{
-                              padding: '0.35rem 0.75rem',
-                              backgroundColor: '#f0fdf4',
-                              color: '#166534',
-                              border: '1px solid #bbf7d0',
-                              borderRadius: '6px',
-                              fontSize: '0.82rem',
-                              fontWeight: '600',
-                              textDecoration: 'none',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '0.3rem',
-                              transition: 'all 0.15s',
-                            }}
-                            title="Open document in Google Drive"
-                          >
-                            <span>View in Drive</span>
-                            <span style={{ fontSize: '0.75rem' }}>↗</span>
-                          </a>
-                        ) : null}
+                        {(() => {
+                          const viewFile =
+                            isQuizItem
+                              ? singleQuizFile || matchingFiles.find((f) => f.fileFormat === 'pdf' && f.googleDriveWebViewLink)
+                              : isAssignItem
+                              ? singleAssignFile || matchingFiles.find((f) => f.fileFormat === 'pdf' && f.googleDriveWebViewLink)
+                              : primaryFile;
+                          if (!viewFile?.googleDriveWebViewLink) return null;
+                          return (
+                            <a
+                              href={viewFile.googleDriveWebViewLink}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{
+                                padding: '0.35rem 0.75rem',
+                                backgroundColor: '#f0fdf4',
+                                color: '#166534',
+                                border: '1px solid #bbf7d0',
+                                borderRadius: '6px',
+                                fontSize: '0.82rem',
+                                fontWeight: '600',
+                                textDecoration: 'none',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '0.3rem',
+                                transition: 'all 0.15s',
+                              }}
+                              title={isQuizItem || isAssignItem ? 'Open PDF in Google Drive' : 'Open document in Google Drive'}
+                            >
+                              <span>{isQuizItem || isAssignItem ? 'View PDF in Drive' : 'View in Drive'}</span>
+                              <span style={{ fontSize: '0.75rem' }}>↗</span>
+                            </a>
+                          );
+                        })()}
 
                         {/* Upload File Action */}
                         {item.formType !== 'LECTURES' && (

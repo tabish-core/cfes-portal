@@ -66,6 +66,12 @@ router.post('/sync/ccr/:offeringId', flexibleAuth, courseFileController.syncCCRD
 // 8. Generate and synchronize Timetable with Consulting Hours to Google Drive
 router.post('/sync/timetable/:offeringId', flexibleAuth, courseFileController.syncTimetableDocument);
 
+// 9. Generate and synchronize Quiz document to Google Drive
+router.post('/sync/quiz/:offeringId/:quizId', flexibleAuth, courseFileController.syncQuizDocument);
+
+// 10. Generate and synchronize Assignment document to Google Drive
+router.post('/sync/assignment/:offeringId/:assignmentId', flexibleAuth, courseFileController.syncAssignmentDocument);
+
 
 // Middleware to handle both single and multiple file uploads seamlessly
 const uploadFilesMiddleware = (req, res, next) => {

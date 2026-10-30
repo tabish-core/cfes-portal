@@ -51,6 +51,28 @@ export const syncTimetableDocument = async (offeringId, format = 'pdf') => {
   return data;
 };
 
+/**
+ * Synchronize Quiz document to Google Drive.
+ * @param {string} offeringId
+ * @param {string} quizId
+ * @returns {Promise<Object>} { success, data, message }
+ */
+export const syncQuizDocument = async (offeringId, quizId) => {
+  const { data } = await api.post(`/course-files/sync/quiz/${offeringId}/${quizId}`);
+  return data;
+};
+
+/**
+ * Synchronize Assignment document to Google Drive.
+ * @param {string} offeringId
+ * @param {string} assignmentId
+ * @returns {Promise<Object>} { success, data, message }
+ */
+export const syncAssignmentDocument = async (offeringId, assignmentId) => {
+  const { data } = await api.post(`/course-files/sync/assignment/${offeringId}/${assignmentId}`);
+  return data;
+};
+
 
 /**
  * Upload an arbitrary document to Google Drive for an offering.

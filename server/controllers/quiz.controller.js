@@ -3,6 +3,7 @@ const Quiz = require('../models/Quiz.model');
 const CourseOffering = require('../models/CourseOffering.model');
 const CourseChecklist = require('../models/CourseChecklist.model');
 const courseOfferingService = require('../services/courseOffering.service');
+const courseFileService = require('../services/courseFile.service');
 const { sendSuccess, sendError } = require('../utils/response');
 const quizWordService = require('../services/documentService/generateQuizWord');
 
@@ -403,6 +404,25 @@ const deleteQuiz = async (req, res, next) => {
     }
 
     const offeringRef = quiz.courseOffering;
+
+    // Safely delete associated Drive file and CourseFile record if offering is present
+    if (offeringRef) {
+      try {
+        await courseFileService.deleteAssessmentFile({
+          offeringId: offeringRef,
+          documentType: 'ASSESS_QUIZ',
+          assessmentId: quiz._id,
+          user: req.user,
+        });
+      } catch (driveErr) {
+        return sendError(
+          res,
+          `Failed to delete associated Google Drive file: ${driveErr.message}. Quiz was not deleted. Please retry.`,
+          driveErr.statusCode || 502
+        );
+      }
+    }
+
     await quiz.deleteOne();
 
     // Recalculate checklist completion for the offering

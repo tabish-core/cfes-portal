@@ -290,6 +290,54 @@ const syncTimetableDocument = async (req, res, next) => {
   }
 };
 
+/**
+ * Generates and synchronizes a Quiz document to Google Drive.
+ *
+ * @route   POST /api/course-files/sync/quiz/:offeringId/:quizId
+ * @access  Private
+ */
+const syncQuizDocument = async (req, res, next) => {
+  try {
+    const { offeringId, quizId } = req.params;
+    const result = await courseFileService.generateAndSyncQuiz({
+      offeringId,
+      quizId,
+      user: req.user,
+    });
+    return sendSuccess(
+      res,
+      result,
+      `Quiz PDF document (${result.filename}) synchronized to Google Drive successfully.`
+    );
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * Generates and synchronizes an Assignment PDF document to Google Drive.
+ *
+ * @route   POST /api/course-files/sync/assignment/:offeringId/:assignmentId
+ * @access  Private
+ */
+const syncAssignmentDocument = async (req, res, next) => {
+  try {
+    const { offeringId, assignmentId } = req.params;
+    const result = await courseFileService.generateAndSyncAssignment({
+      offeringId,
+      assignmentId,
+      user: req.user,
+    });
+    return sendSuccess(
+      res,
+      result,
+      `Assignment PDF document (${result.filename}) synchronized to Google Drive successfully.`
+    );
+  } catch (err) {
+    next(err);
+  }
+};
+
 
 /**
  * Uploads an arbitrary course document buffer to Google Drive for an offering.
@@ -573,6 +621,8 @@ module.exports = {
   syncCISDocument,
   syncCCRDocument,
   syncTimetableDocument,
+  syncQuizDocument,
+  syncAssignmentDocument,
   uploadOfferingDocument,
   deleteCourseFile,
   viewCourseFile,

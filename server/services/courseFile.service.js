@@ -25,6 +25,12 @@ const ccrPdfService = require('./documentService/generateCCRPDF');
 const { Timetable } = require('../models/Timetable.model');
 const timetableWordService = require('./documentService/generateTimetableWord');
 const timetablePdfService = require('./documentService/generateTimetablePDF');
+const Quiz = require('../models/Quiz.model');
+const Assignment = require('../models/Assignment.model');
+const quizWordService = require('./documentService/generateQuizWord');
+const assignmentWordService = require('./documentService/generateAssignmentWord');
+const quizPdfService = require('./documentService/generateQuizPDF');
+const assignmentPdfService = require('./documentService/generateAssignmentPDF');
 
 
 /**
@@ -472,6 +478,48 @@ const getLecturesFolderForOffering = async (offering) => {
 };
 
 /**
+ * Resolves or creates an offering-scoped Quizzes folder in Google Drive.
+ *
+ * @param {Object} offering
+ * @returns {Promise<string>} Folder ID
+ */
+const getQuizzesFolderForOffering = async (offering) => {
+  const courseCode = offering.course?.courseCode || 'COURSE';
+  const section = offering.section || 'A';
+  const folderName = `${courseCode}_Sec${section}_Quizzes`;
+  try {
+    return await driveService.getOrCreateFolder(
+      folderName,
+      googleDriveConfig.DESTINATION_FOLDER_ID
+    );
+  } catch (err) {
+    console.warn(`Could not resolve Quizzes subfolder '${folderName}':`, err.message);
+    return googleDriveConfig.DESTINATION_FOLDER_ID;
+  }
+};
+
+/**
+ * Resolves or creates an offering-scoped Assignments folder in Google Drive.
+ *
+ * @param {Object} offering
+ * @returns {Promise<string>} Folder ID
+ */
+const getAssignmentsFolderForOffering = async (offering) => {
+  const courseCode = offering.course?.courseCode || 'COURSE';
+  const section = offering.section || 'A';
+  const folderName = `${courseCode}_Sec${section}_Assignments`;
+  try {
+    return await driveService.getOrCreateFolder(
+      folderName,
+      googleDriveConfig.DESTINATION_FOLDER_ID
+    );
+  } catch (err) {
+    console.warn(`Could not resolve Assignments subfolder '${folderName}':`, err.message);
+    return googleDriveConfig.DESTINATION_FOLDER_ID;
+  }
+};
+
+/**
  * Uploads a single lecture material file to Google Drive and creates CourseFile metadata.
  *
  * @param {Object} params
@@ -790,6 +838,428 @@ const getCourseFileById = async (fileId, user) => {
 };
 
 /**
+ * Generates and synchronizes a Quiz Word document (.docx) to Google Drive.
+ *
+ * @param {Object} params
+ * @param {string} params.offeringId - CourseOffering ID
+ * @param {string} params.quizId - Quiz ID
+ * @param {Object} params.user - Authenticated user
+ * @returns {Promise<Object>} Persisted CourseFile document
+ */
+const generateAndSyncQuiz = async ({ offeringId, quizId, user }) => {
+  if (!offeringId || !mongoose.Types.ObjectId.isValid(offeringId)) {
+    const error = new Error('Invalid or missing CourseOffering ID.');
+    error.statusCode = 400;
+    throw error;
+  }
+  if (!quizId || !mongoose.Types.ObjectId.isValid(quizId)) {
+    const error = new Error('Invalid or missing Quiz ID.');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  // 1. Authorize offering access
+  const offering = await courseOfferingService.getOfferingById(offeringId, user);
+
+  // 2. Retrieve quiz
+  const quiz = await Quiz.findById(quizId);
+  if (!quiz) {
+    const error = new Error('Quiz not found.');
+    error.statusCode = 404;
+    throw error;
+  }
+
+  // 3. Verify quiz belongs to offering and reject unassociated legacy assessments
+  if (!quiz.courseOffering) {
+    const error = new Error(
+      'This quiz is not associated with a course offering. Please associate it with an offering before synchronizing to Google Drive.'
+    );
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (quiz.courseOffering.toString() !== offering._id.toString()) {
+    const error = new Error('This quiz belongs to a different course offering.');
+    error.statusCode = 403;
+    throw error;
+  }
+
+  // 4. Generate PDF buffer
+  let buffer;
+  try {
+    buffer = await quizPdfService.generateQuizPDF(quiz);
+  } catch (genErr) {
+    console.error('Quiz PDF document generation failed:', genErr);
+    const error = new Error(`Failed to generate Quiz PDF document: ${genErr.message}`);
+    error.statusCode = 500;
+    throw error;
+  }
+
+  // 5. Resolve Drive destination folder
+  const folderId = await module.exports.getQuizzesFolderForOffering(offering);
+
+  // 6. Generate filename
+  const rawQuizNum = (quiz.quizInfo?.quizNumber || '1').toString().trim();
+  const safeQuizNum = rawQuizNum.toLowerCase().startsWith('quiz')
+    ? rawQuizNum.replace(/[^a-zA-Z0-9_-]/g, '_')
+    : `Quiz_${rawQuizNum.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
+  const courseCode = offering.course?.courseCode || 'COURSE';
+  const section = offering.section || 'A';
+  const filename = `ASSESS_QUIZ_${courseCode}_Sec${section}_${safeQuizNum}.pdf`;
+
+  // 7. Check for existing CourseFile record for this quiz (specifically PDF format)
+  const query = {
+    courseOffering: offering._id,
+    documentType: 'ASSESS_QUIZ',
+    fileFormat: 'pdf',
+    instanceName: quizId.toString(),
+  };
+  const existingRecord = await CourseFile.findOne(query);
+
+  // 8. Upload to Google Drive (in-place update if existing, or fresh creation)
+  const mimeType = MIME_TYPES.pdf;
+  let uploadResult;
+  try {
+    uploadResult = await driveService.uploadDocumentBuffer({
+      buffer,
+      filename,
+      mimeType,
+      folderId,
+      existingFileId: existingRecord ? existingRecord.googleDriveFileId : null,
+    });
+  } catch (driveErr) {
+    const error = new Error(`Google Drive upload failed: ${driveErr.message}`);
+    error.statusCode = 500;
+    throw error;
+  }
+
+  // 9. Persist CourseFile metadata
+  let courseFile;
+  if (existingRecord) {
+    existingRecord.googleDriveFileId = uploadResult.fileId;
+    existingRecord.googleDriveFolderId = folderId;
+    existingRecord.googleDriveWebViewLink = uploadResult.webViewLink;
+    existingRecord.googleDriveWebContentLink = uploadResult.webContentLink;
+    existingRecord.filename = uploadResult.name;
+    existingRecord.fileFormat = 'pdf';
+    existingRecord.mimeType = uploadResult.mimeType || mimeType;
+    existingRecord.sizeBytes = uploadResult.sizeBytes || buffer.length;
+    existingRecord.version = (existingRecord.version || 1) + 1;
+    existingRecord.uploadedBy = user._id;
+    existingRecord.status = 'synced';
+    try {
+      courseFile = await existingRecord.save();
+    } catch (saveErr) {
+      saveErr.driveFileId = uploadResult.fileId;
+      saveErr.driveFileName = uploadResult.name;
+      console.error(
+        `CRITICAL: Quiz file updated in Google Drive (${uploadResult.fileId}) but CourseFile database update failed: ${saveErr.message}`
+      );
+      throw saveErr;
+    }
+  } else {
+    try {
+      courseFile = await CourseFile.create({
+        courseOffering: offering._id,
+        course: offering.course._id || offering.course,
+        faculty: offering.faculty._id || offering.faculty,
+        semester: offering.semester?._id || offering.semester,
+        section: offering.section || 'A',
+        documentType: 'ASSESS_QUIZ',
+        fileFormat: 'pdf',
+        filename: uploadResult.name,
+        googleDriveFileId: uploadResult.fileId,
+        googleDriveFolderId: folderId,
+        googleDriveWebViewLink: uploadResult.webViewLink,
+        googleDriveWebContentLink: uploadResult.webContentLink,
+        mimeType: uploadResult.mimeType || mimeType,
+        sizeBytes: uploadResult.sizeBytes || buffer.length,
+        version: 1,
+        isCanonical: false,
+        instanceName: quizId.toString(),
+        status: 'synced',
+        uploadedBy: user._id,
+      });
+    } catch (createErr) {
+      createErr.driveFileId = uploadResult.fileId;
+      createErr.driveFileName = uploadResult.name;
+      console.error(
+        `CRITICAL: Quiz file uploaded to Google Drive (${uploadResult.fileId}) but CourseFile database creation failed: ${createErr.message}`
+      );
+      try {
+        await driveService.deleteFile(uploadResult.fileId);
+      } catch (cleanupErr) {
+        console.warn(`Could not clean up orphaned Drive file ${uploadResult.fileId}: ${cleanupErr.message}`);
+      }
+      const error = new Error(`Failed to save quiz file metadata: ${createErr.message}`);
+      error.statusCode = 500;
+      throw error;
+    }
+  }
+
+  // 10. Update CourseChecklist completion status
+  try {
+    let checklist = await CourseChecklist.findOne({ courseOffering: offering._id });
+    if (!checklist) {
+      checklist = await CourseChecklist.findOne({
+        course: offering.course._id || offering.course,
+        faculty: offering.faculty._id || offering.faculty,
+        semester: offering.semester?._id || offering.semester,
+        section: offering.section || 'A',
+      });
+    }
+    if (checklist && Array.isArray(checklist.checklistItems)) {
+      const item = checklist.checklistItems.find((i) => i.type === 'ASSESS_QUIZ');
+      if (item && !item.completed) {
+        item.completed = true;
+        await checklist.save();
+      }
+    }
+  } catch (err) {
+    console.warn('Could not update checklist status for ASSESS_QUIZ:', err.message);
+  }
+
+  return courseFile;
+};
+
+/**
+ * Generates and synchronizes an Assignment Word document (.docx) to Google Drive.
+ *
+ * @param {Object} params
+ * @param {string} params.offeringId - CourseOffering ID
+ * @param {string} params.assignmentId - Assignment ID
+ * @param {Object} params.user - Authenticated user
+ * @returns {Promise<Object>} Persisted CourseFile document
+ */
+const generateAndSyncAssignment = async ({ offeringId, assignmentId, user }) => {
+  if (!offeringId || !mongoose.Types.ObjectId.isValid(offeringId)) {
+    const error = new Error('Invalid or missing CourseOffering ID.');
+    error.statusCode = 400;
+    throw error;
+  }
+  if (!assignmentId || !mongoose.Types.ObjectId.isValid(assignmentId)) {
+    const error = new Error('Invalid or missing Assignment ID.');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  // 1. Authorize offering access
+  const offering = await courseOfferingService.getOfferingById(offeringId, user);
+
+  // 2. Retrieve assignment
+  const assignment = await Assignment.findById(assignmentId);
+  if (!assignment) {
+    const error = new Error('Assignment not found.');
+    error.statusCode = 404;
+    throw error;
+  }
+
+  // 3. Verify assignment belongs to offering and reject unassociated legacy assessments
+  if (!assignment.courseOffering) {
+    const error = new Error(
+      'This assignment is not associated with a course offering. Please associate it with an offering before synchronizing to Google Drive.'
+    );
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (assignment.courseOffering.toString() !== offering._id.toString()) {
+    const error = new Error('This assignment belongs to a different course offering.');
+    error.statusCode = 403;
+    throw error;
+  }
+
+  // 4. Generate PDF buffer
+  let buffer;
+  try {
+    buffer = await assignmentPdfService.generateAssignmentPDF(assignment);
+  } catch (genErr) {
+    console.error('Assignment PDF document generation failed:', genErr);
+    const error = new Error(`Failed to generate Assignment PDF document: ${genErr.message}`);
+    error.statusCode = 500;
+    throw error;
+  }
+
+  // 5. Resolve Drive destination folder
+  const folderId = await module.exports.getAssignmentsFolderForOffering(offering);
+
+  // 6. Generate filename
+  const rawAssignNum = (assignment.assignmentInfo?.assignmentNumber || '1').toString().trim();
+  const safeAssignNum = rawAssignNum.toLowerCase().startsWith('assignment')
+    ? rawAssignNum.replace(/[^a-zA-Z0-9_-]/g, '_')
+    : `Assignment_${rawAssignNum.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
+  const courseCode = offering.course?.courseCode || 'COURSE';
+  const section = offering.section || 'A';
+  const filename = `ASSESS_ASSIGN_${courseCode}_Sec${section}_${safeAssignNum}.pdf`;
+
+  // 7. Check for existing CourseFile record for this assignment (specifically PDF format)
+  const query = {
+    courseOffering: offering._id,
+    documentType: 'ASSESS_ASSIGN',
+    fileFormat: 'pdf',
+    instanceName: assignmentId.toString(),
+  };
+  const existingRecord = await CourseFile.findOne(query);
+
+  // 8. Upload to Google Drive (in-place update if existing, or fresh creation)
+  const mimeType = MIME_TYPES.pdf;
+  let uploadResult;
+  try {
+    uploadResult = await driveService.uploadDocumentBuffer({
+      buffer,
+      filename,
+      mimeType,
+      folderId,
+      existingFileId: existingRecord ? existingRecord.googleDriveFileId : null,
+    });
+  } catch (driveErr) {
+    const error = new Error(`Google Drive upload failed: ${driveErr.message}`);
+    error.statusCode = 500;
+    throw error;
+  }
+
+  // 9. Persist CourseFile metadata
+  let courseFile;
+  if (existingRecord) {
+    existingRecord.googleDriveFileId = uploadResult.fileId;
+    existingRecord.googleDriveFolderId = folderId;
+    existingRecord.googleDriveWebViewLink = uploadResult.webViewLink;
+    existingRecord.googleDriveWebContentLink = uploadResult.webContentLink;
+    existingRecord.filename = uploadResult.name;
+    existingRecord.fileFormat = 'pdf';
+    existingRecord.mimeType = uploadResult.mimeType || mimeType;
+    existingRecord.sizeBytes = uploadResult.sizeBytes || buffer.length;
+    existingRecord.version = (existingRecord.version || 1) + 1;
+    existingRecord.uploadedBy = user._id;
+    existingRecord.status = 'synced';
+    try {
+      courseFile = await existingRecord.save();
+    } catch (saveErr) {
+      saveErr.driveFileId = uploadResult.fileId;
+      saveErr.driveFileName = uploadResult.name;
+      console.error(
+        `CRITICAL: Assignment file updated in Google Drive (${uploadResult.fileId}) but CourseFile database update failed: ${saveErr.message}`
+      );
+      throw saveErr;
+    }
+  } else {
+    try {
+      courseFile = await CourseFile.create({
+        courseOffering: offering._id,
+        course: offering.course._id || offering.course,
+        faculty: offering.faculty._id || offering.faculty,
+        semester: offering.semester?._id || offering.semester,
+        section: offering.section || 'A',
+        documentType: 'ASSESS_ASSIGN',
+        fileFormat: 'pdf',
+        filename: uploadResult.name,
+        googleDriveFileId: uploadResult.fileId,
+        googleDriveFolderId: folderId,
+        googleDriveWebViewLink: uploadResult.webViewLink,
+        googleDriveWebContentLink: uploadResult.webContentLink,
+        mimeType: uploadResult.mimeType || mimeType,
+        sizeBytes: uploadResult.sizeBytes || buffer.length,
+        version: 1,
+        isCanonical: false,
+        instanceName: assignmentId.toString(),
+        status: 'synced',
+        uploadedBy: user._id,
+      });
+    } catch (createErr) {
+      createErr.driveFileId = uploadResult.fileId;
+      createErr.driveFileName = uploadResult.name;
+      console.error(
+        `CRITICAL: Assignment file uploaded to Google Drive (${uploadResult.fileId}) but CourseFile database creation failed: ${createErr.message}`
+      );
+      try {
+        await driveService.deleteFile(uploadResult.fileId);
+      } catch (cleanupErr) {
+        console.warn(`Could not clean up orphaned Drive file ${uploadResult.fileId}: ${cleanupErr.message}`);
+      }
+      const error = new Error(`Failed to save assignment file metadata: ${createErr.message}`);
+      error.statusCode = 500;
+      throw error;
+    }
+  }
+
+  // 10. Update CourseChecklist completion status
+  try {
+    let checklist = await CourseChecklist.findOne({ courseOffering: offering._id });
+    if (!checklist) {
+      checklist = await CourseChecklist.findOne({
+        course: offering.course._id || offering.course,
+        faculty: offering.faculty._id || offering.faculty,
+        semester: offering.semester?._id || offering.semester,
+        section: offering.section || 'A',
+      });
+    }
+    if (checklist && Array.isArray(checklist.checklistItems)) {
+      const item = checklist.checklistItems.find((i) => i.type === 'ASSESS_ASSIGN');
+      if (item && !item.completed) {
+        item.completed = true;
+        await checklist.save();
+      }
+    }
+  } catch (err) {
+    console.warn('Could not update checklist status for ASSESS_ASSIGN:', err.message);
+  }
+
+  return courseFile;
+};
+
+/**
+ * Deletes the CourseFile record and associated Google Drive file for an assessment.
+ *
+ * @param {Object} params
+ * @param {string} params.offeringId - CourseOffering ID
+ * @param {string} params.documentType - 'ASSESS_QUIZ' | 'ASSESS_ASSIGN'
+ * @param {string} params.assessmentId - MongoDB ObjectId string of the quiz or assignment
+ * @param {Object} params.user - Authenticated user
+ * @returns {Promise<{ deleted: boolean, driveFileId?: string }>}
+ */
+const deleteAssessmentFile = async ({ offeringId, documentType, assessmentId, user }) => {
+  if (!offeringId || !assessmentId) return { deleted: false };
+
+  // Verify offering authorization
+  await courseOfferingService.getOfferingById(offeringId, user);
+
+  const courseFile = await CourseFile.findOne({
+    courseOffering: offeringId,
+    documentType,
+    instanceName: assessmentId.toString(),
+  });
+
+  if (!courseFile) {
+    return { deleted: false };
+  }
+
+  // 1. Delete from Google Drive if driveFileId exists
+  if (courseFile.googleDriveFileId) {
+    try {
+      await driveService.deleteFile(courseFile.googleDriveFileId);
+    } catch (driveErr) {
+      console.error(
+        `Failed to delete ${documentType} file ${courseFile.googleDriveFileId} from Google Drive: ${driveErr.message}`
+      );
+      const error = new Error(`Google Drive deletion failed: ${driveErr.message}`);
+      error.statusCode = 502;
+      error.courseFileId = courseFile._id;
+      error.driveFileId = courseFile.googleDriveFileId;
+      throw error;
+    }
+  }
+
+  // 2. Delete CourseFile record only after Drive file deletion succeeds
+  await CourseFile.findByIdAndDelete(courseFile._id);
+
+  return {
+    deleted: true,
+    deletedFileId: courseFile._id,
+    driveFileId: courseFile.googleDriveFileId,
+  };
+};
+
+/**
  * Retrieves readable file stream from Google Drive for an authorized user.
  *
  * @param {string} fileId - CourseFile ObjectId
@@ -812,6 +1282,11 @@ module.exports = {
   uploadLectureFiles,
   deleteCourseFile,
   getLecturesFolderForOffering,
+  getQuizzesFolderForOffering,
+  getAssignmentsFolderForOffering,
+  generateAndSyncQuiz,
+  generateAndSyncAssignment,
+  deleteAssessmentFile,
   listOfferingFiles,
   getCourseFileById,
   downloadCourseFile,
