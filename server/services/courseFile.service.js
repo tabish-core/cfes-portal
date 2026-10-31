@@ -427,10 +427,22 @@ const generateAndSyncTimetable = async ({ offeringId, fileFormat = 'pdf', user }
   const semesterId = offering.semester?._id || offering.semester;
 
   // 4. Retrieve saved timetable strictly using faculty and semester
-  const timetable = await Timetable.findOne({
+  let query = Timetable.findOne({
     faculty: facultyId,
     semester: semesterId,
   });
+
+  if (query && typeof query.populate === 'function') {
+    query = query.populate('semester', 'name status');
+  }
+  if (query && typeof query.lean === 'function') {
+    query = query.lean();
+  }
+
+  const rawTimetable = await query;
+  const timetable = rawTimetable && typeof rawTimetable.toObject === 'function'
+    ? rawTimetable.toObject()
+    : rawTimetable;
 
   // 5. Reject if no saved timetable exists
   if (!timetable) {

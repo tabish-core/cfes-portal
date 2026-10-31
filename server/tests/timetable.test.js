@@ -487,5 +487,46 @@ describe('Timetable Backend Foundation — Unit & Service Tests', () => {
       }
     }
   });
+
+  test('12. PDF preprocessing converts real Mongoose Timetable Document so times and labels survive and render correctly in Handlebars template', () => {
+    const fs = require('fs');
+    const path = require('path');
+    const handlebars = require('handlebars');
+    const actualModel = jest.requireActual('../models/Timetable.model');
+
+    const realMongooseDoc = new actualModel.Timetable({
+      faculty: facultyId1,
+      semester: new mongoose.Types.ObjectId(),
+      facultyInfo: validFacultyInfo,
+      timeSlots: [
+        { slotId: 'slot_1', startTime: '08:30', endTime: '10:00', label: 'Slot 1', order: 1 },
+        { slotId: 'slot_2', startTime: '10:00', endTime: '11:30', label: 'Slot 2', order: 2 },
+      ],
+      days: validDays,
+      activities: validActivities,
+      consultingHours: validConsultingHours,
+    });
+
+    const preprocessed = preprocessTimetableForPDF(realMongooseDoc);
+
+    // Confirm label, startTime, and endTime survive conversion as own properties
+    expect(preprocessed.timeSlots[0].label).toBe('Slot 1');
+    expect(preprocessed.timeSlots[0].startTime).toBe('08:30');
+    expect(preprocessed.timeSlots[0].endTime).toBe('10:00');
+    expect(Object.prototype.hasOwnProperty.call(preprocessed.timeSlots[0], 'startTime')).toBe(true);
+    expect(Object.prototype.hasOwnProperty.call(preprocessed.timeSlots[0], 'endTime')).toBe(true);
+    expect(Object.prototype.hasOwnProperty.call(preprocessed.timeSlots[0], 'label')).toBe(true);
+
+    // Confirm rendered HTML contains the expected time range and does not render as '-'
+    const templatePath = path.join(__dirname, '../services/documentService/templates/timetableTemplate.hbs');
+    const templateHtml = fs.readFileSync(templatePath, 'utf8');
+    const template = handlebars.compile(templateHtml);
+    const renderedHtml = template(preprocessed);
+
+    expect(renderedHtml).toContain('08:30-10:00');
+    expect(renderedHtml).toContain('10:00-11:30');
+    expect(renderedHtml).toContain('Slot 1');
+    expect(renderedHtml).not.toMatch(/<th>\s*-\s*<\/th>/);
+  });
 });
 

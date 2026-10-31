@@ -27,11 +27,25 @@ const DAY_LABELS = {
 
 /**
  * Preprocess timetable data into a clean structure ready for the Handlebars template.
- * @param {object} timetable
+ * @param {object} rawTimetable
  * @returns {object}
  */
-const preprocessTimetableForPDF = (timetable) => {
-  const timeSlots = [...(timetable.timeSlots || [])];
+const preprocessTimetableForPDF = (rawTimetable) => {
+  const timetable = rawTimetable && typeof rawTimetable.toObject === 'function'
+    ? rawTimetable.toObject()
+    : (rawTimetable || {});
+
+  const rawTimeSlots = Array.isArray(timetable.timeSlots) ? timetable.timeSlots : [];
+  const timeSlots = rawTimeSlots.map((slot) => {
+    const plainSlot = slot && typeof slot.toObject === 'function' ? slot.toObject() : { ...slot };
+    return {
+      slotId: plainSlot.slotId != null ? String(plainSlot.slotId) : '',
+      startTime: plainSlot.startTime != null ? String(plainSlot.startTime) : '',
+      endTime: plainSlot.endTime != null ? String(plainSlot.endTime) : '',
+      label: plainSlot.label != null ? String(plainSlot.label) : '',
+      order: plainSlot.order != null ? Number(plainSlot.order) : 0
+    };
+  });
   timeSlots.sort((a, b) => (timeToMinutes(a.startTime) || 0) - (timeToMinutes(b.startTime) || 0));
 
   const slotIndexMap = new Map();
@@ -42,11 +56,15 @@ const preprocessTimetableForPDF = (timetable) => {
   const slotCount = timeSlots.length;
 
   // Determine days list
-  let daysConfig = timetable.days && timetable.days.length > 0
-    ? timetable.days
+  const rawDays = Array.isArray(timetable.days) ? timetable.days : [];
+  let daysConfig = rawDays.length > 0
+    ? rawDays.map((d) => (d && typeof d.toObject === 'function' ? d.toObject() : { ...d }))
     : DAYS_OF_WEEK.map((d) => ({ day: d, isOffDay: ['Saturday', 'Sunday'].includes(d) }));
 
-  const activities = timetable.activities || [];
+  const rawActivities = Array.isArray(timetable.activities) ? timetable.activities : [];
+  const activities = rawActivities.map((a) =>
+    a && typeof a.toObject === 'function' ? a.toObject() : { ...a }
+  );
 
   const processedDays = daysConfig.map((dayCfg) => {
     const dayName = dayCfg.day;
@@ -119,22 +137,31 @@ const preprocessTimetableForPDF = (timetable) => {
     logoBase64 = `data:image/png;base64,${logoBuffer.toString('base64')}`;
   }
 
-  const academicTerm = timetable.facultyInfo?.academicTerm ||
+  const rawFacultyInfo = timetable.facultyInfo && typeof timetable.facultyInfo.toObject === 'function'
+    ? timetable.facultyInfo.toObject()
+    : (timetable.facultyInfo || {});
+
+  const academicTerm = rawFacultyInfo.academicTerm ||
     (timetable.semester && timetable.semester.name ? timetable.semester.name : 'Current Term');
+
+  const rawConsulting = Array.isArray(timetable.consultingHours) ? timetable.consultingHours : [];
+  const consultingHours = rawConsulting.map((ch) =>
+    ch && typeof ch.toObject === 'function' ? ch.toObject() : { ...ch }
+  );
 
   return {
     facultyInfo: {
-      facultyName: timetable.facultyInfo?.facultyName || '',
-      designation: timetable.facultyInfo?.designation || '',
-      department: timetable.facultyInfo?.department || 'Department of Computer Science',
-      facultySchool: timetable.facultyInfo?.facultySchool || 'Faculty of Engineering Sciences and Technology',
+      facultyName: rawFacultyInfo.facultyName || '',
+      designation: rawFacultyInfo.designation || '',
+      department: rawFacultyInfo.department || 'Department of Computer Science',
+      facultySchool: rawFacultyInfo.facultySchool || 'Faculty of Engineering Sciences and Technology',
       academicTerm
     },
     academicTerm,
     timeSlots,
     slotCount,
     processedDays,
-    consultingHours: timetable.consultingHours || [],
+    consultingHours,
     logoBase64
   };
 };

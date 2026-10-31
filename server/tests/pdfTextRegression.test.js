@@ -20,6 +20,8 @@ const CourseChecklist = require('../models/CourseChecklist.model');
 const CourseOffering = require('../models/CourseOffering.model');
 const { generateCISPDF } = require('../services/documentService/generateCISPDF');
 const { generateCCRPDF } = require('../services/documentService/generateCCRPDF');
+const { Timetable } = require('../models/Timetable.model');
+const { generateTimetablePDF, preprocessTimetableForPDF } = require('../services/documentService/generateTimetablePDF');
 const formController = require('../controllers/form.controller');
 const courseFileService = require('../services/courseFile.service');
 const courseOfferingService = require('../services/courseOffering.service');
@@ -655,6 +657,178 @@ describe('CIS and CCR PDF Text Regression & Drive Sync Suite', () => {
       expect(mockUploadSpy).toHaveBeenLastCalledWith(
         expect.objectContaining({
           existingFileId: 'drive_ccr_file_initial',
+        })
+      );
+      expect(secondResult.version).toBe(2);
+    });
+  });
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // 5. Timetable PDF Text Rendering & Drive Synchronization
+  // ───────────────────────────────────────────────────────────────────────────
+  describe('5. Timetable PDF Text Rendering & Drive Synchronization', () => {
+    test('generateTimetablePDF renders all timeSlots with valid time ranges and labels from real Mongoose Document', async () => {
+      const fs = require('fs');
+      const path = require('path');
+      const mongooseDoc = new Timetable({
+        faculty: new mongoose.Types.ObjectId(mockFacultyId),
+        semester: new mongoose.Types.ObjectId(mockSemesterId),
+        facultyInfo: {
+          facultyName: 'Dr. Jane Faculty',
+          designation: 'Associate Professor',
+          department: 'Department of Computer Science',
+          facultySchool: 'Faculty of Engineering Sciences and Technology',
+          academicTerm: 'Fall 2026',
+        },
+        timeSlots: [
+          { slotId: 'slot_1', startTime: '08:30', endTime: '10:00', label: 'Slot 1', order: 1 },
+          { slotId: 'slot_2', startTime: '10:00', endTime: '11:30', label: 'Slot 2', order: 2 },
+          { slotId: 'slot_3', startTime: '11:30', endTime: '13:00', label: 'Slot 3', order: 3 },
+        ],
+        days: [
+          { day: 'Monday', isOffDay: false },
+          { day: 'Tuesday', isOffDay: false },
+          { day: 'Saturday', isOffDay: true },
+        ],
+        activities: [
+          {
+            id: 'act_1',
+            day: 'Monday',
+            startSlotId: 'slot_1',
+            endSlotId: 'slot_1',
+            activityType: 'Class',
+            title: 'Operating Systems',
+            venue: 'Lab 3',
+          },
+        ],
+        consultingHours: [
+          {
+            id: 'ch_1',
+            day: 'Tuesday',
+            startTime: '10:00',
+            endTime: '11:30',
+            location: 'Faculty Office 204',
+          },
+        ],
+      });
+
+      // 1. Verify preprocessor converts subdocuments to plain objects
+      const preprocessed = preprocessTimetableForPDF(mongooseDoc);
+      expect(preprocessed.timeSlots[0].label).toBe('Slot 1');
+      expect(preprocessed.timeSlots[0].startTime).toBe('08:30');
+      expect(preprocessed.timeSlots[0].endTime).toBe('10:00');
+      expect(Object.prototype.hasOwnProperty.call(preprocessed.timeSlots[0], 'startTime')).toBe(true);
+
+      // 2. Verify Handlebars template renders full time ranges, not '-'
+      const templatePath = path.join(__dirname, '../services/documentService/templates/timetableTemplate.hbs');
+      const templateHtml = fs.readFileSync(templatePath, 'utf8');
+      const template = handlebars.compile(templateHtml);
+      const renderedHtml = template(preprocessed);
+
+      expect(renderedHtml).toContain('08:30-10:00');
+      expect(renderedHtml).toContain('10:00-11:30');
+      expect(renderedHtml).toContain('11:30-13:00');
+      expect(renderedHtml).toContain('Slot 1');
+      expect(renderedHtml).toContain('Slot 2');
+      expect(renderedHtml).toContain('Operating Systems');
+      expect(renderedHtml).not.toMatch(/<th>\s*-\s*<\/th>/);
+
+      // 3. Verify actual PDF generation succeeds with real document
+      const pdfBuffer = await generateTimetablePDF(mongooseDoc);
+      expect(Buffer.isBuffer(pdfBuffer)).toBe(true);
+      expect(pdfBuffer.length).toBeGreaterThan(1000);
+      expect(pdfBuffer.toString('utf8', 0, 4)).toBe('%PDF');
+    });
+
+    test('generateAndSyncTimetable queries with populate/lean and re-sync updates file in place without duplicates', async () => {
+      jest.spyOn(courseOfferingService, 'getOfferingById').mockResolvedValue(mockOffering);
+
+      const realDoc = new Timetable({
+        faculty: new mongoose.Types.ObjectId(mockFacultyId),
+        semester: new mongoose.Types.ObjectId(mockSemesterId),
+        facultyInfo: {
+          facultyName: 'Dr. Jane Faculty',
+          designation: 'Associate Professor',
+          department: 'Department of Computer Science',
+          facultySchool: 'Faculty of Engineering Sciences and Technology',
+          academicTerm: 'Fall 2026',
+        },
+        timeSlots: [
+          { slotId: 'slot_1', startTime: '08:30', endTime: '10:00', label: 'Slot 1', order: 1 },
+          { slotId: 'slot_2', startTime: '10:00', endTime: '11:30', label: 'Slot 2', order: 2 },
+        ],
+        days: [
+          { day: 'Monday', isOffDay: false },
+          { day: 'Tuesday', isOffDay: false },
+        ],
+        activities: [],
+        consultingHours: [],
+      });
+
+      const mockQuery = {
+        populate: jest.fn().mockReturnThis(),
+        lean: jest.fn().mockResolvedValue(realDoc),
+      };
+      jest.spyOn(Timetable, 'findOne').mockReturnValue(mockQuery);
+
+      let savedCourseFile = null;
+      jest.spyOn(CourseFile, 'findOne').mockImplementation(() => Promise.resolve(savedCourseFile));
+      jest.spyOn(CourseFile, 'create').mockImplementation(async (data) => {
+        savedCourseFile = {
+          ...data,
+          _id: new mongoose.Types.ObjectId(),
+          version: data.version || 1,
+          save: jest.fn().mockImplementation(function () {
+            return Promise.resolve(this);
+          }),
+        };
+        return savedCourseFile;
+      });
+
+      const mockUploadSpy = jest.spyOn(driveService, 'uploadDocumentBuffer').mockImplementation(async (opts) => {
+        return {
+          fileId: opts.existingFileId || 'drive_tt_file_initial',
+          name: opts.fileName,
+          mimeType: opts.mimeType,
+          sizeBytes: opts.buffer.length,
+          webViewLink: 'https://drive.google.com/file/d/test/view',
+          webContentLink: 'https://drive.google.com/uc?id=test',
+          isUpdated: Boolean(opts.existingFileId),
+        };
+      });
+
+      const mockChecklist = {
+        checklistItems: [{ type: 'TIMETABLE', completed: false }],
+        save: jest.fn().mockResolvedValue(true),
+      };
+      const checklistFindSpy = jest.spyOn(CourseChecklist, 'findOne').mockResolvedValue(mockChecklist);
+
+      // First sync: creates record (version 1)
+      const firstResult = await courseFileService.generateAndSyncTimetable({
+        offeringId: mockOfferingId,
+        fileFormat: 'pdf',
+        user: mockUser,
+      });
+
+      expect(mockQuery.populate).toHaveBeenCalledWith('semester', 'name status');
+      expect(mockQuery.lean).toHaveBeenCalled();
+      expect(firstResult.version).toBe(1);
+      expect(checklistFindSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ courseOffering: mockOffering._id })
+      );
+      expect(mockChecklist.checklistItems[0].completed).toBe(true);
+      expect(mockChecklist.save).toHaveBeenCalled();
+
+      // Second sync (re-sync): must update in place with existingFileId, increment version to 2, no duplicate
+      const secondResult = await courseFileService.generateAndSyncTimetable({
+        offeringId: mockOfferingId,
+        fileFormat: 'pdf',
+        user: mockUser,
+      });
+
+      expect(mockUploadSpy).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          existingFileId: 'drive_tt_file_initial',
         })
       );
       expect(secondResult.version).toBe(2);

@@ -297,6 +297,48 @@ describe('Stage 4B: Timetable Google Drive Synchronization Suite', () => {
       expect(queryArg).not.toHaveProperty('course');
       expect(queryArg).not.toHaveProperty('section');
     });
+
+    test('Timetable query populates semester, uses lean, and passes plain object data to PDF generator', async () => {
+      jest.spyOn(courseOfferingService, 'getOfferingById').mockResolvedValue(mockOffering);
+
+      // Create a chained query mock returning a Mongoose Document instance
+      const realDoc = new Timetable({
+        faculty: mockOffering.faculty._id,
+        semester: mockOffering.semester._id,
+        facultyInfo: mockTimetableDoc.facultyInfo,
+        timeSlots: mockTimetableDoc.timeSlots,
+        days: mockTimetableDoc.days,
+        activities: mockTimetableDoc.activities,
+        consultingHours: mockTimetableDoc.consultingHours,
+      });
+
+      const mockQuery = {
+        populate: jest.fn().mockReturnThis(),
+        lean: jest.fn().mockResolvedValue(realDoc),
+      };
+      jest.spyOn(Timetable, 'findOne').mockReturnValue(mockQuery);
+
+      let passedTimetable = null;
+      jest.spyOn(timetablePdfService, 'generateTimetablePDF').mockImplementation(async (data) => {
+        passedTimetable = data;
+        return Buffer.from('pdf');
+      });
+      jest.spyOn(courseFileService, 'syncOfferingDocument').mockResolvedValue({ status: 'synced' });
+
+      await courseFileService.generateAndSyncTimetable({
+        offeringId: mockOfferingId,
+        fileFormat: 'pdf',
+        user: mockUser,
+      });
+
+      expect(mockQuery.populate).toHaveBeenCalledWith('semester', 'name status');
+      expect(mockQuery.lean).toHaveBeenCalled();
+      expect(passedTimetable).toBeDefined();
+      // Confirm that the timetable passed to the generator is converted to a plain object
+      expect(passedTimetable instanceof mongoose.Document).toBe(false);
+      expect(Object.prototype.hasOwnProperty.call(passedTimetable.timeSlots[0], 'startTime')).toBe(true);
+      expect(passedTimetable.timeSlots[0].startTime).toBe('08:30');
+    });
   });
 
   // ───────────────────────────────────────────────────────────────────────────
