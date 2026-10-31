@@ -12,12 +12,31 @@ import TimetablePage from '../../components/forms/Timetable/TimetablePage';
 import AttendanceRecordPage from '../../components/forms/Attendance/AttendanceRecordPage';
 import ClassProjectPage from '../../components/forms/CCP/ClassProjectPage';
 import LecturesPage from '../../components/forms/Lectures/LecturesPage';
+import ExamUploadSection from '../../components/forms/Exam/ExamUploadSection';
+import { getOfferingFiles } from '../../services/courseFile.service';
 
 
 const CourseForm = () => {
   const { courseId: paramCourseId, offeringId, formType } = useParams();
   const [offering, setOffering] = useState(null);
   const [loadingOffering, setLoadingOffering] = useState(Boolean(offeringId));
+  const [examFiles, setExamFiles] = useState([]);
+
+  const isAttendance = formType === 'AR';
+  const isProject = formType === 'ASSESS_PROJECT';
+  const isLectures = formType === 'LECTURES';
+  const isMidterm = formType === 'ASSESS_MID';
+  const isFinal = formType === 'ASSESS_FINAL';
+
+  const loadExamFiles = async () => {
+    if (!offeringId) return;
+    try {
+      const files = await getOfferingFiles(offeringId);
+      setExamFiles(files || []);
+    } catch (err) {
+      console.warn('Could not load offering files for exam:', err);
+    }
+  };
 
   useEffect(() => {
     if (!offeringId) return;
@@ -33,12 +52,12 @@ const CourseForm = () => {
       }
     };
     loadOffering();
-  }, [offeringId]);
+    if (isMidterm || isFinal) {
+      loadExamFiles();
+    }
+  }, [offeringId, isMidterm, isFinal]);
 
   const activeCourseId = offering?.course?._id || paramCourseId;
-  const isAttendance = formType === 'AR';
-  const isProject = formType === 'ASSESS_PROJECT';
-  const isLectures = formType === 'LECTURES';
 
   return (
     <div className="dashboard">
@@ -56,6 +75,10 @@ const CourseForm = () => {
             ? 'CCP / Class Project'
             : isLectures
             ? 'Lectures'
+            : isMidterm
+            ? 'Midterm Exam Documents'
+            : isFinal
+            ? 'Final Exam Documents'
             : `Submit ${formType}`}
         </h1>
         {offering && (
@@ -90,6 +113,22 @@ const CourseForm = () => {
           <AttendanceRecordPage courseId={activeCourseId} offeringId={offeringId} />
         ) : isLectures ? (
           <LecturesPage courseId={activeCourseId} offeringId={offeringId} />
+        ) : isMidterm ? (
+          <ExamUploadSection
+            examType="MIDTERM"
+            offeringId={offeringId}
+            courseFiles={examFiles}
+            onUploadSuccess={loadExamFiles}
+            isCard={false}
+          />
+        ) : isFinal ? (
+          <ExamUploadSection
+            examType="FINAL"
+            offeringId={offeringId}
+            courseFiles={examFiles}
+            onUploadSuccess={loadExamFiles}
+            isCard={false}
+          />
         ) : (
           <>
             <p>Multi-step form will be implemented in Phase 2.</p>

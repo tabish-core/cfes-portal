@@ -7,12 +7,30 @@ import {
   syncCISDocument,
   syncCCRDocument,
   syncTimetableDocument,
+  syncProjectDocument,
+  syncCCCDocument,
+  syncCRRDocument,
   syncQuizDocument,
   syncAssignmentDocument,
   uploadOfferingDocument,
   verifyGoogleDriveAccess,
 } from '../../services/courseFile.service';
+import ExamUploadSection from '../../components/forms/Exam/ExamUploadSection';
 import '../dean/Dashboard.css';
+
+const MIDTERM_DOC_TYPES = [
+  'MIDTERM_EXAM_PAPER',
+  'MIDTERM_BEST_COPY',
+  'MIDTERM_AVERAGE_COPY',
+  'MIDTERM_WORST_COPY',
+];
+
+const FINAL_DOC_TYPES = [
+  'FINAL_EXAM_PAPER',
+  'FINAL_BEST_COPY',
+  'FINAL_AVERAGE_COPY',
+  'FINAL_WORST_COPY',
+];
 
 /**
  * Checklist data structure.
@@ -81,12 +99,23 @@ const CourseFileChecklist = () => {
   const [syncingCIS, setSyncingCIS] = useState(false);
   const [syncingCCR, setSyncingCCR] = useState(false);
   const [syncingTimetable, setSyncingTimetable] = useState(false);
+  const [syncingProject, setSyncingProject] = useState(false);
+  const [syncingCCC, setSyncingCCC] = useState(false);
+  const [syncingCRR, setSyncingCRR] = useState(false);
   const [offeringQuizzes, setOfferingQuizzes] = useState([]);
   const [offeringAssignments, setOfferingAssignments] = useState([]);
   const [syncingQuizId, setSyncingQuizId] = useState(null);
   const [syncingAssignmentId, setSyncingAssignmentId] = useState(null);
   const [uploadingDocType, setUploadingDocType] = useState(null);
   const [rowErrors, setRowErrors] = useState({});
+  const [expandedExams, setExpandedExams] = useState({ MIDTERM: false, FINAL: false });
+
+  const toggleExpandExam = (type) => {
+    setExpandedExams((prev) => ({
+      ...prev,
+      [type]: !prev[type],
+    }));
+  };
 
   // Upload modal state
   const [uploadModal, setUploadModal] = useState({
@@ -108,6 +137,10 @@ const CourseFileChecklist = () => {
       const type = file.documentType;
       if (!map[type]) map[type] = [];
       map[type].push(file);
+      if (type === 'CCP') {
+        if (!map['ASSESS_PROJECT']) map['ASSESS_PROJECT'] = [];
+        map['ASSESS_PROJECT'].push(file);
+      }
     });
     return map;
   }, [courseFiles]);
@@ -118,7 +151,21 @@ const CourseFileChecklist = () => {
     courseFiles.forEach((f) => {
       if (f.status === 'synced') syncedTypes.add(f.documentType);
     });
-    return syncedTypes.size;
+
+    const isMidtermDone = MIDTERM_DOC_TYPES.filter((t) => syncedTypes.has(t)).length === 4;
+    if (isMidtermDone) syncedTypes.add('ASSESS_MID');
+
+    const isFinalDone = FINAL_DOC_TYPES.filter((t) => syncedTypes.has(t)).length === 4;
+    if (isFinalDone) syncedTypes.add('ASSESS_FINAL');
+
+    const validFormTypes = new Set(
+      INITIAL_CHECKLIST.filter((i) => i.formType).map((i) => i.formType)
+    );
+    let count = 0;
+    validFormTypes.forEach((ft) => {
+      if (syncedTypes.has(ft)) count++;
+    });
+    return count;
   }, [courseFiles]);
 
   const totalChecklistItemsCount = useMemo(() => {
@@ -154,6 +201,18 @@ const CourseFileChecklist = () => {
               const wpMatch = saved.checklistItems.find((s) => s.type === 'WP');
               return { ...item, completed: Boolean(cisMatch?.completed || wpMatch?.completed) };
             }
+            if (item.formType === 'ASSESS_MID') {
+              const mCount = MIDTERM_DOC_TYPES.filter((t) =>
+                (files || []).some((f) => f.documentType === t && f.status === 'synced')
+              ).length;
+              return { ...item, completed: mCount === 4 };
+            }
+            if (item.formType === 'ASSESS_FINAL') {
+              const fCount = FINAL_DOC_TYPES.filter((t) =>
+                (files || []).some((f) => f.documentType === t && f.status === 'synced')
+              ).length;
+              return { ...item, completed: fCount === 4 };
+            }
             const match = saved.checklistItems.find((s) => s.type === item.formType);
             return match ? { ...item, completed: match.completed } : item;
           })
@@ -175,6 +234,7 @@ const CourseFileChecklist = () => {
         setLoading(true);
 
         let checklistData = null;
+        let loadedFiles = [];
 
         if (offeringId) {
           // Fetch offering details
@@ -201,8 +261,9 @@ const CourseFileChecklist = () => {
             api.get(`/assignments/offering/${offeringId}`).catch(() => ({ data: { data: { assignments: [] } } })),
           ]);
 
+          loadedFiles = files || [];
           checklistData = checklistRes.data?.data?.checklist;
-          setCourseFiles(files || []);
+          setCourseFiles(loadedFiles);
           if (folderInfo) setDriveFolder(folderInfo);
           if (quizRes.data?.data?.quizzes) {
             setOfferingQuizzes(quizRes.data.data.quizzes);
@@ -244,6 +305,18 @@ const CourseFileChecklist = () => {
                   const cisMatch = saved.checklistItems.find((s) => s.type === 'CIS');
                   const wpMatch = saved.checklistItems.find((s) => s.type === 'WP');
                   return { ...item, completed: Boolean(cisMatch?.completed || wpMatch?.completed) };
+                }
+                if (item.formType === 'ASSESS_MID') {
+                  const mCount = MIDTERM_DOC_TYPES.filter((t) =>
+                    (loadedFiles || []).some((f) => f.documentType === t && f.status === 'synced')
+                  ).length;
+                  return { ...item, completed: mCount === 4 };
+                }
+                if (item.formType === 'ASSESS_FINAL') {
+                  const fCount = FINAL_DOC_TYPES.filter((t) =>
+                    (loadedFiles || []).some((f) => f.documentType === t && f.status === 'synced')
+                  ).length;
+                  return { ...item, completed: fCount === 4 };
                 }
                 const match = saved.checklistItems.find((s) => s.type === item.formType);
                 return match ? { ...item, completed: match.completed } : item;
@@ -380,6 +453,85 @@ const CourseFileChecklist = () => {
       setSyncingTimetable(false);
     }
   };
+
+  // Trigger CCP / Class Project Generation and Google Drive Synchronization
+  const handleSyncProject = async () => {
+    if (!offeringId) {
+      toast.error('Google Drive synchronization requires an offering-scoped course view.');
+      return;
+    }
+    try {
+      setSyncingProject(true);
+      setRowErrors((prev) => ({ ...prev, ASSESS_PROJECT: null }));
+      const res = await syncProjectDocument(offeringId);
+      toast.success(
+        res.message || 'CCP / Class Project (PDF) synchronized to Google Drive successfully!'
+      );
+      await refreshFilesAndChecklist();
+    } catch (err) {
+      console.error('Class Project synchronization failed:', err);
+      const message =
+        err.response?.data?.message ||
+        'Failed to synchronize Class Project with Google Drive.';
+      setRowErrors((prev) => ({ ...prev, ASSESS_PROJECT: message }));
+      toast.error(message);
+    } finally {
+      setSyncingProject(false);
+    }
+  };
+
+  // Trigger CCC Generation and Google Drive Synchronization
+  const handleSyncCCC = async () => {
+    if (!offeringId) {
+      toast.error('Google Drive synchronization requires an offering-scoped course view.');
+      return;
+    }
+    try {
+      setSyncingCCC(true);
+      setRowErrors((prev) => ({ ...prev, CCC: null }));
+      const res = await syncCCCDocument(offeringId);
+      toast.success(
+        res.message || 'Course Completion Certificate (PDF) synchronized to Google Drive successfully!'
+      );
+      await refreshFilesAndChecklist();
+    } catch (err) {
+      console.error('CCC synchronization failed:', err);
+      const message =
+        err.response?.data?.message ||
+        'Failed to synchronize Course Completion Certificate with Google Drive.';
+      setRowErrors((prev) => ({ ...prev, CCC: message }));
+      toast.error(message);
+    } finally {
+      setSyncingCCC(false);
+    }
+  };
+
+  // Trigger CRR Generation and Google Drive Synchronization
+  const handleSyncCRR = async () => {
+    if (!offeringId) {
+      toast.error('Google Drive synchronization requires an offering-scoped course view.');
+      return;
+    }
+    try {
+      setSyncingCRR(true);
+      setRowErrors((prev) => ({ ...prev, CRR: null }));
+      const res = await syncCRRDocument(offeringId);
+      toast.success(
+        res.message || 'Course Review Report (PDF) synchronized to Google Drive successfully!'
+      );
+      await refreshFilesAndChecklist();
+    } catch (err) {
+      console.error('CRR synchronization failed:', err);
+      const message =
+        err.response?.data?.message ||
+        'Failed to synchronize Course Review Report with Google Drive.';
+      setRowErrors((prev) => ({ ...prev, CRR: message }));
+      toast.error(message);
+    } finally {
+      setSyncingCRR(false);
+    }
+  };
+
 
   // Trigger Quiz Synchronization to Google Drive
   const handleSyncQuiz = async (quizId) => {
@@ -959,6 +1111,25 @@ const CourseFileChecklist = () => {
 
                 const isQuizItem = item.formType === 'ASSESS_QUIZ';
                 const isAssignItem = item.formType === 'ASSESS_ASSIGN';
+                const isMidtermItem = item.formType === 'ASSESS_MID';
+                const isFinalItem = item.formType === 'ASSESS_FINAL';
+
+                const midtermUploadedCount = isMidtermItem
+                  ? MIDTERM_DOC_TYPES.filter((t) =>
+                      courseFiles.some((f) => f.documentType === t && f.status === 'synced')
+                    ).length
+                  : 0;
+
+                const finalUploadedCount = isFinalItem
+                  ? FINAL_DOC_TYPES.filter((t) =>
+                      courseFiles.some((f) => f.documentType === t && f.status === 'synced')
+                    ).length
+                  : 0;
+
+                const isExamItem = isMidtermItem || isFinalItem;
+                const examUploadedCount = isMidtermItem ? midtermUploadedCount : finalUploadedCount;
+                const isExamPartial = isExamItem && examUploadedCount > 0 && examUploadedCount < 4;
+
                 const quizCount = isQuizItem ? offeringQuizzes.length : 0;
                 const assignCount = isAssignItem ? offeringAssignments.length : 0;
 
@@ -991,6 +1162,10 @@ const CourseFileChecklist = () => {
                   ? (quizCount === 1 ? isSingleQuizSynced : quizCount > 1 ? assessmentSyncedCount > 0 : Boolean(primaryPdfFile))
                   : isAssignItem
                   ? (assignCount === 1 ? isSingleAssignSynced : assignCount > 1 ? assessmentSyncedCount > 0 : Boolean(primaryPdfFile))
+                  : isMidtermItem
+                  ? midtermUploadedCount === 4
+                  : isFinalItem
+                  ? finalUploadedCount === 4
                   : primaryFile?.status === 'synced';
 
                 const hasRowError = Boolean(
@@ -1010,10 +1185,14 @@ const CourseFileChecklist = () => {
                   (item.formType === 'CIS' && syncingCIS) ||
                   (item.formType === 'CCR' && syncingCCR) ||
                   (item.formType === 'TIMETABLE' && syncingTimetable) ||
+                  (item.formType === 'ASSESS_PROJECT' && syncingProject) ||
+                  (item.formType === 'CCC' && syncingCCC) ||
+                  (item.formType === 'CRR' && syncingCRR) ||
                   (item.formType === 'ASSESS_QUIZ' && Boolean(syncingQuizId)) ||
                   (item.formType === 'ASSESS_ASSIGN' && Boolean(syncingAssignmentId));
 
                 return (
+                  <React.Fragment key={item.id}>
                   <tr
                     key={item.id}
                     style={{
@@ -1060,10 +1239,22 @@ const CourseFileChecklist = () => {
                         >
                           {item.name}
                         </Link>
+                        {isExamItem && (
+                          <span
+                            style={{
+                              marginLeft: '0.5rem',
+                              fontSize: '0.78rem',
+                              color: '#64748b',
+                              fontWeight: 'normal',
+                            }}
+                          >
+                            (4 categories: Paper + 3 Student Copies)
+                          </span>
+                        )}
                       </div>
 
-                      {/* Display synchronized file details if available */}
-                      {hasDriveFile && (
+                      {/* Display synchronized file details if available (non-exam) */}
+                      {!isExamItem && hasDriveFile && (
                         <div
                           style={{
                             marginTop: '0.3rem',
@@ -1086,8 +1277,64 @@ const CourseFileChecklist = () => {
                         </div>
                       )}
 
+                      {/* Display uploaded exam categories list */}
+                      {isExamItem && examUploadedCount > 0 && (
+                        <div
+                          style={{
+                            marginTop: '0.35rem',
+                            fontSize: '0.78rem',
+                            display: 'flex',
+                            gap: '0.4rem',
+                            flexWrap: 'wrap',
+                          }}
+                        >
+                          {(isMidtermItem ? MIDTERM_DOC_TYPES : FINAL_DOC_TYPES).map((docType) => {
+                            const f = courseFiles.find(
+                              (file) => file.documentType === docType && file.status === 'synced'
+                            );
+                            if (!f) return null;
+                            const slotLabel = docType
+                              .replace(/^(MIDTERM_|FINAL_)/, '')
+                              .replace(/_/g, ' ');
+                            return (
+                              <span
+                                key={docType}
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '0.25rem',
+                                  padding: '0.15rem 0.45rem',
+                                  backgroundColor: '#f1f5f9',
+                                  border: '1px solid #e2e8f0',
+                                  borderRadius: '4px',
+                                  color: '#334155',
+                                }}
+                              >
+                                <span>✓ {slotLabel}:</span>
+                                {f.googleDriveWebViewLink ? (
+                                  <a
+                                    href={f.googleDriveWebViewLink}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    style={{
+                                      color: '#2563eb',
+                                      textDecoration: 'none',
+                                      fontWeight: '500',
+                                    }}
+                                  >
+                                    {f.filename} ↗
+                                  </a>
+                                ) : (
+                                  <span>{f.filename}</span>
+                                )}
+                              </span>
+                            );
+                          })}
+                        </div>
+                      )}
+
                       {/* Display multiple assessment or lecture instances if present */}
-                      {matchingFiles.length > 1 && (
+                      {!isExamItem && matchingFiles.length > 1 && (
                         <div style={{ marginTop: '0.4rem', fontSize: '0.78rem' }}>
                           <span style={{ color: '#64748b' }}>Files ({matchingFiles.length}): </span>
                           {matchingFiles.map((f, idx) => (
@@ -1184,6 +1431,10 @@ const CourseFileChecklist = () => {
                               ? `PDF Synced${singleAssignFile?.version > 1 ? ` v${singleAssignFile.version}` : ''}`
                               : (isQuizItem || isAssignItem)
                               ? `PDF Synced${primaryPdfFile?.version > 1 ? ` v${primaryPdfFile.version}` : ''}`
+                              : isMidtermItem
+                              ? 'Completed (4/4)'
+                              : isFinalItem
+                              ? 'Completed (4/4)'
                               : item.formType === 'LECTURES' && matchingFiles.length > 0
                               ? `Synced (${matchingFiles.length} file${matchingFiles.length > 1 ? 's' : ''})`
                               : primaryFile?.version > 1
@@ -1210,6 +1461,24 @@ const CourseFileChecklist = () => {
                           <span>✗</span>
                           <span>{rowErrors[item.formType] ? 'Sync failed' : 'Upload failed'}</span>
                         </span>
+                      ) : isExamPartial ? (
+                        <span
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.3rem',
+                            padding: '0.25rem 0.65rem',
+                            borderRadius: '9999px',
+                            fontSize: '0.78rem',
+                            fontWeight: '600',
+                            backgroundColor: '#eff6ff',
+                            color: '#1d4ed8',
+                            border: '1px solid #bfdbfe',
+                          }}
+                        >
+                          <span>●</span>
+                          <span>In Progress ({examUploadedCount}/4)</span>
+                        </span>
                       ) : (
                         <span
                           style={{
@@ -1226,11 +1495,13 @@ const CourseFileChecklist = () => {
                           }}
                         >
                           <span>
-                            {isQuizItem && quizCount === 0
+                            {isExamItem
+                              ? 'Not Started (0/4)'
+                              : isQuizItem && quizCount === 0
                               ? 'Not created'
                               : isAssignItem && assignCount === 0
                               ? 'Not created'
-                              : isQuizItem || isAssignItem
+                              : isQuizItem || isAssignItem || item.formType === 'ASSESS_PROJECT' || item.formType === 'CCC' || item.formType === 'CRR'
                               ? 'PDF Not Synced'
                               : 'Not uploaded'}
                           </span>
@@ -1345,7 +1616,6 @@ const CourseFileChecklist = () => {
                           </button>
                         )}
 
-
                         {/* Lectures Action: Manage Lectures */}
                         {item.formType === 'LECTURES' && (
                           <Link
@@ -1372,6 +1642,58 @@ const CourseFileChecklist = () => {
                           >
                             <span>📂 Manage Lectures{matchingFiles.length > 0 ? ` (${matchingFiles.length})` : ''}</span>
                           </Link>
+                        )}
+
+                        {/* Midterm Exam Action */}
+                        {isMidtermItem && (
+                          <button
+                            type="button"
+                            onClick={() => toggleExpandExam('MIDTERM')}
+                            style={{
+                              padding: '0.35rem 0.75rem',
+                              backgroundColor: expandedExams.MIDTERM ? '#1e40af' : isSynced ? '#eff6ff' : '#2563eb',
+                              color: expandedExams.MIDTERM || !isSynced ? '#ffffff' : '#1d4ed8',
+                              border: isSynced && !expandedExams.MIDTERM ? '1px solid #bfdbfe' : 'none',
+                              borderRadius: '6px',
+                              fontSize: '0.82rem',
+                              fontWeight: '600',
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '0.35rem',
+                              transition: 'all 0.15s',
+                            }}
+                            title="Expand or collapse Midterm Exam document uploads"
+                          >
+                            <span>📁 Manage Documents ({midtermUploadedCount}/4)</span>
+                            <span>{expandedExams.MIDTERM ? '▲' : '▼'}</span>
+                          </button>
+                        )}
+
+                        {/* Final Exam Action */}
+                        {isFinalItem && (
+                          <button
+                            type="button"
+                            onClick={() => toggleExpandExam('FINAL')}
+                            style={{
+                              padding: '0.35rem 0.75rem',
+                              backgroundColor: expandedExams.FINAL ? '#1e40af' : isSynced ? '#eff6ff' : '#2563eb',
+                              color: expandedExams.FINAL || !isSynced ? '#ffffff' : '#1d4ed8',
+                              border: isSynced && !expandedExams.FINAL ? '1px solid #bfdbfe' : 'none',
+                              borderRadius: '6px',
+                              fontSize: '0.82rem',
+                              fontWeight: '600',
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '0.35rem',
+                              transition: 'all 0.15s',
+                            }}
+                            title="Expand or collapse Final Exam document uploads"
+                          >
+                            <span>📁 Manage Documents ({finalUploadedCount}/4)</span>
+                            <span>{expandedExams.FINAL ? '▲' : '▼'}</span>
+                          </button>
                         )}
 
                         {/* Quiz Sync / Manage Actions */}
@@ -1556,6 +1878,105 @@ const CourseFileChecklist = () => {
                           </>
                         )}
 
+                        {/* CCP / Class Project Sync Action */}
+                        {item.formType === 'ASSESS_PROJECT' && (
+                          <button
+                            type="button"
+                            onClick={handleSyncProject}
+                            disabled={isItemSyncing || !offeringId}
+                            style={{
+                              padding: '0.35rem 0.75rem',
+                              backgroundColor: isSynced ? '#eff6ff' : '#2563eb',
+                              color: isSynced ? '#1d4ed8' : '#ffffff',
+                              border: isSynced ? '1px solid #bfdbfe' : 'none',
+                              borderRadius: '6px',
+                              fontSize: '0.82rem',
+                              fontWeight: '600',
+                              cursor: isItemSyncing ? 'wait' : 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '0.3rem',
+                              transition: 'all 0.15s',
+                              opacity: isItemSyncing ? 0.75 : 1,
+                            }}
+                            title="Generate and synchronize CCP / Class Project document to Google Drive"
+                          >
+                            {isItemSyncing ? (
+                              <span>Syncing...</span>
+                            ) : isSynced ? (
+                              <span>Re-sync Project</span>
+                            ) : (
+                              <span>⚡ Sync to Drive</span>
+                            )}
+                          </button>
+                        )}
+
+                        {/* CCC Sync Action */}
+                        {item.formType === 'CCC' && (
+                          <button
+                            type="button"
+                            onClick={handleSyncCCC}
+                            disabled={isItemSyncing || !offeringId}
+                            style={{
+                              padding: '0.35rem 0.75rem',
+                              backgroundColor: isSynced ? '#eff6ff' : '#2563eb',
+                              color: isSynced ? '#1d4ed8' : '#ffffff',
+                              border: isSynced ? '1px solid #bfdbfe' : 'none',
+                              borderRadius: '6px',
+                              fontSize: '0.82rem',
+                              fontWeight: '600',
+                              cursor: isItemSyncing ? 'wait' : 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '0.3rem',
+                              transition: 'all 0.15s',
+                              opacity: isItemSyncing ? 0.75 : 1,
+                            }}
+                            title="Generate and synchronize Course Completion Certificate to Google Drive"
+                          >
+                            {isItemSyncing ? (
+                              <span>Syncing...</span>
+                            ) : isSynced ? (
+                              <span>Re-sync CCC</span>
+                            ) : (
+                              <span>⚡ Sync to Drive</span>
+                            )}
+                          </button>
+                        )}
+
+                        {/* CRR Sync Action */}
+                        {item.formType === 'CRR' && (
+                          <button
+                            type="button"
+                            onClick={handleSyncCRR}
+                            disabled={isItemSyncing || !offeringId}
+                            style={{
+                              padding: '0.35rem 0.75rem',
+                              backgroundColor: isSynced ? '#eff6ff' : '#2563eb',
+                              color: isSynced ? '#1d4ed8' : '#ffffff',
+                              border: isSynced ? '1px solid #bfdbfe' : 'none',
+                              borderRadius: '6px',
+                              fontSize: '0.82rem',
+                              fontWeight: '600',
+                              cursor: isItemSyncing ? 'wait' : 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '0.3rem',
+                              transition: 'all 0.15s',
+                              opacity: isItemSyncing ? 0.75 : 1,
+                            }}
+                            title="Generate and synchronize Course Review Report to Google Drive"
+                          >
+                            {isItemSyncing ? (
+                              <span>Syncing...</span>
+                            ) : isSynced ? (
+                              <span>Re-sync CRR</span>
+                            ) : (
+                              <span>⚡ Sync to Drive</span>
+                            )}
+                          </button>
+                        )}
+
                         {/* View in Google Drive Button */}
                         {(() => {
                           const viewFile =
@@ -1563,6 +1984,10 @@ const CourseFileChecklist = () => {
                               ? singleQuizFile || matchingFiles.find((f) => f.fileFormat === 'pdf' && f.googleDriveWebViewLink)
                               : isAssignItem
                               ? singleAssignFile || matchingFiles.find((f) => f.fileFormat === 'pdf' && f.googleDriveWebViewLink)
+                              : isMidtermItem
+                              ? courseFiles.find((f) => MIDTERM_DOC_TYPES.includes(f.documentType) && f.googleDriveWebViewLink)
+                              : isFinalItem
+                              ? courseFiles.find((f) => FINAL_DOC_TYPES.includes(f.documentType) && f.googleDriveWebViewLink)
                               : primaryFile;
                           if (!viewFile?.googleDriveWebViewLink) return null;
                           return (
@@ -1592,8 +2017,8 @@ const CourseFileChecklist = () => {
                           );
                         })()}
 
-                        {/* Upload File Action */}
-                        {item.formType !== 'LECTURES' && (
+                        {/* Upload File Action (for standard non-exam items) */}
+                        {item.formType !== 'LECTURES' && !isExamItem && (
                           <button
                             type="button"
                             onClick={() => openUploadModal(item)}
@@ -1620,6 +2045,51 @@ const CourseFileChecklist = () => {
                       </div>
                     </td>
                   </tr>
+
+                  {/* Expandable Midterm Exam Card */}
+                  {isMidtermItem && expandedExams.MIDTERM && (
+                    <tr key={`${item.id}-expanded-midterm`}>
+                      <td
+                        colSpan={5}
+                        style={{
+                          padding: '0.5rem 1rem 1.25rem',
+                          backgroundColor: '#f8fafc',
+                          border: '1px solid #e2e8f0',
+                        }}
+                      >
+                        <ExamUploadSection
+                          examType="MIDTERM"
+                          offeringId={offeringId}
+                          courseFiles={courseFiles}
+                          onUploadSuccess={refreshFilesAndChecklist}
+                          isCard={true}
+                        />
+                      </td>
+                    </tr>
+                  )}
+
+                  {/* Expandable Final Exam Card */}
+                  {isFinalItem && expandedExams.FINAL && (
+                    <tr key={`${item.id}-expanded-final`}>
+                      <td
+                        colSpan={5}
+                        style={{
+                          padding: '0.5rem 1rem 1.25rem',
+                          backgroundColor: '#f8fafc',
+                          border: '1px solid #e2e8f0',
+                        }}
+                      >
+                        <ExamUploadSection
+                          examType="FINAL"
+                          offeringId={offeringId}
+                          courseFiles={courseFiles}
+                          onUploadSuccess={refreshFilesAndChecklist}
+                          isCard={true}
+                        />
+                      </td>
+                    </tr>
+                  )}
+                  </React.Fragment>
                 );
               })}
             </tbody>

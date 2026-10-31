@@ -13,6 +13,7 @@ const crypto = require('node:crypto');
 const googleDriveConfig = require('../config/googleDrive');
 const driveService = require('../services/drive.service');
 const courseFileService = require('../services/courseFile.service');
+const CourseFile = require('../models/CourseFile.model');
 const { sendSuccess, sendError } = require('../utils/response');
 
 /**
@@ -291,6 +292,75 @@ const syncTimetableDocument = async (req, res, next) => {
 };
 
 /**
+ * Generates and synchronizes the CCP / Class Project to Google Drive as PDF.
+ *
+ * @route   POST /api/course-files/sync/project/:offeringId
+ * @access  Private
+ */
+const syncProjectDocument = async (req, res, next) => {
+  try {
+    const { offeringId } = req.params;
+    const result = await courseFileService.generateAndSyncProject({
+      offeringId,
+      user: req.user,
+    });
+    return sendSuccess(
+      res,
+      result,
+      'CCP / Class Project (PDF) synchronized to Google Drive successfully.'
+    );
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * Generates and synchronizes the Course Completion Certificate (CCC) to Google Drive as PDF.
+ *
+ * @route   POST /api/course-files/sync/ccc/:offeringId
+ * @access  Private
+ */
+const syncCCCDocument = async (req, res, next) => {
+  try {
+    const { offeringId } = req.params;
+    const result = await courseFileService.generateAndSyncCCC({
+      offeringId,
+      user: req.user,
+    });
+    return sendSuccess(
+      res,
+      result,
+      'Course Completion Certificate (PDF) synchronized to Google Drive successfully.'
+    );
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * Generates and synchronizes the Course Review Report (CRR) to Google Drive as PDF.
+ *
+ * @route   POST /api/course-files/sync/crr/:offeringId
+ * @access  Private
+ */
+const syncCRRDocument = async (req, res, next) => {
+  try {
+    const { offeringId } = req.params;
+    const result = await courseFileService.generateAndSyncCRR({
+      offeringId,
+      user: req.user,
+    });
+    return sendSuccess(
+      res,
+      result,
+      'Course Review Report (PDF) synchronized to Google Drive successfully.'
+    );
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
  * Generates and synchronizes a Quiz document to Google Drive.
  *
  * @route   POST /api/course-files/sync/quiz/:offeringId/:quizId
@@ -381,6 +451,21 @@ const uploadOfferingDocument = async (req, res, next) => {
       );
     }
 
+    // Special handling for Midterm & Final Exam documents (preserves Word/PDF formats, offering folders, independent slots)
+    if (CourseFile.EXAM_DOCUMENT_TYPES.includes(documentType)) {
+      const fileToUpload = req.file || (req.files && req.files[0]);
+      if (!fileToUpload) {
+        return sendError(res, 'A document file is required for upload.', 400);
+      }
+      const result = await courseFileService.uploadExamDocument({
+        offeringId,
+        documentType,
+        file: fileToUpload,
+        user: req.user,
+      });
+      return sendSuccess(res, result, 'Exam document uploaded to Google Drive successfully.');
+    }
+
     let buffer = null;
     let fileFormat = format;
 
@@ -412,6 +497,47 @@ const uploadOfferingDocument = async (req, res, next) => {
     });
 
     return sendSuccess(res, result, 'Document synchronized to Google Drive successfully.');
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * Uploads or replaces an exam document (Midterm or Final) for an offering.
+ * Supports PDF, DOC, and DOCX files up to 25 MB.
+ *
+ * @route   POST /api/course-files/upload/exam/:offeringId
+ * @access  Private
+ */
+const uploadExamDocument = async (req, res, next) => {
+  try {
+    const { offeringId } = req.params;
+    const { documentType } = req.body;
+
+    if (!documentType) {
+      return sendError(res, 'Document type is required.', 400);
+    }
+
+    const fileToUpload = req.file || (req.files && req.files[0]);
+    if (!fileToUpload) {
+      return sendError(res, 'A document file is required for upload.', 400);
+    }
+
+    const result = await courseFileService.uploadExamDocument({
+      offeringId,
+      documentType,
+      file: fileToUpload,
+      user: req.user,
+    });
+
+    const isMidterm = CourseFile.MIDTERM_DOCUMENT_TYPES.includes(documentType);
+    const examLabel = isMidterm ? 'Midterm Exam' : 'Final Exam';
+
+    return sendSuccess(
+      res,
+      result,
+      `${examLabel} document (${result.filename}) uploaded to Google Drive successfully.`
+    );
   } catch (err) {
     next(err);
   }
@@ -621,9 +747,13 @@ module.exports = {
   syncCISDocument,
   syncCCRDocument,
   syncTimetableDocument,
+  syncProjectDocument,
+  syncCCCDocument,
+  syncCRRDocument,
   syncQuizDocument,
   syncAssignmentDocument,
   uploadOfferingDocument,
+  uploadExamDocument,
   deleteCourseFile,
   viewCourseFile,
   downloadCourseFile,

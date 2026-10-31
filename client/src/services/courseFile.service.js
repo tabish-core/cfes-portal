@@ -52,6 +52,36 @@ export const syncTimetableDocument = async (offeringId, format = 'pdf') => {
 };
 
 /**
+ * Synchronize CCP / Class Project document to Google Drive.
+ * @param {string} offeringId
+ * @returns {Promise<Object>} { success, data, message }
+ */
+export const syncProjectDocument = async (offeringId) => {
+  const { data } = await api.post(`/course-files/sync/project/${offeringId}`);
+  return data;
+};
+
+/**
+ * Synchronize Course Completion Certificate (CCC) document to Google Drive.
+ * @param {string} offeringId
+ * @returns {Promise<Object>} { success, data, message }
+ */
+export const syncCCCDocument = async (offeringId) => {
+  const { data } = await api.post(`/course-files/sync/ccc/${offeringId}`);
+  return data;
+};
+
+/**
+ * Synchronize Course Review Report (CRR) document to Google Drive.
+ * @param {string} offeringId
+ * @returns {Promise<Object>} { success, data, message }
+ */
+export const syncCRRDocument = async (offeringId) => {
+  const { data } = await api.post(`/course-files/sync/crr/${offeringId}`);
+  return data;
+};
+
+/**
  * Synchronize Quiz document to Google Drive.
  * @param {string} offeringId
  * @param {string} quizId
@@ -120,6 +150,24 @@ export const uploadLectureFiles = async (offeringId, files) => {
   const fileList = Array.isArray(files) ? files : [files];
   fileList.forEach((f) => formData.append('files', f));
   const { data } = await api.post(`/course-files/upload/${offeringId}`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return data;
+};
+
+/**
+ * Upload or replace an exam document (Midterm or Final) for an offering.
+ * Supports PDF (.pdf), Microsoft Word (.doc, .docx) up to 25 MB.
+ * @param {string} offeringId
+ * @param {string} documentType - One of the 8 exam document types
+ * @param {File} file - File object
+ * @returns {Promise<Object>} { success, data, message }
+ */
+export const uploadExamDocument = async (offeringId, documentType, file) => {
+  const formData = new FormData();
+  formData.append('documentType', documentType);
+  formData.append('file', file);
+  const { data } = await api.post(`/course-files/upload/exam/${offeringId}`, formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   });
   return data;

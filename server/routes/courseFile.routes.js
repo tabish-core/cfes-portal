@@ -66,6 +66,15 @@ router.post('/sync/ccr/:offeringId', flexibleAuth, courseFileController.syncCCRD
 // 8. Generate and synchronize Timetable with Consulting Hours to Google Drive
 router.post('/sync/timetable/:offeringId', flexibleAuth, courseFileController.syncTimetableDocument);
 
+// 8b. Generate and synchronize CCP / Class Project to Google Drive
+router.post('/sync/project/:offeringId', flexibleAuth, courseFileController.syncProjectDocument);
+
+// 8c. Generate and synchronize Course Completion Certificate (CCC) to Google Drive
+router.post('/sync/ccc/:offeringId', flexibleAuth, courseFileController.syncCCCDocument);
+
+// 8d. Generate and synchronize Course Review Report (CRR) to Google Drive
+router.post('/sync/crr/:offeringId', flexibleAuth, courseFileController.syncCRRDocument);
+
 // 9. Generate and synchronize Quiz document to Google Drive
 router.post('/sync/quiz/:offeringId/:quizId', flexibleAuth, courseFileController.syncQuizDocument);
 
@@ -93,6 +102,9 @@ const uploadFilesMiddleware = (req, res, next) => {
 
 // 9. Direct document upload for an offering (single or multiple files, or base64)
 router.post('/upload/:offeringId', flexibleAuth, uploadFilesMiddleware, courseFileController.uploadOfferingDocument);
+
+// 9b. Dedicated exam document upload (Midterm & Final) for an offering
+router.post('/upload/exam/:offeringId', flexibleAuth, uploadFilesMiddleware, courseFileController.uploadExamDocument);
 
 // 10. View course file metadata / redirect to Google Drive web view
 router.get('/:id/view', flexibleAuth, courseFileController.viewCourseFile);

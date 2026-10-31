@@ -11,11 +11,31 @@
  */
 const mongoose = require('mongoose');
 
+const MIDTERM_DOCUMENT_TYPES = [
+  'MIDTERM_EXAM_PAPER',
+  'MIDTERM_BEST_COPY',
+  'MIDTERM_AVERAGE_COPY',
+  'MIDTERM_WORST_COPY',
+];
+
+const FINAL_DOCUMENT_TYPES = [
+  'FINAL_EXAM_PAPER',
+  'FINAL_BEST_COPY',
+  'FINAL_AVERAGE_COPY',
+  'FINAL_WORST_COPY',
+];
+
+const EXAM_DOCUMENT_TYPES = [
+  ...MIDTERM_DOCUMENT_TYPES,
+  ...FINAL_DOCUMENT_TYPES,
+];
+
 const DOCUMENT_TYPES = [
   'CIS',
   'CCR',
   'CCC',
   'CCP',
+  'ASSESS_PROJECT',
   'TIMETABLE',
   'WP',
   'AR',
@@ -24,6 +44,7 @@ const DOCUMENT_TYPES = [
   'ASSESS_ASSIGN',
   'ASSESS_MID',
   'ASSESS_FINAL',
+  ...EXAM_DOCUMENT_TYPES,
   'FMGR',
   'CLO',
   'GA',
@@ -195,3 +216,6 @@ const CourseFile = mongoose.model('CourseFile', courseFileSchema);
 module.exports = CourseFile;
 module.exports.DOCUMENT_TYPES = DOCUMENT_TYPES;
 module.exports.FILE_FORMATS = FILE_FORMATS;
+module.exports.MIDTERM_DOCUMENT_TYPES = MIDTERM_DOCUMENT_TYPES;
+module.exports.FINAL_DOCUMENT_TYPES = FINAL_DOCUMENT_TYPES;
+module.exports.EXAM_DOCUMENT_TYPES = EXAM_DOCUMENT_TYPES;
