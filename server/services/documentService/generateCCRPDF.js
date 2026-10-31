@@ -3,9 +3,21 @@ const fs = require('fs');
 const path = require('path');
 const handlebars = require('handlebars');
 
-const generateCCRPDF = async (data) => {
+const toPlain = (val) => {
+  if (!val || typeof val !== 'object') return val;
+  if (typeof val.toObject === 'function') return val.toObject();
+  return val;
+};
+
+const generateCCRPDF = async (rawData) => {
+  const data = toPlain(rawData) || {};
+  const courseInfo = toPlain(data.courseInfo) || {};
+  const rawWeekly = toPlain(data.weeklyData) || [];
+  const weeklyData = Array.isArray(rawWeekly) ? rawWeekly.map(toPlain) : [];
+  const rawAlternate = toPlain(data.alternateData) || [];
+  const alternateData = Array.isArray(rawAlternate) ? rawAlternate.map(toPlain) : [];
+
   // Pre-process weekly data for Handlebars rowspan logic
-  const weeklyData = data.weeklyData || [];
   const processedWeekly = [];
   const weekSpans = {};
 
@@ -47,10 +59,10 @@ const generateCCRPDF = async (data) => {
     }
 
     const templateData = {
-      courseInfo: data.courseInfo || {},
+      courseInfo,
       weeklyData: processedWeekly,
-      alternateData: data.alternateData || [],
-      alternateDataCount: (data.alternateData || []).length || 1,
+      alternateData,
+      alternateDataCount: alternateData.length || 1,
       logoBase64
     };
 

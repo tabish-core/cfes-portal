@@ -274,21 +274,23 @@ const generateAndSyncCIS = async ({ offeringId, fileFormat = 'pdf', user }) => {
     throw error;
   }
 
+  const plainForm = form.toObject ? form.toObject() : form;
+
   // 3. Build export data structure expected by CIS generators
   const exportData = {
     courseInfo: {
-      ...(form.courseSummary?.toObject ? form.courseSummary.toObject() : form.courseSummary || {}),
-      ...(form.basicInfo?.toObject ? form.basicInfo.toObject() : form.basicInfo || {}),
-      courseObjectives: form.courseObjectives,
-      courseContents: form.courseContents,
+      ...(plainForm.courseSummary || {}),
+      ...(plainForm.basicInfo || {}),
+      courseObjectives: plainForm.courseObjectives,
+      courseContents: plainForm.courseContents,
     },
     alternateData: {
-      cloTable: form.cloTable,
-      textbooks: form.textbooks,
-      obaTable: form.obaTable,
-      gradingPolicy: form.gradingPolicy,
+      cloTable: plainForm.cloTable || [],
+      textbooks: plainForm.textbooks || [],
+      obaTable: plainForm.obaTable || [],
+      gradingPolicy: plainForm.gradingPolicy || {},
     },
-    weeklyData: form.weeklyPlan,
+    weeklyData: plainForm.weeklyPlan || [],
   };
 
   // 4. Generate document buffer
@@ -354,11 +356,13 @@ const generateAndSyncCCR = async ({ offeringId, fileFormat = 'pdf', user }) => {
     throw error;
   }
 
+  const plainForm = form.toObject ? form.toObject() : form;
+
   // 4. Build export data structure expected by CCR generators
   const exportData = {
-    courseInfo: form.courseInfo?.toObject ? form.courseInfo.toObject() : form.courseInfo || {},
-    weeklyData: form.weeklyData?.toObject ? form.weeklyData.toObject() : form.weeklyData || [],
-    alternateData: form.alternateData?.toObject ? form.alternateData.toObject() : form.alternateData || [],
+    courseInfo: plainForm.courseInfo || {},
+    weeklyData: plainForm.weeklyData || [],
+    alternateData: plainForm.alternateData || [],
   };
 
   // 5. Generate document buffer

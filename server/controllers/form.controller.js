@@ -366,19 +366,19 @@ const exportCCRForm = async (req, res, next) => {
     };
     if (semesterId) legacyQuery.semester = semesterId;
 
-    const form = await findFormByOfferingOrQuery(CCR, offering, legacyQuery, 'CCR');
+    const formDoc = await findFormByOfferingOrQuery(CCR, offering, legacyQuery, 'CCR');
 
-
-    if (!form) {
+    if (!formDoc) {
       return sendError(res, 'CCR form not found. Please save it first.', 404);
     }
 
+    const form = formDoc.toObject ? formDoc.toObject() : formDoc;
 
     if (format === 'docx' || format === 'pdf') {
       const exportData = {
-        courseInfo: form.courseInfo,
-        weeklyData: form.weeklyData,
-        alternateData: form.alternateData
+        courseInfo: form.courseInfo || {},
+        weeklyData: form.weeklyData || [],
+        alternateData: form.alternateData || []
       };
 
       if (format === 'docx') {
@@ -634,29 +634,29 @@ const exportCISForm = async (req, res, next) => {
     };
     if (semesterId) legacyQuery.semester = semesterId;
 
-    const form = await findFormByOfferingOrQuery(CIS, offering, legacyQuery, 'CIS');
+    const formDoc = await findFormByOfferingOrQuery(CIS, offering, legacyQuery, 'CIS');
 
-
-    if (!form) {
+    if (!formDoc) {
       return sendError(res, 'CIS form not found. Please save it first.', 404);
     }
 
+    const form = formDoc.toObject ? formDoc.toObject() : formDoc;
 
     if (format === 'docx' || format === 'pdf') {
       const exportData = {
         courseInfo: {
-          ...form.courseSummary,
-          ...form.basicInfo,
+          ...(form.courseSummary || {}),
+          ...(form.basicInfo || {}),
           courseObjectives: form.courseObjectives,
           courseContents: form.courseContents
         },
         alternateData: {
-          cloTable: form.cloTable,
-          textbooks: form.textbooks,
-          obaTable: form.obaTable,
-          gradingPolicy: form.gradingPolicy
+          cloTable: form.cloTable || [],
+          textbooks: form.textbooks || [],
+          obaTable: form.obaTable || [],
+          gradingPolicy: form.gradingPolicy || {}
         },
-        weeklyData: form.weeklyPlan
+        weeklyData: form.weeklyPlan || []
       };
 
       if (format === 'docx') {

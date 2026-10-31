@@ -3,8 +3,40 @@ const handlebars = require('handlebars');
 const fs = require('fs');
 const path = require('path');
 
-const generateCISPDF = async (formData) => {
+const toPlain = (val) => {
+  if (!val || typeof val !== 'object') return val;
+  if (typeof val.toObject === 'function') return val.toObject();
+  return val;
+};
+
+const generateCISPDF = async (rawFormData) => {
   try {
+    const plainForm = toPlain(rawFormData) || {};
+    const courseInfo = toPlain(plainForm.courseInfo) || {};
+    const rawAlternate = toPlain(plainForm.alternateData) || {};
+    const rawCloTable = toPlain(rawAlternate.cloTable) || [];
+    const cloTable = Array.isArray(rawCloTable) ? rawCloTable.map(toPlain) : [];
+    const rawTextbooks = toPlain(rawAlternate.textbooks) || [];
+    const textbooks = Array.isArray(rawTextbooks) ? rawTextbooks.map(toPlain) : [];
+    const rawObaTable = toPlain(rawAlternate.obaTable) || [];
+    const obaTable = Array.isArray(rawObaTable) ? rawObaTable.map(toPlain) : [];
+    const gradingPolicy = toPlain(rawAlternate.gradingPolicy) || {};
+    const rawWeekly = toPlain(plainForm.weeklyData) || [];
+    const weeklyData = Array.isArray(rawWeekly) ? rawWeekly.map(toPlain) : [];
+
+    const formData = {
+      ...plainForm,
+      courseInfo,
+      alternateData: {
+        ...rawAlternate,
+        cloTable,
+        textbooks,
+        obaTable,
+        gradingPolicy,
+      },
+      weeklyData,
+    };
+
     const templatePath = path.join(__dirname, 'templates', 'cisTemplate.hbs');
     const templateHtml = fs.readFileSync(templatePath, 'utf8');
 
@@ -21,13 +53,17 @@ const generateCISPDF = async (formData) => {
     formData.alternateData.cloCount = (formData.alternateData?.cloTable || []).length;
 
     // Pre-process Grading Policy for cleaner row-less rendering
-    const gradingPolicy = formData.alternateData?.gradingPolicy || {};
+    // Prefer schema field 'quizzes' with legacy fallback to 'quiz'
+    const quizValue = (gradingPolicy.quizzes !== undefined && gradingPolicy.quizzes !== null && gradingPolicy.quizzes !== '')
+      ? gradingPolicy.quizzes
+      : ((gradingPolicy.quiz !== undefined && gradingPolicy.quiz !== null && gradingPolicy.quiz !== '') ? gradingPolicy.quiz : 0);
+
     formData.alternateData.gradingPolicyItems = [
-      { label: "Quizzes", range: "10-15%", value: gradingPolicy.quiz || 0 },
-      { label: "Assignments", range: "10-15%", value: gradingPolicy.assignments || 0 },
-      { label: "Projects/Presentation/CCP", range: "0-10%", value: gradingPolicy.project || 0 },
-      { label: "Mid Semester Examination", range: "20-30%", value: gradingPolicy.midterm || 0 },
-      { label: "End Semester Examination", range: "40-50%", value: gradingPolicy.finalExam || 0 },
+      { label: "Quizzes", range: "10-15%", value: quizValue },
+      { label: "Assignments", range: "10-15%", value: gradingPolicy.assignments ?? 0 },
+      { label: "Projects/Presentation/CCP", range: "0-10%", value: gradingPolicy.project ?? 0 },
+      { label: "Mid Semester Examination", range: "20-30%", value: gradingPolicy.midterm ?? 0 },
+      { label: "End Semester Examination", range: "40-50%", value: gradingPolicy.finalExam ?? 0 },
     ];
 
     // Pre-process OBA Table for Handlebars template grouping and rowSpans
