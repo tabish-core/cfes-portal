@@ -1,0 +1,141 @@
+/* ── CFES Button Component ─────────────────────────────────────────── */
+.cfes-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--cfes-space-2);
+  font-family: var(--cfes-font-sans);
+  font-weight: 500;
+  border-radius: var(--cfes-radius-md);
+  border: 1px solid transparent;
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+  user-select: none;
+  transition: background-color var(--cfes-transition-fast),
+              border-color var(--cfes-transition-fast),
+              color var(--cfes-transition-fast),
+              box-shadow var(--cfes-transition-fast);
+  box-sizing: border-box;
+  line-height: 1;
+}
+
+.cfes-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.25);
+}
+
+.cfes-btn:disabled,
+.cfes-btn--loading {
+  opacity: 0.6;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* ── Sizes ─────────────────────────────────────────────────────────── */
+.cfes-btn--sm {
+  height: 30px;
+  padding: 0 0.65rem;
+  font-size: var(--cfes-font-xs);
+  gap: 0.35rem;
+}
+
+.cfes-btn--md {
+  height: 36px;
+  padding: 0 0.95rem;
+  font-size: var(--cfes-font-base);
+}
+
+.cfes-btn--lg {
+  height: 42px;
+  padding: 0 1.25rem;
+  font-size: var(--cfes-font-md);
+}
+
+/* ── Variants ──────────────────────────────────────────────────────── */
+/* Primary: Navy / Blue */
+.cfes-btn--primary {
+  background-color: var(--cfes-navy-800);
+  border-color: var(--cfes-navy-800);
+  color: #ffffff;
+  box-shadow: var(--cfes-shadow-xs);
+}
+
+.cfes-btn--primary:hover:not(:disabled) {
+  background-color: var(--cfes-navy-700);
+  border-color: var(--cfes-navy-700);
+}
+
+/* Secondary / Subtle Outline */
+.cfes-btn--secondary {
+  background-color: var(--cfes-white);
+  border-color: var(--cfes-slate-300);
+  color: var(--cfes-slate-700);
+  box-shadow: var(--cfes-shadow-xs);
+}
+
+.cfes-btn--secondary:hover:not(:disabled) {
+  background-color: var(--cfes-slate-50);
+  border-color: var(--cfes-slate-400);
+  color: var(--cfes-slate-900);
+}
+
+/* Subtle Primary (Table sync actions, in-table actions) */
+.cfes-btn--subtle {
+  background-color: var(--cfes-blue-50);
+  border-color: var(--cfes-blue-100);
+  color: var(--cfes-blue-700);
+}
+
+.cfes-btn--subtle:hover:not(:disabled) {
+  background-color: #e0edff;
+  border-color: #93c5fd;
+  color: #1e40af;
+}
+
+/* Danger / Destructive */
+.cfes-btn--danger {
+  background-color: var(--cfes-status-danger-solid);
+  border-color: var(--cfes-status-danger-solid);
+  color: #ffffff;
+}
+
+.cfes-btn--danger:hover:not(:disabled) {
+  background-color: #dc2626;
+  border-color: #dc2626;
+}
+
+/* Danger Subtle */
+.cfes-btn--danger-subtle {
+  background-color: var(--cfes-status-danger-bg);
+  border-color: var(--cfes-status-danger-border);
+  color: var(--cfes-status-danger-text);
+}
+
+.cfes-btn--danger-subtle:hover:not(:disabled) {
+  background-color: #fee2e2;
+  border-color: #fca5a5;
+}
+
+/* Ghost */
+.cfes-btn--ghost {
+  background-color: transparent;
+  border-color: transparent;
+  color: var(--cfes-slate-600);
+}
+
+.cfes-btn--ghost:hover:not(:disabled) {
+  background-color: var(--cfes-slate-100);
+  color: var(--cfes-slate-900);
+}
+
+/* Spinner Animation */
+@keyframes cfes-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.cfes-btn-spinner {
+  display: inline-block;
+  animation: cfes-spin 0.8s linear infinite;
+}

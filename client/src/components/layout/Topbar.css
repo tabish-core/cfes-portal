@@ -1,125 +1,135 @@
-/* ── Topbar ──────────────────────────────────────────────── */
+/* ── CFES Topbar ─────────────────────────────────────────────── */
 .topbar {
-  height: 64px;
-  background: #fff;
-  border-bottom: 1px solid #e5e7eb;
+  height: var(--cfes-topbar-height);
+  background-color: var(--cfes-white);
+  border-bottom: 1px solid var(--cfes-slate-200);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 2rem;
+  padding: 0 var(--cfes-space-6);
   flex-shrink: 0;
+  box-sizing: border-box;
+  z-index: 10;
 }
 
 .topbar-left {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: var(--cfes-space-3);
+  min-width: 0;
 }
 
 .topbar-menu-btn {
   display: none;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  background: #fff;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--cfes-slate-300);
+  border-radius: var(--cfes-radius-md);
+  background-color: var(--cfes-white);
   width: 34px;
   height: 34px;
-  font-size: 1rem;
-  line-height: 1;
-  color: #111827;
+  color: var(--cfes-slate-700);
   cursor: pointer;
   padding: 0;
-  flex-direction: column;
-  gap: 3px;
+  flex-shrink: 0;
+  transition: background-color var(--cfes-transition-fast), border-color var(--cfes-transition-fast);
 }
 
-.topbar-menu-btn span {
-  width: 14px;
-  height: 1.8px;
-  border-radius: 999px;
-  background: #111827;
+.topbar-menu-btn:hover {
+  background-color: var(--cfes-slate-100);
+  border-color: var(--cfes-slate-400);
+  color: var(--cfes-slate-900);
 }
 
 .topbar-title {
-  font-size: 1rem;
+  font-size: var(--cfes-font-base);
   font-weight: 600;
-  color: #1a237e;
+  color: var(--cfes-navy-800);
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .topbar-right {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: var(--cfes-space-4);
+  flex-shrink: 0;
 }
 
 .topbar-user {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: var(--cfes-space-3);
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--cfes-radius-md);
+  transition: background-color var(--cfes-transition-fast);
 }
 
 .topbar-avatar {
-  width: 36px; height: 36px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #1a237e, #3949ab);
-  color: #fff;
-  font-size: 0.9rem;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--cfes-radius-full);
+  background: linear-gradient(135deg, var(--cfes-navy-800), var(--cfes-navy-600));
+  color: #ffffff;
+  font-size: var(--cfes-font-xs);
   font-weight: 600;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  box-shadow: var(--cfes-shadow-xs);
 }
 
 .topbar-user-info {
   display: flex;
   flex-direction: column;
+  line-height: 1.25;
 }
 
 .topbar-name {
-  font-size: 0.875rem;
+  font-size: var(--cfes-font-sm);
   font-weight: 600;
-  color: #111827;
-  line-height: 1.2;
+  color: var(--cfes-slate-800);
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .topbar-role {
-  font-size: 0.75rem;
-  color: #6b7280;
+  font-size: var(--cfes-font-xs);
+  color: var(--cfes-slate-500);
   text-transform: capitalize;
 }
 
+/* ── Responsive Topbar ───────────────────────────────────────── */
 @media (max-width: 992px) {
-  .topbar-menu-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+  .topbar {
+    padding: 0 var(--cfes-space-4);
   }
 
-  .topbar {
-    height: auto;
-    min-height: 56px;
-    padding: 0.6rem 1rem;
+  .topbar-menu-btn {
+    display: inline-flex;
   }
 
   .topbar-title {
-    font-size: 0.92rem;
+    font-size: var(--cfes-font-sm);
+  }
+}
+
+@media (max-width: 576px) {
+  .topbar {
+    padding: 0 var(--cfes-space-3);
   }
 
-  .topbar-user {
-    gap: 0.5rem;
+  .topbar-title {
+    font-size: 0.8125rem;
+    max-width: 180px;
   }
 
-  .topbar-avatar {
-    width: 32px;
-    height: 32px;
-    font-size: 0.82rem;
-  }
-
-  .topbar-name {
-    font-size: 0.8rem;
-    max-width: 120px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+  .topbar-user-info {
+    display: none;
   }
 }

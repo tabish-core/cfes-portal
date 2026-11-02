@@ -16,7 +16,10 @@ import {
   getGoogleDriveStatus,
 } from '../../services/courseFile.service';
 import ExamUploadSection from '../../components/forms/Exam/ExamUploadSection';
-import '../dean/Dashboard.css';
+import Button from '../../components/common/Button';
+import StatusBadge from '../../components/common/StatusBadge';
+import Icon from '../../components/common/Icon';
+import './CourseFileChecklist.css';
 
 const MIDTERM_DOC_TYPES = [
   'MIDTERM_EXAM_PAPER',
@@ -673,49 +676,34 @@ const CourseFileChecklist = () => {
   let serialNo = 0;
 
   return (
-    <div className="dashboard">
-      <div
-        className="dashboard-header-container"
-        style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}
-      >
+    <div className="checklist-page">
+      <div className="checklist-header">
         <div>
-          <Link to="/faculty/dashboard" className="back-link">
-            ← Back to Courses
+          <Link to="/faculty/dashboard" className="checklist-back-link">
+            <Icon name="chevron-left" size={14} />
+            <span>Back to Courses</span>
           </Link>
-          <h1 className="dashboard-heading">Course File Checklist</h1>
+          <h1 className="checklist-heading">Course File Checklist</h1>
           {offering && (
-            <p className="dashboard-sub">
+            <p className="checklist-sub">
               {offering.course?.courseCode} - {offering.course?.courseName} (
               {offering.semester?.name ? `${offering.semester.name} - ` : ''}
               Section {offering.section || 'A'})
             </p>
           )}
         </div>
-        <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.5rem', flexWrap: 'wrap' }}>
+        <div className="checklist-header-actions">
           {driveFolder?.isConfigured && driveFolder?.folderId && (
             <a
               href={`https://drive.google.com/drive/folders/${driveFolder.folderId}`}
               target="_blank"
               rel="noopener noreferrer"
-              style={{
-                padding: '0.6rem 1.1rem',
-                backgroundColor: '#ffffff',
-                color: '#1e293b',
-                border: '1px solid #cbd5e1',
-                textDecoration: 'none',
-                borderRadius: '6px',
-                fontWeight: '600',
-                fontSize: '0.9rem',
-                boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.4rem',
-                transition: 'all 0.2s',
-              }}
+              className="cfes-btn cfes-btn--secondary cfes-btn--md"
               title="Open Destination Google Drive Folder"
             >
-              <span>📁 Open Drive Folder</span>
-              <span style={{ fontSize: '0.8rem', color: '#64748b' }}>↗</span>
+              <Icon name="folder" size={16} />
+              <span>Open Drive Folder</span>
+              <Icon name="external" size={13} />
             </a>
           )}
           <Link
@@ -724,19 +712,10 @@ const CourseFileChecklist = () => {
                 ? `/faculty/offering/${offeringId}/obe`
                 : `/faculty/course/${activeCourseId}/obe`
             }
-            style={{
-              padding: '0.6rem 1.2rem',
-              backgroundColor: '#4338ca',
-              color: 'white',
-              textDecoration: 'none',
-              borderRadius: '6px',
-              fontWeight: '600',
-              fontSize: '0.95rem',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-              transition: 'all 0.2s',
-            }}
+            className="cfes-btn cfes-btn--primary cfes-btn--md"
           >
-            OBE Workspace
+            <Icon name="dashboard" size={16} />
+            <span>OBE Workspace</span>
           </Link>
         </div>
       </div>
@@ -745,77 +724,35 @@ const CourseFileChecklist = () => {
         <div
           style={{
             textAlign: 'center',
-            marginBottom: '1rem',
-            fontStyle: 'italic',
-            color: '#64748b',
+            margin: 'var(--cfes-space-4) 0',
+            color: 'var(--cfes-slate-500)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 'var(--cfes-space-2)',
           }}
         >
-          Loading course file details...
+          <Icon name="spinner" size={18} className="cfes-spin" />
+          <span>Loading course file details...</span>
         </div>
       )}
 
       {/* Google Drive Status Banner */}
       {offeringId && (
-        <div
-          className="dashboard-panel"
-          style={{
-            marginBottom: '1.5rem',
-            background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
-            border: '1px solid #e2e8f0',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            flexWrap: 'wrap',
-            gap: '1rem',
-            padding: '1.25rem 1.5rem',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <div
-              style={{
-                width: '42px',
-                height: '42px',
-                borderRadius: '10px',
-                backgroundColor: '#eff6ff',
-                border: '1px solid #bfdbfe',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '1.3rem',
-              }}
-            >
-              ☁️
+        <div className="checklist-drive-banner">
+          <div className="checklist-drive-left">
+            <div className="checklist-drive-icon">
+              <Icon name="cloud" size={24} />
             </div>
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                <h3
-                  style={{
-                    margin: 0,
-                    fontSize: '1rem',
-                    fontWeight: '700',
-                    color: '#0f172a',
-                  }}
-                >
-                  Google Drive Synchronization
-                </h3>
-                <span
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '0.3rem',
-                    padding: '0.2rem 0.6rem',
-                    borderRadius: '9999px',
-                    fontSize: '0.75rem',
-                    fontWeight: '600',
-                    backgroundColor: driveFolder?.isConfigured ? '#ecfdf5' : driveFolder ? '#fef2f2' : '#f1f5f9',
-                    color: driveFolder?.isConfigured ? '#047857' : driveFolder ? '#b91c1c' : '#64748b',
-                    border: `1px solid ${driveFolder?.isConfigured ? '#a7f3d0' : driveFolder ? '#fecaca' : '#e2e8f0'}`,
-                  }}
-                >
-                  {driveFolder?.isConfigured ? '● Connected' : driveFolder ? '○ Disconnected' : 'Checking status...'}
-                </span>
+            <div className="checklist-drive-info">
+              <div className="checklist-drive-title-row">
+                <h3 className="checklist-drive-title">Google Drive Synchronization</h3>
+                <StatusBadge
+                  variant={driveFolder?.isConfigured ? 'success' : driveFolder ? 'danger' : 'neutral'}
+                  label={driveFolder?.isConfigured ? 'Connected' : driveFolder ? 'Disconnected' : 'Checking status...'}
+                />
               </div>
-              <p style={{ margin: '0.25rem 0 0', fontSize: '0.85rem', color: '#64748b' }}>
+              <p className="checklist-drive-desc">
                 {driveFolder?.isConfigured ? (
                   <>
                     Destination folder: <strong>{driveFolder.folderName || 'Institutional Google Drive'}</strong>{' '}
@@ -828,230 +765,83 @@ const CourseFileChecklist = () => {
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <button
+          <div className="checklist-drive-actions">
+            <Button
               type="button"
-              onClick={handleSyncCIS}
+              variant="primary"
+              size="sm"
+              icon={syncingCIS ? 'spinner' : 'bolt'}
+              loading={syncingCIS}
               disabled={syncingCIS || loadingFiles}
-              style={{
-                padding: '0.55rem 1.1rem',
-                backgroundColor: '#2563eb',
-                color: 'white',
-                border: 'none',
-                borderRadius: '6px',
-                fontSize: '0.88rem',
-                fontWeight: '600',
-                cursor: syncingCIS ? 'wait' : 'pointer',
-                boxShadow: '0 1px 2px rgba(37,99,235,0.2)',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.4rem',
-                transition: 'all 0.2s',
-                opacity: syncingCIS ? 0.75 : 1,
-              }}
+              onClick={handleSyncCIS}
             >
-              {syncingCIS ? (
-                <>
-                  <span className="spinner-sm" style={{ display: 'inline-block', animation: 'spin 1s linear infinite' }}>⟳</span>
-                  <span>Syncing CIS...</span>
-                </>
-              ) : (
-                <>
-                  <span>⚡ Sync CIS to Drive</span>
-                </>
-              )}
-            </button>
-            <button
+              {syncingCIS ? 'Syncing CIS...' : 'Sync CIS to Drive'}
+            </Button>
+            <Button
               type="button"
-              onClick={refreshFilesAndChecklist}
+              variant="secondary"
+              size="sm"
+              icon="refresh"
+              loading={loadingFiles}
               disabled={loadingFiles}
+              onClick={refreshFilesAndChecklist}
               title="Refresh Google Drive files status"
-              style={{
-                padding: '0.55rem 0.85rem',
-                backgroundColor: '#ffffff',
-                color: '#475569',
-                border: '1px solid #cbd5e1',
-                borderRadius: '6px',
-                fontSize: '0.85rem',
-                cursor: loadingFiles ? 'wait' : 'pointer',
-                fontWeight: '600',
-              }}
             >
-              {loadingFiles ? 'Refreshing...' : '🔄 Refresh'}
-            </button>
+              {loadingFiles ? 'Refreshing...' : 'Refresh'}
+            </Button>
           </div>
         </div>
       )}
 
       {/* Course Info Fields */}
-      <div className="dashboard-panel" style={{ marginBottom: '1.5rem' }}>
-        <h2 className="dashboard-section-title">Course Details</h2>
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-            gap: '1rem',
-          }}
-        >
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <label
-              style={{
-                marginBottom: '0.35rem',
-                fontSize: '0.85rem',
-                fontWeight: '600',
-                color: '#475569',
-              }}
-            >
-              Course Title
-            </label>
+      <div className="checklist-card">
+        <h2 className="checklist-card-title">Course Details</h2>
+        <div className="checklist-details-grid">
+          <div className="checklist-field">
+            <label className="checklist-label">Course Title</label>
             <input
               type="text"
+              className="checklist-input"
               value={courseInfo.courseTitle}
               onChange={(e) => handleCourseInfoChange('courseTitle', e.target.value)}
               placeholder="Enter Course Title"
-              style={{
-                padding: '0.6rem 0.8rem',
-                border: '1px solid #cbd5e1',
-                backgroundColor: '#ffffff',
-                color: '#1e293b',
-                borderRadius: '6px',
-                fontSize: '0.95rem',
-                outline: 'none',
-                colorScheme: 'light',
-              }}
             />
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <label
-              style={{
-                marginBottom: '0.35rem',
-                fontSize: '0.85rem',
-                fontWeight: '600',
-                color: '#475569',
-              }}
-            >
-              Course Code
-            </label>
+          <div className="checklist-field">
+            <label className="checklist-label">Course Code</label>
             <input
               type="text"
+              className="checklist-input"
               value={courseInfo.courseCode}
               onChange={(e) => handleCourseInfoChange('courseCode', e.target.value)}
               placeholder="Enter Course Code"
-              style={{
-                padding: '0.6rem 0.8rem',
-                border: '1px solid #cbd5e1',
-                backgroundColor: '#ffffff',
-                color: '#1e293b',
-                borderRadius: '6px',
-                fontSize: '0.95rem',
-                outline: 'none',
-                colorScheme: 'light',
-              }}
             />
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <label
-              style={{
-                marginBottom: '0.35rem',
-                fontSize: '0.85rem',
-                fontWeight: '600',
-                color: '#475569',
-              }}
-            >
-              Batch
-            </label>
+          <div className="checklist-field">
+            <label className="checklist-label">Batch</label>
             <input
               type="text"
+              className="checklist-input"
               value={courseInfo.batch}
               onChange={(e) => handleCourseInfoChange('batch', e.target.value)}
               placeholder="e.g., Fall 2024"
-              style={{
-                padding: '0.6rem 0.8rem',
-                border: '1px solid #cbd5e1',
-                backgroundColor: '#ffffff',
-                color: '#1e293b',
-                borderRadius: '6px',
-                fontSize: '0.95rem',
-                outline: 'none',
-                colorScheme: 'light',
-              }}
             />
           </div>
         </div>
       </div>
 
       {/* Checklist & Document Synchronization Table */}
-      <div className="dashboard-panel">
-        <h2 className="dashboard-section-title">Document Checklist & Google Drive Synchronization</h2>
-        <div style={{ overflowX: 'auto' }}>
-          <table
-            style={{
-              width: '100%',
-              borderCollapse: 'collapse',
-              fontSize: '0.9rem',
-            }}
-          >
+      <div className="checklist-table-card">
+        <h2 className="checklist-card-title">Document Checklist & Google Drive Synchronization</h2>
+        <div className="checklist-table-container">
+          <table className="checklist-table">
             <thead>
-              <tr style={{ backgroundColor: '#f1f5f9', textAlign: 'left' }}>
-                <th
-                  style={{
-                    padding: '0.75rem 0.8rem',
-                    border: '1px solid #e2e8f0',
-                    fontWeight: '700',
-                    color: '#0f172a',
-                    width: '55px',
-                    textAlign: 'center',
-                  }}
-                >
-                  S.No
-                </th>
-                <th
-                  style={{
-                    padding: '0.75rem 1rem',
-                    border: '1px solid #e2e8f0',
-                    fontWeight: '700',
-                    color: '#0f172a',
-                    minWidth: '220px',
-                  }}
-                >
-                  Document Item
-                </th>
-                <th
-                  style={{
-                    padding: '0.75rem 0.75rem',
-                    border: '1px solid #e2e8f0',
-                    fontWeight: '700',
-                    color: '#0f172a',
-                    width: '80px',
-                    textAlign: 'center',
-                  }}
-                  title="Checklist completion status"
-                >
-                  Check
-                </th>
-                <th
-                  style={{
-                    padding: '0.75rem 0.85rem',
-                    border: '1px solid #e2e8f0',
-                    fontWeight: '700',
-                    color: '#0f172a',
-                    width: '135px',
-                    textAlign: 'center',
-                  }}
-                >
-                  Drive Status
-                </th>
-                <th
-                  style={{
-                    padding: '0.75rem 1rem',
-                    border: '1px solid #e2e8f0',
-                    fontWeight: '700',
-                    color: '#0f172a',
-                    minWidth: '210px',
-                  }}
-                >
-                  Google Drive Actions
-                </th>
+              <tr>
+                <th style={{ width: '55px', textAlign: 'center' }}>S.No</th>
+                <th style={{ minWidth: '220px' }}>Document Item</th>
+                <th style={{ width: '80px', textAlign: 'center' }} title="Checklist completion status">Check</th>
+                <th style={{ width: '150px', textAlign: 'center' }}>Drive Status</th>
+                <th style={{ minWidth: '220px' }}>Google Drive Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -1059,21 +849,8 @@ const CourseFileChecklist = () => {
                 // Separator row
                 if (item.type === 'separator') {
                   return (
-                    <tr key={item.id} style={{ backgroundColor: '#F1F5F9' }}>
-                      <td
-                        colSpan={5}
-                        style={{
-                          padding: '0.65rem 1rem',
-                          border: '1px solid #e2e8f0',
-                          textAlign: 'center',
-                          fontWeight: '600',
-                          color: '#475569',
-                          fontStyle: 'italic',
-                          fontSize: '0.85rem',
-                        }}
-                      >
-                        {item.label}
-                      </td>
+                    <tr key={item.id} className="checklist-separator-row">
+                      <td colSpan={5}>{item.label}</td>
                     </tr>
                   );
                 }
@@ -1082,29 +859,9 @@ const CourseFileChecklist = () => {
                 if (item.type === 'group-header') {
                   serialNo++;
                   return (
-                    <tr key={item.id} style={{ backgroundColor: '#f8fafc' }}>
-                      <td
-                        style={{
-                          padding: '0.75rem 0.8rem',
-                          border: '1px solid #e2e8f0',
-                          textAlign: 'center',
-                          fontWeight: '700',
-                          color: '#334155',
-                        }}
-                      >
-                        {serialNo}
-                      </td>
-                      <td
-                        colSpan={4}
-                        style={{
-                          padding: '0.75rem 1rem',
-                          border: '1px solid #e2e8f0',
-                          fontWeight: '700',
-                          color: '#1e293b',
-                        }}
-                      >
-                        {item.name}
-                      </td>
+                    <tr key={item.id} className="checklist-group-header-row">
+                      <td style={{ textAlign: 'center' }}>{serialNo}</td>
+                      <td colSpan={4}>{item.name}</td>
                     </tr>
                   );
                 }
@@ -1204,34 +961,22 @@ const CourseFileChecklist = () => {
                   <React.Fragment key={item.id}>
                   <tr
                     key={item.id}
-                    style={{
-                      backgroundColor: isSynced ? '#fafdfb' : 'transparent',
-                      transition: 'background-color 0.2s',
-                    }}
+                    className={`checklist-row ${isSynced ? 'checklist-row--synced' : ''}`}
                   >
                     {/* S.No */}
                     <td
                       style={{
-                        padding: '0.75rem 0.8rem',
-                        border: '1px solid #e2e8f0',
                         textAlign: 'center',
-                        color: isSubItem ? '#64748b' : '#334155',
+                        color: isSubItem ? 'var(--cfes-slate-500)' : 'var(--cfes-slate-700)',
                         fontWeight: isSubItem ? '400' : '600',
-                        fontSize: isSubItem ? '0.85rem' : '0.9rem',
+                        fontSize: isSubItem ? 'var(--cfes-font-xs)' : 'var(--cfes-font-sm)',
                       }}
                     >
                       {isSubItem ? '—' : serialNo}
                     </td>
 
                     {/* Item Name */}
-                    <td
-                      style={{
-                        padding: '0.75rem 1rem',
-                        border: '1px solid #e2e8f0',
-                        paddingLeft: isSubItem ? '2.25rem' : '1rem',
-                        color: '#334155',
-                      }}
-                    >
+                    <td style={{ paddingLeft: isSubItem ? '2rem' : '0.85rem' }}>
                       <div>
                         <Link
                           to={
@@ -1239,24 +984,12 @@ const CourseFileChecklist = () => {
                               ? `/offering/${offeringId}/form/${item.formType}`
                               : `/course/${activeCourseId}/form/${item.formType}`
                           }
-                          style={{
-                            color: '#3949ab',
-                            textDecoration: 'none',
-                            fontWeight: '600',
-                            fontSize: '0.92rem',
-                          }}
+                          className="checklist-item-title"
                         >
                           {item.name}
                         </Link>
                         {isExamItem && (
-                          <span
-                            style={{
-                              marginLeft: '0.5rem',
-                              fontSize: '0.78rem',
-                              color: '#64748b',
-                              fontWeight: 'normal',
-                            }}
-                          >
+                          <span className="checklist-item-hint">
                             (4 categories: Paper + 3 Student Copies)
                           </span>
                         )}
@@ -1264,22 +997,16 @@ const CourseFileChecklist = () => {
 
                       {/* Display synchronized file details if available (non-exam) */}
                       {!isExamItem && hasDriveFile && (
-                        <div
-                          style={{
-                            marginTop: '0.3rem',
-                            fontSize: '0.78rem',
-                            color: '#64748b',
-                            display: 'flex',
-                            gap: '0.5rem',
-                            flexWrap: 'wrap',
-                          }}
-                        >
-                          <span>📄 {primaryFile.filename || 'Document'}</span>
+                        <div className="checklist-file-meta">
+                          <span className="checklist-file-tag">
+                            <Icon name="file" size={12} />
+                            <span>{primaryFile.filename || 'Document'}</span>
+                          </span>
                           {primaryFile.sizeBytes ? (
                             <span>• {(primaryFile.sizeBytes / 1024).toFixed(1)} KB</span>
                           ) : null}
                           {primaryFile.version > 1 ? (
-                            <span style={{ color: '#047857', fontWeight: '600' }}>
+                            <span style={{ color: 'var(--cfes-status-success-text)', fontWeight: '600' }}>
                               v{primaryFile.version}
                             </span>
                           ) : null}
@@ -1288,15 +1015,7 @@ const CourseFileChecklist = () => {
 
                       {/* Display uploaded exam categories list */}
                       {isExamItem && examUploadedCount > 0 && (
-                        <div
-                          style={{
-                            marginTop: '0.35rem',
-                            fontSize: '0.78rem',
-                            display: 'flex',
-                            gap: '0.4rem',
-                            flexWrap: 'wrap',
-                          }}
-                        >
+                        <div className="checklist-file-meta">
                           {(isMidtermItem ? MIDTERM_DOC_TYPES : FINAL_DOC_TYPES).map((docType) => {
                             const f = courseFiles.find(
                               (file) => file.documentType === docType && file.status === 'synced'
@@ -1306,32 +1025,16 @@ const CourseFileChecklist = () => {
                               .replace(/^(MIDTERM_|FINAL_)/, '')
                               .replace(/_/g, ' ');
                             return (
-                              <span
-                                key={docType}
-                                style={{
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  gap: '0.25rem',
-                                  padding: '0.15rem 0.45rem',
-                                  backgroundColor: '#f1f5f9',
-                                  border: '1px solid #e2e8f0',
-                                  borderRadius: '4px',
-                                  color: '#334155',
-                                }}
-                              >
-                                <span>✓ {slotLabel}:</span>
+                              <span key={docType} className="checklist-file-tag">
+                                <Icon name="check" size={11} style={{ color: 'var(--cfes-status-success-text)' }} />
+                                <span>{slotLabel}:</span>
                                 {f.googleDriveWebViewLink ? (
                                   <a
                                     href={f.googleDriveWebViewLink}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    style={{
-                                      color: '#2563eb',
-                                      textDecoration: 'none',
-                                      fontWeight: '500',
-                                    }}
                                   >
-                                    {f.filename} ↗
+                                    {f.filename} <Icon name="external" size={10} />
                                   </a>
                                 ) : (
                                   <span>{f.filename}</span>
@@ -1344,18 +1047,17 @@ const CourseFileChecklist = () => {
 
                       {/* Display multiple assessment or lecture instances if present */}
                       {!isExamItem && matchingFiles.length > 1 && (
-                        <div style={{ marginTop: '0.4rem', fontSize: '0.78rem' }}>
-                          <span style={{ color: '#64748b' }}>Files ({matchingFiles.length}): </span>
+                        <div className="checklist-file-meta">
+                          <span style={{ color: 'var(--cfes-slate-500)' }}>Files ({matchingFiles.length}): </span>
                           {matchingFiles.map((f, idx) => (
-                            <span key={f._id || idx} style={{ marginRight: '0.5rem' }}>
+                            <span key={f._id || idx} className="checklist-file-tag">
                               {f.googleDriveWebViewLink ? (
                                 <a
                                   href={f.googleDriveWebViewLink}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  style={{ color: '#2563eb', textDecoration: 'none' }}
                                 >
-                                  {f.filename || f.instanceName || `File ${idx + 1}`} ↗
+                                  {f.filename || f.instanceName || `File ${idx + 1}`} <Icon name="external" size={10} />
                                 </a>
                               ) : (
                                 <span>{f.filename || f.instanceName || `File ${idx + 1}`}</span>
@@ -1367,70 +1069,32 @@ const CourseFileChecklist = () => {
 
                       {/* Row error display */}
                       {hasRowError && rowErrorMessage && (
-                        <div
-                          style={{
-                            marginTop: '0.35rem',
-                            fontSize: '0.75rem',
-                            color: '#b91c1c',
-                            backgroundColor: '#fef2f2',
-                            padding: '0.2rem 0.5rem',
-                            borderRadius: '4px',
-                            border: '1px solid #fecaca',
-                          }}
-                        >
-                          ⚠️ {rowErrorMessage}
+                        <div className="checklist-row-error">
+                          <Icon name="alert" size={12} />
+                          <span>{rowErrorMessage}</span>
                         </div>
                       )}
                     </td>
 
                     {/* Manual Checklist Checkbox */}
-                    <td
-                      style={{
-                        padding: '0.75rem 0.75rem',
-                        border: '1px solid #e2e8f0',
-                        textAlign: 'center',
-                      }}
-                    >
+                    <td style={{ textAlign: 'center' }}>
                       <input
                         type="checkbox"
                         checked={item.completed}
                         onChange={() => handleToggle(item.id)}
-                        style={{
-                          width: '18px',
-                          height: '18px',
-                          cursor: 'pointer',
-                          accentColor: '#3949ab',
-                        }}
+                        className="checklist-checkbox"
                         title={`Mark ${item.name} as complete/incomplete`}
                       />
                     </td>
 
                     {/* Google Drive Status Badge */}
-                    <td
-                      style={{
-                        padding: '0.75rem 0.85rem',
-                        border: '1px solid #e2e8f0',
-                        textAlign: 'center',
-                      }}
-                    >
+                    <td style={{ textAlign: 'center' }}>
                       {isSynced ? (
-                        <span
-                          style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '0.3rem',
-                            padding: '0.25rem 0.65rem',
-                            borderRadius: '9999px',
-                            fontSize: '0.78rem',
-                            fontWeight: '600',
-                            backgroundColor: '#ecfdf5',
-                            color: '#047857',
-                            border: '1px solid #a7f3d0',
-                          }}
-                        >
-                          <span>✓</span>
-                          <span>
-                            {isQuizItem && quizCount > 1
+                        <StatusBadge
+                          variant="success"
+                          icon="check"
+                          label={
+                            isQuizItem && quizCount > 1
                               ? `PDF Synced (${assessmentSyncedCount}/${quizCount})`
                               : isAssignItem && assignCount > 1
                               ? `PDF Synced (${assessmentSyncedCount}/${assignCount})`
@@ -1448,63 +1112,26 @@ const CourseFileChecklist = () => {
                               ? `Synced (${matchingFiles.length} file${matchingFiles.length > 1 ? 's' : ''})`
                               : primaryFile?.version > 1
                               ? `Synced v${primaryFile.version}`
-                              : 'Synced'}
-                          </span>
-                        </span>
+                              : 'Synced'
+                          }
+                        />
                       ) : hasRowError ? (
-                        <span
-                          style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '0.3rem',
-                            padding: '0.25rem 0.65rem',
-                            borderRadius: '9999px',
-                            fontSize: '0.78rem',
-                            fontWeight: '600',
-                            backgroundColor: '#fef2f2',
-                            color: '#b91c1c',
-                            border: '1px solid #fecaca',
-                          }}
+                        <StatusBadge
+                          variant="danger"
+                          icon="close"
+                          label={rowErrors[item.formType] ? 'Sync failed' : 'Upload failed'}
                           title={rowErrorMessage}
-                        >
-                          <span>✗</span>
-                          <span>{rowErrors[item.formType] ? 'Sync failed' : 'Upload failed'}</span>
-                        </span>
+                        />
                       ) : isExamPartial ? (
-                        <span
-                          style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '0.3rem',
-                            padding: '0.25rem 0.65rem',
-                            borderRadius: '9999px',
-                            fontSize: '0.78rem',
-                            fontWeight: '600',
-                            backgroundColor: '#eff6ff',
-                            color: '#1d4ed8',
-                            border: '1px solid #bfdbfe',
-                          }}
-                        >
-                          <span>●</span>
-                          <span>In Progress ({examUploadedCount}/4)</span>
-                        </span>
+                        <StatusBadge
+                          variant="info"
+                          label={`In Progress (${examUploadedCount}/4)`}
+                        />
                       ) : (
-                        <span
-                          style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '0.3rem',
-                            padding: '0.25rem 0.65rem',
-                            borderRadius: '9999px',
-                            fontSize: '0.78rem',
-                            fontWeight: '500',
-                            backgroundColor: '#f1f5f9',
-                            color: '#64748b',
-                            border: '1px solid #e2e8f0',
-                          }}
-                        >
-                          <span>
-                            {isExamItem
+                        <StatusBadge
+                          variant="neutral"
+                          label={
+                            isExamItem
                               ? 'Not Started (0/4)'
                               : isQuizItem && quizCount === 0
                               ? 'Not created'
@@ -1512,117 +1139,61 @@ const CourseFileChecklist = () => {
                               ? 'Not created'
                               : isQuizItem || isAssignItem || item.formType === 'ASSESS_PROJECT' || item.formType === 'CCC' || item.formType === 'CRR'
                               ? 'PDF Not Synced'
-                              : 'Not uploaded'}
-                          </span>
-                        </span>
+                              : 'Not uploaded'
+                          }
+                        />
                       )}
                     </td>
 
                     {/* Google Drive Actions */}
-                    <td
-                      style={{
-                        padding: '0.75rem 1rem',
-                        border: '1px solid #e2e8f0',
-                      }}
-                    >
-                      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                    <td>
+                      <div className="checklist-actions-cell">
                         {/* CIS Sync Action */}
                         {item.formType === 'CIS' && (
-                          <button
+                          <Button
                             type="button"
-                            onClick={handleSyncCIS}
+                            variant={isSynced ? 'subtle' : 'primary'}
+                            size="sm"
+                            icon={isItemSyncing ? 'spinner' : 'bolt'}
+                            loading={isItemSyncing}
                             disabled={isItemSyncing || !offeringId}
-                            style={{
-                              padding: '0.35rem 0.75rem',
-                              backgroundColor: isSynced ? '#eff6ff' : '#2563eb',
-                              color: isSynced ? '#1d4ed8' : '#ffffff',
-                              border: isSynced ? '1px solid #bfdbfe' : 'none',
-                              borderRadius: '6px',
-                              fontSize: '0.82rem',
-                              fontWeight: '600',
-                              cursor: isItemSyncing ? 'wait' : 'pointer',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '0.3rem',
-                              transition: 'all 0.15s',
-                              opacity: isItemSyncing ? 0.75 : 1,
-                            }}
+                            onClick={handleSyncCIS}
                             title="Generate and synchronize CIS document to Google Drive"
                           >
-                            {isItemSyncing ? (
-                              <span>Syncing...</span>
-                            ) : isSynced ? (
-                              <span>Re-sync CIS</span>
-                            ) : (
-                              <span>⚡ Sync to Drive</span>
-                            )}
-                          </button>
+                            {isItemSyncing ? 'Syncing...' : isSynced ? 'Re-sync CIS' : 'Sync to Drive'}
+                          </Button>
                         )}
 
                         {/* CCR Sync Action */}
                         {item.formType === 'CCR' && (
-                          <button
+                          <Button
                             type="button"
-                            onClick={handleSyncCCR}
+                            variant={isSynced ? 'subtle' : 'primary'}
+                            size="sm"
+                            icon={isItemSyncing ? 'spinner' : 'bolt'}
+                            loading={isItemSyncing}
                             disabled={isItemSyncing || !offeringId}
-                            style={{
-                              padding: '0.35rem 0.75rem',
-                              backgroundColor: isSynced ? '#eff6ff' : '#2563eb',
-                              color: isSynced ? '#1d4ed8' : '#ffffff',
-                              border: isSynced ? '1px solid #bfdbfe' : 'none',
-                              borderRadius: '6px',
-                              fontSize: '0.82rem',
-                              fontWeight: '600',
-                              cursor: isItemSyncing ? 'wait' : 'pointer',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '0.3rem',
-                              transition: 'all 0.15s',
-                              opacity: isItemSyncing ? 0.75 : 1,
-                            }}
+                            onClick={handleSyncCCR}
                             title="Generate and synchronize CCR document to Google Drive"
                           >
-                            {isItemSyncing ? (
-                              <span>Syncing...</span>
-                            ) : isSynced ? (
-                              <span>Re-sync CCR</span>
-                            ) : (
-                              <span>⚡ Sync to Drive</span>
-                            )}
-                          </button>
+                            {isItemSyncing ? 'Syncing...' : isSynced ? 'Re-sync CCR' : 'Sync to Drive'}
+                          </Button>
                         )}
 
                         {/* Timetable Sync Action */}
                         {item.formType === 'TIMETABLE' && (
-                          <button
+                          <Button
                             type="button"
-                            onClick={handleSyncTimetable}
+                            variant={isSynced ? 'subtle' : 'primary'}
+                            size="sm"
+                            icon={isItemSyncing ? 'spinner' : 'bolt'}
+                            loading={isItemSyncing}
                             disabled={isItemSyncing || !offeringId}
-                            style={{
-                              padding: '0.35rem 0.75rem',
-                              backgroundColor: isSynced ? '#eff6ff' : '#2563eb',
-                              color: isSynced ? '#1d4ed8' : '#ffffff',
-                              border: isSynced ? '1px solid #bfdbfe' : 'none',
-                              borderRadius: '6px',
-                              fontSize: '0.82rem',
-                              fontWeight: '600',
-                              cursor: isItemSyncing ? 'wait' : 'pointer',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '0.3rem',
-                              transition: 'all 0.15s',
-                              opacity: isItemSyncing ? 0.75 : 1,
-                            }}
+                            onClick={handleSyncTimetable}
                             title="Generate and synchronize Timetable document to Google Drive"
                           >
-                            {isItemSyncing ? (
-                              <span>Syncing...</span>
-                            ) : isSynced ? (
-                              <span>Re-sync Timetable</span>
-                            ) : (
-                              <span>⚡ Sync to Drive</span>
-                            )}
-                          </button>
+                            {isItemSyncing ? 'Syncing...' : isSynced ? 'Re-sync Timetable' : 'Sync to Drive'}
+                          </Button>
                         )}
 
                         {/* Lectures Action: Manage Lectures */}
@@ -1633,76 +1204,42 @@ const CourseFileChecklist = () => {
                                 ? `/offering/${offeringId}/form/LECTURES`
                                 : `/course/${activeCourseId}/form/LECTURES`
                             }
-                            style={{
-                              padding: '0.35rem 0.75rem',
-                              backgroundColor: isSynced ? '#eff6ff' : '#2563eb',
-                              color: isSynced ? '#1d4ed8' : '#ffffff',
-                              border: isSynced ? '1px solid #bfdbfe' : 'none',
-                              borderRadius: '6px',
-                              fontSize: '0.82rem',
-                              fontWeight: '600',
-                              textDecoration: 'none',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '0.3rem',
-                              transition: 'all 0.15s',
-                            }}
+                            className="cfes-btn cfes-btn--secondary cfes-btn--sm"
                             title="Open Lectures File Manager to upload and manage lecture files"
                           >
-                            <span>📂 Manage Lectures{matchingFiles.length > 0 ? ` (${matchingFiles.length})` : ''}</span>
+                            <Icon name="folder" size={14} />
+                            <span>Manage Lectures{matchingFiles.length > 0 ? ` (${matchingFiles.length})` : ''}</span>
                           </Link>
                         )}
 
                         {/* Midterm Exam Action */}
                         {isMidtermItem && (
-                          <button
+                          <Button
                             type="button"
+                            variant={expandedExams.MIDTERM ? 'primary' : isSynced ? 'subtle' : 'secondary'}
+                            size="sm"
+                            icon="folder"
                             onClick={() => toggleExpandExam('MIDTERM')}
-                            style={{
-                              padding: '0.35rem 0.75rem',
-                              backgroundColor: expandedExams.MIDTERM ? '#1e40af' : isSynced ? '#eff6ff' : '#2563eb',
-                              color: expandedExams.MIDTERM || !isSynced ? '#ffffff' : '#1d4ed8',
-                              border: isSynced && !expandedExams.MIDTERM ? '1px solid #bfdbfe' : 'none',
-                              borderRadius: '6px',
-                              fontSize: '0.82rem',
-                              fontWeight: '600',
-                              cursor: 'pointer',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '0.35rem',
-                              transition: 'all 0.15s',
-                            }}
                             title="Expand or collapse Midterm Exam document uploads"
                           >
-                            <span>📁 Manage Documents ({midtermUploadedCount}/4)</span>
-                            <span>{expandedExams.MIDTERM ? '▲' : '▼'}</span>
-                          </button>
+                            <span>Manage Documents ({midtermUploadedCount}/4)</span>
+                            <Icon name={expandedExams.MIDTERM ? 'chevron-up' : 'chevron-down'} size={12} />
+                          </Button>
                         )}
 
                         {/* Final Exam Action */}
                         {isFinalItem && (
-                          <button
+                          <Button
                             type="button"
+                            variant={expandedExams.FINAL ? 'primary' : isSynced ? 'subtle' : 'secondary'}
+                            size="sm"
+                            icon="folder"
                             onClick={() => toggleExpandExam('FINAL')}
-                            style={{
-                              padding: '0.35rem 0.75rem',
-                              backgroundColor: expandedExams.FINAL ? '#1e40af' : isSynced ? '#eff6ff' : '#2563eb',
-                              color: expandedExams.FINAL || !isSynced ? '#ffffff' : '#1d4ed8',
-                              border: isSynced && !expandedExams.FINAL ? '1px solid #bfdbfe' : 'none',
-                              borderRadius: '6px',
-                              fontSize: '0.82rem',
-                              fontWeight: '600',
-                              cursor: 'pointer',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '0.35rem',
-                              transition: 'all 0.15s',
-                            }}
                             title="Expand or collapse Final Exam document uploads"
                           >
-                            <span>📁 Manage Documents ({finalUploadedCount}/4)</span>
-                            <span>{expandedExams.FINAL ? '▲' : '▼'}</span>
-                          </button>
+                            <span>Manage Documents ({finalUploadedCount}/4)</span>
+                            <Icon name={expandedExams.FINAL ? 'chevron-up' : 'chevron-down'} size={12} />
+                          </Button>
                         )}
 
                         {/* Quiz Sync / Manage Actions */}
@@ -1715,58 +1252,30 @@ const CourseFileChecklist = () => {
                                     ? `/offering/${offeringId}/form/ASSESS_QUIZ`
                                     : `/course/${activeCourseId}/form/ASSESS_QUIZ`
                                 }
-                                style={{
-                                  padding: '0.35rem 0.75rem',
-                                  backgroundColor: '#f8fafc',
-                                  color: '#475569',
-                                  border: '1px dashed #cbd5e1',
-                                  borderRadius: '6px',
-                                  fontSize: '0.82rem',
-                                  fontWeight: '600',
-                                  textDecoration: 'none',
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  gap: '0.3rem',
-                                  transition: 'all 0.15s',
-                                }}
+                                className="cfes-btn cfes-btn--ghost cfes-btn--sm"
+                                style={{ borderStyle: 'dashed' }}
                                 title="No quizzes created for this offering. Click to create a quiz."
                               >
+                                <Icon name="document" size={13} />
                                 <span>+ Create Quiz</span>
                               </Link>
                             ) : quizCount === 1 ? (
-                              <button
+                              <Button
                                 type="button"
-                                onClick={() => handleSyncQuiz(singleQuiz._id)}
+                                variant={isSingleQuizSynced ? 'subtle' : 'primary'}
+                                size="sm"
+                                icon={isItemSyncing ? 'spinner' : 'bolt'}
+                                loading={isItemSyncing}
                                 disabled={isItemSyncing || !offeringId}
-                                style={{
-                                  padding: '0.35rem 0.75rem',
-                                  backgroundColor: isSingleQuizSynced ? '#eff6ff' : '#2563eb',
-                                  color: isSingleQuizSynced ? '#1d4ed8' : '#ffffff',
-                                  border: isSingleQuizSynced ? '1px solid #bfdbfe' : 'none',
-                                  borderRadius: '6px',
-                                  fontSize: '0.82rem',
-                                  fontWeight: '600',
-                                  cursor: isItemSyncing ? 'wait' : 'pointer',
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  gap: '0.3rem',
-                                  transition: 'all 0.15s',
-                                  opacity: isItemSyncing ? 0.75 : 1,
-                                }}
+                                onClick={() => handleSyncQuiz(singleQuiz._id)}
                                 title={
                                   isSingleQuizSynced
                                     ? 'Re-synchronize quiz PDF to Google Drive'
                                     : 'Generate and synchronize quiz PDF to Google Drive'
                                 }
                               >
-                                {isItemSyncing ? (
-                                  <span>Syncing...</span>
-                                ) : isSingleQuizSynced ? (
-                                  <span>Re-sync PDF</span>
-                                ) : (
-                                  <span>⚡ Sync PDF</span>
-                                )}
-                              </button>
+                                {isItemSyncing ? 'Syncing...' : isSingleQuizSynced ? 'Re-sync PDF' : 'Sync PDF'}
+                              </Button>
                             ) : (
                               <Link
                                 to={
@@ -1774,23 +1283,11 @@ const CourseFileChecklist = () => {
                                     ? `/offering/${offeringId}/form/ASSESS_QUIZ`
                                     : `/course/${activeCourseId}/form/ASSESS_QUIZ`
                                 }
-                                style={{
-                                  padding: '0.35rem 0.75rem',
-                                  backgroundColor: '#eff6ff',
-                                  color: '#1d4ed8',
-                                  border: '1px solid #bfdbfe',
-                                  borderRadius: '6px',
-                                  fontSize: '0.82rem',
-                                  fontWeight: '600',
-                                  textDecoration: 'none',
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  gap: '0.3rem',
-                                  transition: 'all 0.15s',
-                                }}
+                                className="cfes-btn cfes-btn--secondary cfes-btn--sm"
                                 title="Open Quiz Management to view and synchronize individual quiz PDFs"
                               >
-                                <span>📂 Manage & Sync Quizzes ({quizCount})</span>
+                                <Icon name="folder" size={14} />
+                                <span>Manage & Sync Quizzes ({quizCount})</span>
                               </Link>
                             )}
                           </>
@@ -1806,58 +1303,30 @@ const CourseFileChecklist = () => {
                                     ? `/offering/${offeringId}/form/ASSESS_ASSIGN`
                                     : `/course/${activeCourseId}/form/ASSESS_ASSIGN`
                                 }
-                                style={{
-                                  padding: '0.35rem 0.75rem',
-                                  backgroundColor: '#f8fafc',
-                                  color: '#475569',
-                                  border: '1px dashed #cbd5e1',
-                                  borderRadius: '6px',
-                                  fontSize: '0.82rem',
-                                  fontWeight: '600',
-                                  textDecoration: 'none',
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  gap: '0.3rem',
-                                  transition: 'all 0.15s',
-                                }}
+                                className="cfes-btn cfes-btn--ghost cfes-btn--sm"
+                                style={{ borderStyle: 'dashed' }}
                                 title="No assignments created for this offering. Click to create an assignment."
                               >
+                                <Icon name="document" size={13} />
                                 <span>+ Create Assignment</span>
                               </Link>
                             ) : assignCount === 1 ? (
-                              <button
+                              <Button
                                 type="button"
-                                onClick={() => handleSyncAssignment(singleAssign._id)}
+                                variant={isSingleAssignSynced ? 'subtle' : 'primary'}
+                                size="sm"
+                                icon={isItemSyncing ? 'spinner' : 'bolt'}
+                                loading={isItemSyncing}
                                 disabled={isItemSyncing || !offeringId}
-                                style={{
-                                  padding: '0.35rem 0.75rem',
-                                  backgroundColor: isSingleAssignSynced ? '#eff6ff' : '#2563eb',
-                                  color: isSingleAssignSynced ? '#1d4ed8' : '#ffffff',
-                                  border: isSingleAssignSynced ? '1px solid #bfdbfe' : 'none',
-                                  borderRadius: '6px',
-                                  fontSize: '0.82rem',
-                                  fontWeight: '600',
-                                  cursor: isItemSyncing ? 'wait' : 'pointer',
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  gap: '0.3rem',
-                                  transition: 'all 0.15s',
-                                  opacity: isItemSyncing ? 0.75 : 1,
-                                }}
+                                onClick={() => handleSyncAssignment(singleAssign._id)}
                                 title={
                                   isSingleAssignSynced
                                     ? 'Re-synchronize assignment PDF to Google Drive'
                                     : 'Generate and synchronize assignment PDF to Google Drive'
                                 }
                               >
-                                {isItemSyncing ? (
-                                  <span>Syncing...</span>
-                                ) : isSingleAssignSynced ? (
-                                  <span>Re-sync PDF</span>
-                                ) : (
-                                  <span>⚡ Sync PDF</span>
-                                )}
-                              </button>
+                                {isItemSyncing ? 'Syncing...' : isSingleAssignSynced ? 'Re-sync PDF' : 'Sync PDF'}
+                              </Button>
                             ) : (
                               <Link
                                 to={
@@ -1865,23 +1334,11 @@ const CourseFileChecklist = () => {
                                     ? `/offering/${offeringId}/form/ASSESS_ASSIGN`
                                     : `/course/${activeCourseId}/form/ASSESS_ASSIGN`
                                 }
-                                style={{
-                                  padding: '0.35rem 0.75rem',
-                                  backgroundColor: '#eff6ff',
-                                  color: '#1d4ed8',
-                                  border: '1px solid #bfdbfe',
-                                  borderRadius: '6px',
-                                  fontSize: '0.82rem',
-                                  fontWeight: '600',
-                                  textDecoration: 'none',
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  gap: '0.3rem',
-                                  transition: 'all 0.15s',
-                                }}
+                                className="cfes-btn cfes-btn--secondary cfes-btn--sm"
                                 title="Open Assignment Management to view and synchronize individual assignment PDFs"
                               >
-                                <span>📂 Manage & Sync Assignments ({assignCount})</span>
+                                <Icon name="folder" size={14} />
+                                <span>Manage & Sync Assignments ({assignCount})</span>
                               </Link>
                             )}
                           </>
@@ -1889,101 +1346,50 @@ const CourseFileChecklist = () => {
 
                         {/* CCP / Class Project Sync Action */}
                         {item.formType === 'ASSESS_PROJECT' && (
-                          <button
+                          <Button
                             type="button"
-                            onClick={handleSyncProject}
+                            variant={isSynced ? 'subtle' : 'primary'}
+                            size="sm"
+                            icon={isItemSyncing ? 'spinner' : 'bolt'}
+                            loading={isItemSyncing}
                             disabled={isItemSyncing || !offeringId}
-                            style={{
-                              padding: '0.35rem 0.75rem',
-                              backgroundColor: isSynced ? '#eff6ff' : '#2563eb',
-                              color: isSynced ? '#1d4ed8' : '#ffffff',
-                              border: isSynced ? '1px solid #bfdbfe' : 'none',
-                              borderRadius: '6px',
-                              fontSize: '0.82rem',
-                              fontWeight: '600',
-                              cursor: isItemSyncing ? 'wait' : 'pointer',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '0.3rem',
-                              transition: 'all 0.15s',
-                              opacity: isItemSyncing ? 0.75 : 1,
-                            }}
+                            onClick={handleSyncProject}
                             title="Generate and synchronize CCP / Class Project document to Google Drive"
                           >
-                            {isItemSyncing ? (
-                              <span>Syncing...</span>
-                            ) : isSynced ? (
-                              <span>Re-sync Project</span>
-                            ) : (
-                              <span>⚡ Sync to Drive</span>
-                            )}
-                          </button>
+                            {isItemSyncing ? 'Syncing...' : isSynced ? 'Re-sync Project' : 'Sync to Drive'}
+                          </Button>
                         )}
 
                         {/* CCC Sync Action */}
                         {item.formType === 'CCC' && (
-                          <button
+                          <Button
                             type="button"
-                            onClick={handleSyncCCC}
+                            variant={isSynced ? 'subtle' : 'primary'}
+                            size="sm"
+                            icon={isItemSyncing ? 'spinner' : 'bolt'}
+                            loading={isItemSyncing}
                             disabled={isItemSyncing || !offeringId}
-                            style={{
-                              padding: '0.35rem 0.75rem',
-                              backgroundColor: isSynced ? '#eff6ff' : '#2563eb',
-                              color: isSynced ? '#1d4ed8' : '#ffffff',
-                              border: isSynced ? '1px solid #bfdbfe' : 'none',
-                              borderRadius: '6px',
-                              fontSize: '0.82rem',
-                              fontWeight: '600',
-                              cursor: isItemSyncing ? 'wait' : 'pointer',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '0.3rem',
-                              transition: 'all 0.15s',
-                              opacity: isItemSyncing ? 0.75 : 1,
-                            }}
+                            onClick={handleSyncCCC}
                             title="Generate and synchronize Course Completion Certificate to Google Drive"
                           >
-                            {isItemSyncing ? (
-                              <span>Syncing...</span>
-                            ) : isSynced ? (
-                              <span>Re-sync CCC</span>
-                            ) : (
-                              <span>⚡ Sync to Drive</span>
-                            )}
-                          </button>
+                            {isItemSyncing ? 'Syncing...' : isSynced ? 'Re-sync CCC' : 'Sync to Drive'}
+                          </Button>
                         )}
 
                         {/* CRR Sync Action */}
                         {item.formType === 'CRR' && (
-                          <button
+                          <Button
                             type="button"
-                            onClick={handleSyncCRR}
+                            variant={isSynced ? 'subtle' : 'primary'}
+                            size="sm"
+                            icon={isItemSyncing ? 'spinner' : 'bolt'}
+                            loading={isItemSyncing}
                             disabled={isItemSyncing || !offeringId}
-                            style={{
-                              padding: '0.35rem 0.75rem',
-                              backgroundColor: isSynced ? '#eff6ff' : '#2563eb',
-                              color: isSynced ? '#1d4ed8' : '#ffffff',
-                              border: isSynced ? '1px solid #bfdbfe' : 'none',
-                              borderRadius: '6px',
-                              fontSize: '0.82rem',
-                              fontWeight: '600',
-                              cursor: isItemSyncing ? 'wait' : 'pointer',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '0.3rem',
-                              transition: 'all 0.15s',
-                              opacity: isItemSyncing ? 0.75 : 1,
-                            }}
+                            onClick={handleSyncCRR}
                             title="Generate and synchronize Course Review Report to Google Drive"
                           >
-                            {isItemSyncing ? (
-                              <span>Syncing...</span>
-                            ) : isSynced ? (
-                              <span>Re-sync CRR</span>
-                            ) : (
-                              <span>⚡ Sync to Drive</span>
-                            )}
-                          </button>
+                            {isItemSyncing ? 'Syncing...' : isSynced ? 'Re-sync CRR' : 'Sync to Drive'}
+                          </Button>
                         )}
 
                         {/* View in Google Drive Button */}
@@ -2004,52 +1410,29 @@ const CourseFileChecklist = () => {
                               href={viewFile.googleDriveWebViewLink}
                               target="_blank"
                               rel="noopener noreferrer"
-                              style={{
-                                padding: '0.35rem 0.75rem',
-                                backgroundColor: '#f0fdf4',
-                                color: '#166534',
-                                border: '1px solid #bbf7d0',
-                                borderRadius: '6px',
-                                fontSize: '0.82rem',
-                                fontWeight: '600',
-                                textDecoration: 'none',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '0.3rem',
-                                transition: 'all 0.15s',
-                              }}
+                              className="cfes-btn cfes-btn--subtle cfes-btn--sm"
+                              style={{ color: 'var(--cfes-status-success-text)', borderColor: 'var(--cfes-status-success-border)' }}
                               title={isQuizItem || isAssignItem ? 'Open PDF in Google Drive' : 'Open document in Google Drive'}
                             >
                               <span>{isQuizItem || isAssignItem ? 'View PDF in Drive' : 'View in Drive'}</span>
-                              <span style={{ fontSize: '0.75rem' }}>↗</span>
+                              <Icon name="external" size={11} />
                             </a>
                           );
                         })()}
 
                         {/* Upload File Action (for standard non-exam items) */}
                         {item.formType !== 'LECTURES' && !isExamItem && (
-                          <button
+                          <Button
                             type="button"
+                            variant="secondary"
+                            size="sm"
+                            icon="upload"
                             onClick={() => openUploadModal(item)}
                             disabled={isItemUploading || !offeringId}
-                            style={{
-                              padding: '0.35rem 0.75rem',
-                              backgroundColor: '#ffffff',
-                              color: '#334155',
-                              border: '1px solid #cbd5e1',
-                              borderRadius: '6px',
-                              fontSize: '0.82rem',
-                              fontWeight: '600',
-                              cursor: 'pointer',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '0.3rem',
-                              transition: 'all 0.15s',
-                            }}
                             title={`Upload ${item.name} to Google Drive`}
                           >
-                            <span>{isSynced ? 'Update File' : 'Upload File'}</span>
-                          </button>
+                            {isSynced ? 'Update File' : 'Upload File'}
+                          </Button>
                         )}
                       </div>
                     </td>
@@ -2106,24 +1489,17 @@ const CourseFileChecklist = () => {
         </div>
 
         {/* Save Checklist Button */}
-        <div style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'flex-end' }}>
-          <button
-            onClick={handleSave}
+        <div style={{ marginTop: 'var(--cfes-space-5)', display: 'flex', justifyContent: 'flex-end' }}>
+          <Button
+            type="button"
+            variant="primary"
+            size="md"
+            loading={loading}
             disabled={loading}
-            style={{
-              padding: '0.75rem 2rem',
-              backgroundColor: '#3949ab',
-              color: 'white',
-              border: 'none',
-              borderRadius: '6px',
-              fontSize: '1rem',
-              cursor: loading ? 'not-allowed' : 'pointer',
-              fontWeight: '600',
-              opacity: loading ? 0.7 : 1,
-            }}
+            onClick={handleSave}
           >
             {loading ? 'Saving...' : 'Save Checklist'}
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -2139,28 +1515,28 @@ const CourseFileChecklist = () => {
             alignItems: 'center',
             justifyContent: 'center',
             zIndex: 9999,
-            padding: '1rem',
+            padding: 'var(--cfes-space-4)',
           }}
           onClick={closeUploadModal}
         >
           <div
             style={{
-              backgroundColor: '#ffffff',
-              borderRadius: '12px',
+              backgroundColor: 'var(--cfes-white)',
+              borderRadius: 'var(--cfes-radius-xl)',
               maxWidth: '500px',
               width: '100%',
-              padding: '1.75rem',
-              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
-              border: '1px solid #e2e8f0',
+              padding: 'var(--cfes-space-6)',
+              boxShadow: 'var(--cfes-shadow-xl)',
+              border: '1px solid var(--cfes-slate-200)',
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 'var(--cfes-space-4)' }}>
               <div>
-                <h3 style={{ margin: 0, fontSize: '1.15rem', color: '#0f172a', fontWeight: '700' }}>
+                <h3 style={{ margin: 0, fontSize: 'var(--cfes-font-lg)', color: 'var(--cfes-slate-900)', fontWeight: '700' }}>
                   Upload to Google Drive
                 </h3>
-                <p style={{ margin: '0.2rem 0 0', fontSize: '0.85rem', color: '#64748b' }}>
+                <p style={{ margin: 'var(--cfes-space-1) 0 0', fontSize: 'var(--cfes-font-sm)', color: 'var(--cfes-slate-500)' }}>
                   {uploadModal.item.name}
                 </p>
               </div>
@@ -2168,25 +1544,18 @@ const CourseFileChecklist = () => {
                 type="button"
                 onClick={closeUploadModal}
                 disabled={uploadModal.isSubmitting}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  fontSize: '1.25rem',
-                  color: '#94a3b8',
-                  cursor: uploadModal.isSubmitting ? 'not-allowed' : 'pointer',
-                  padding: '0.25rem',
-                  lineHeight: 1,
-                }}
+                className="cfes-modal__close-btn"
+                aria-label="Close modal"
               >
-                ✕
+                <Icon name="close" size={18} />
               </button>
             </div>
 
             <form onSubmit={handleUploadSubmit}>
               {/* File input */}
-              <div style={{ marginBottom: '1.25rem' }}>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', color: '#334155', marginBottom: '0.4rem' }}>
-                  Select File <span style={{ color: '#ef4444' }}>*</span>
+              <div style={{ marginBottom: 'var(--cfes-space-4)' }}>
+                <label style={{ display: 'block', fontSize: 'var(--cfes-font-sm)', fontWeight: '600', color: 'var(--cfes-slate-700)', marginBottom: 'var(--cfes-space-1)' }}>
+                  Select File <span style={{ color: 'var(--cfes-status-danger-text)' }}>*</span>
                 </label>
                 <input
                   type="file"
@@ -2200,39 +1569,32 @@ const CourseFileChecklist = () => {
                     display: 'block',
                     width: '100%',
                     padding: '0.5rem',
-                    fontSize: '0.88rem',
-                    color: '#334155',
-                    backgroundColor: '#f8fafc',
-                    border: '1px dashed #cbd5e1',
-                    borderRadius: '8px',
+                    fontSize: 'var(--cfes-font-sm)',
+                    color: 'var(--cfes-slate-700)',
+                    backgroundColor: 'var(--cfes-slate-50)',
+                    border: '1px dashed var(--cfes-slate-300)',
+                    borderRadius: 'var(--cfes-radius-md)',
                     cursor: 'pointer',
                     boxSizing: 'border-box',
                   }}
                 />
-                <span style={{ display: 'block', fontSize: '0.75rem', color: '#64748b', marginTop: '0.35rem' }}>
+                <span style={{ display: 'block', fontSize: 'var(--cfes-font-xs)', color: 'var(--cfes-slate-500)', marginTop: 'var(--cfes-space-1)' }}>
                   Supported formats: PDF, Word, Excel, PowerPoint, Images, ZIP (max 25 MB).
                 </span>
               </div>
 
               {/* Optional instance name for repeated assessment documents */}
-              <div style={{ marginBottom: '1.25rem' }}>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', color: '#334155', marginBottom: '0.4rem' }}>
-                  Instance Name / Label <span style={{ color: '#94a3b8', fontWeight: 'normal' }}>(Optional)</span>
+              <div style={{ marginBottom: 'var(--cfes-space-4)' }}>
+                <label style={{ display: 'block', fontSize: 'var(--cfes-font-sm)', fontWeight: '600', color: 'var(--cfes-slate-700)', marginBottom: 'var(--cfes-space-1)' }}>
+                  Instance Name / Label <span style={{ color: 'var(--cfes-slate-400)', fontWeight: 'normal' }}>(Optional)</span>
                 </label>
                 <input
                   type="text"
+                  className="checklist-input"
                   value={uploadModal.instanceName}
                   onChange={(e) => setUploadModal((prev) => ({ ...prev, instanceName: e.target.value }))}
                   placeholder="e.g., Quiz 1, Assignment 2, Midterm Solution"
                   disabled={uploadModal.isSubmitting}
-                  style={{
-                    width: '100%',
-                    padding: '0.6rem 0.8rem',
-                    border: '1px solid #cbd5e1',
-                    borderRadius: '6px',
-                    fontSize: '0.9rem',
-                    boxSizing: 'border-box',
-                  }}
                 />
               </div>
 
@@ -2240,54 +1602,44 @@ const CourseFileChecklist = () => {
               {uploadModal.error && (
                 <div
                   style={{
-                    marginBottom: '1.25rem',
-                    padding: '0.6rem 0.8rem',
-                    backgroundColor: '#fef2f2',
-                    border: '1px solid #fecaca',
-                    borderRadius: '6px',
-                    color: '#b91c1c',
-                    fontSize: '0.85rem',
+                    marginBottom: 'var(--cfes-space-4)',
+                    padding: 'var(--cfes-space-3)',
+                    backgroundColor: 'var(--cfes-status-danger-bg)',
+                    border: '1px solid var(--cfes-status-danger-border)',
+                    borderRadius: 'var(--cfes-radius-md)',
+                    color: 'var(--cfes-status-danger-text)',
+                    fontSize: 'var(--cfes-font-sm)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 'var(--cfes-space-2)',
                   }}
                 >
-                  ⚠️ {uploadModal.error}
+                  <Icon name="alert" size={16} />
+                  <span>{uploadModal.error}</span>
                 </div>
               )}
 
               {/* Modal Buttons */}
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
-                <button
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--cfes-space-3)' }}>
+                <Button
                   type="button"
+                  variant="secondary"
+                  size="md"
                   onClick={closeUploadModal}
                   disabled={uploadModal.isSubmitting}
-                  style={{
-                    padding: '0.6rem 1.1rem',
-                    backgroundColor: '#f1f5f9',
-                    color: '#475569',
-                    border: '1px solid #cbd5e1',
-                    borderRadius: '6px',
-                    fontSize: '0.9rem',
-                    fontWeight: '600',
-                    cursor: uploadModal.isSubmitting ? 'not-allowed' : 'pointer',
-                  }}
                 >
                   Cancel
-                </button>
-                <button
+                </Button>
+                <Button
                   type="submit"
+                  variant="primary"
+                  size="md"
+                  icon={uploadModal.isSubmitting ? 'spinner' : 'upload'}
+                  loading={uploadModal.isSubmitting}
                   disabled={uploadModal.isSubmitting || !uploadModal.file}
-                  style={{
-                    padding: '0.6rem 1.4rem',
-                    backgroundColor: uploadModal.isSubmitting || !uploadModal.file ? '#94a3b8' : '#2563eb',
-                    color: '#ffffff',
-                    border: 'none',
-                    borderRadius: '6px',
-                    fontSize: '0.9rem',
-                    fontWeight: '600',
-                    cursor: uploadModal.isSubmitting || !uploadModal.file ? 'not-allowed' : 'pointer',
-                  }}
                 >
                   {uploadModal.isSubmitting ? 'Uploading to Drive...' : 'Upload to Drive'}
-                </button>
+                </Button>
               </div>
             </form>
           </div>

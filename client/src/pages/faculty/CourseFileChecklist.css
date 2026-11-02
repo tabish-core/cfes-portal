@@ -1,0 +1,383 @@
+/* ── CFES Course File Checklist ────────────────────────────────────── */
+
+.checklist-page {
+  width: 100%;
+  max-width: 100%;
+}
+
+.checklist-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: var(--cfes-space-5);
+  flex-wrap: wrap;
+  gap: var(--cfes-space-4);
+}
+
+.checklist-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--cfes-space-1);
+  color: var(--cfes-navy-700);
+  text-decoration: none;
+  font-size: var(--cfes-font-sm);
+  font-weight: 500;
+  margin-bottom: var(--cfes-space-2);
+  transition: color var(--cfes-transition-fast);
+}
+
+.checklist-back-link:hover {
+  color: var(--cfes-blue-700);
+}
+
+.checklist-heading {
+  font-size: var(--cfes-font-2xl);
+  font-weight: 700;
+  color: var(--cfes-slate-900);
+  letter-spacing: -0.015em;
+  margin-bottom: var(--cfes-space-1);
+}
+
+.checklist-sub {
+  color: var(--cfes-slate-500);
+  font-size: var(--cfes-font-base);
+  margin: 0;
+}
+
+.checklist-header-actions {
+  display: flex;
+  gap: var(--cfes-space-3);
+  align-items: center;
+  flex-wrap: wrap;
+  padding-top: var(--cfes-space-2);
+}
+
+/* ── Google Drive Synchronization Panel ────────────────────────────── */
+.checklist-drive-banner {
+  background-color: var(--cfes-white);
+  border: 1px solid var(--cfes-slate-200);
+  border-radius: var(--cfes-radius-lg);
+  padding: var(--cfes-space-4) var(--cfes-space-5);
+  margin-bottom: var(--cfes-space-5);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--cfes-space-4);
+  box-shadow: var(--cfes-shadow-xs);
+}
+
+.checklist-drive-left {
+  display: flex;
+  align-items: center;
+  gap: var(--cfes-space-4);
+  min-width: 0;
+}
+
+.checklist-drive-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--cfes-radius-lg);
+  background-color: var(--cfes-blue-50);
+  border: 1px solid var(--cfes-blue-100);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--cfes-blue-600);
+  flex-shrink: 0;
+}
+
+.checklist-drive-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.checklist-drive-title-row {
+  display: flex;
+  align-items: center;
+  gap: var(--cfes-space-3);
+  flex-wrap: wrap;
+}
+
+.checklist-drive-title {
+  margin: 0;
+  font-size: var(--cfes-font-md);
+  font-weight: 600;
+  color: var(--cfes-slate-900);
+}
+
+.checklist-drive-desc {
+  margin: 0;
+  font-size: var(--cfes-font-xs);
+  color: var(--cfes-slate-500);
+  line-height: 1.4;
+}
+
+.checklist-drive-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--cfes-space-2);
+  flex-shrink: 0;
+}
+
+/* ── Course Details Card ───────────────────────────────────────────── */
+.checklist-card {
+  background-color: var(--cfes-white);
+  border: 1px solid var(--cfes-slate-200);
+  border-radius: var(--cfes-radius-lg);
+  padding: var(--cfes-space-5);
+  margin-bottom: var(--cfes-space-5);
+  box-shadow: var(--cfes-shadow-xs);
+}
+
+.checklist-card-title {
+  margin: 0 0 var(--cfes-space-4);
+  font-size: var(--cfes-font-lg);
+  font-weight: 600;
+  color: var(--cfes-slate-900);
+}
+
+.checklist-details-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--cfes-space-4);
+}
+
+.checklist-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cfes-space-1);
+}
+
+.checklist-label {
+  font-size: var(--cfes-font-sm);
+  font-weight: 600;
+  color: var(--cfes-slate-700);
+}
+
+.checklist-input {
+  width: 100%;
+  height: 36px;
+  padding: 0 0.8rem;
+  border: 1px solid var(--cfes-slate-300);
+  border-radius: var(--cfes-radius-md);
+  font-size: var(--cfes-font-base);
+  color: var(--cfes-slate-800);
+  background-color: var(--cfes-white);
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color var(--cfes-transition-fast),
+              box-shadow var(--cfes-transition-fast);
+}
+
+.checklist-input:focus {
+  border-color: var(--cfes-blue-600);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+/* ── Document Checklist Table ───────────────────────────────────────── */
+.checklist-table-card {
+  background-color: var(--cfes-white);
+  border: 1px solid var(--cfes-slate-200);
+  border-radius: var(--cfes-radius-lg);
+  padding: var(--cfes-space-5);
+  box-shadow: var(--cfes-shadow-xs);
+  margin-bottom: var(--cfes-space-5);
+}
+
+.checklist-table-container {
+  overflow-x: auto;
+  border: 1px solid var(--cfes-slate-200);
+  border-radius: var(--cfes-radius-md);
+  -webkit-overflow-scrolling: touch;
+}
+
+.checklist-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--cfes-font-base);
+  text-align: left;
+}
+
+.checklist-table thead tr {
+  background-color: var(--cfes-slate-100);
+  border-bottom: 1px solid var(--cfes-slate-200);
+}
+
+.checklist-table th {
+  padding: 0.75rem 0.85rem;
+  font-size: var(--cfes-font-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--cfes-slate-600);
+  border-right: 1px solid var(--cfes-slate-200);
+}
+
+.checklist-table th:last-child {
+  border-right: none;
+}
+
+.checklist-table td {
+  padding: 0.7rem 0.85rem;
+  border-bottom: 1px solid var(--cfes-slate-200);
+  border-right: 1px solid var(--cfes-slate-200);
+  vertical-align: middle;
+}
+
+.checklist-table td:last-child {
+  border-right: none;
+}
+
+.checklist-row:hover {
+  background-color: #fafbfd;
+}
+
+.checklist-row--synced {
+  background-color: #fbfdfc;
+}
+
+/* Row types */
+.checklist-separator-row td {
+  background-color: var(--cfes-slate-100);
+  color: var(--cfes-slate-600);
+  font-style: italic;
+  font-size: var(--cfes-font-xs);
+  text-align: center;
+  padding: 0.5rem 1rem;
+}
+
+.checklist-group-header-row td {
+  background-color: #f4f6fa;
+  font-weight: 700;
+  color: var(--cfes-slate-800);
+  font-size: var(--cfes-font-sm);
+  padding: 0.65rem 0.85rem;
+}
+
+.checklist-item-title {
+  color: var(--cfes-navy-800);
+  font-weight: 600;
+  font-size: var(--cfes-font-base);
+  text-decoration: none;
+  transition: color var(--cfes-transition-fast);
+}
+
+.checklist-item-title:hover {
+  color: var(--cfes-blue-700);
+  text-decoration: underline;
+}
+
+.checklist-item-hint {
+  font-size: var(--cfes-font-xs);
+  color: var(--cfes-slate-500);
+  margin-left: var(--cfes-space-2);
+  font-weight: normal;
+}
+
+.checklist-file-meta {
+  margin-top: 0.25rem;
+  display: flex;
+  align-items: center;
+  gap: var(--cfes-space-2);
+  font-size: var(--cfes-font-xs);
+  color: var(--cfes-slate-500);
+  flex-wrap: wrap;
+}
+
+.checklist-file-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.1rem 0.45rem;
+  background-color: var(--cfes-slate-100);
+  border: 1px solid var(--cfes-slate-200);
+  border-radius: var(--cfes-radius-xs);
+  color: var(--cfes-slate-700);
+  font-size: var(--cfes-font-xs);
+}
+
+.checklist-file-tag a {
+  color: var(--cfes-blue-600);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.checklist-file-tag a:hover {
+  text-decoration: underline;
+}
+
+.checklist-row-error {
+  margin-top: 0.3rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.5rem;
+  background-color: var(--cfes-status-danger-bg);
+  border: 1px solid var(--cfes-status-danger-border);
+  border-radius: var(--cfes-radius-xs);
+  color: var(--cfes-status-danger-text);
+  font-size: var(--cfes-font-xs);
+}
+
+.checklist-actions-cell {
+  display: flex;
+  align-items: center;
+  gap: var(--cfes-space-2);
+  flex-wrap: wrap;
+}
+
+/* ── Checkbox ───────────────────────────────────────────────────────── */
+.checklist-checkbox {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: var(--cfes-navy-800);
+}
+
+/* ── Responsive ─────────────────────────────────────────────────────── */
+@media (max-width: 992px) {
+  .checklist-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .checklist-header-actions {
+    justify-content: flex-start;
+  }
+
+  .checklist-drive-banner {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .checklist-drive-actions {
+    justify-content: flex-end;
+  }
+}
+
+@media (max-width: 576px) {
+  .checklist-heading {
+    font-size: var(--cfes-font-xl);
+  }
+
+  .checklist-card,
+  .checklist-table-card {
+    padding: var(--cfes-space-4);
+  }
+
+  .checklist-drive-left {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .checklist-drive-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .checklist-drive-actions button {
+    width: 100%;
+  }
+}

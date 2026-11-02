@@ -1,0 +1,78 @@
+/* ── CFES StatusBadge Component ────────────────────────────────────── */
+.cfes-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.15rem 0.55rem;
+  border-radius: var(--cfes-radius-full);
+  font-family: var(--cfes-font-sans);
+  font-size: var(--cfes-font-xs);
+  font-weight: 600;
+  line-height: 1.3;
+  white-space: nowrap;
+  border: 1px solid transparent;
+  user-select: none;
+  box-sizing: border-box;
+}
+
+.cfes-badge--md {
+  padding: 0.25rem 0.75rem;
+  font-size: var(--cfes-font-sm);
+}
+
+.cfes-badge-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--cfes-radius-full);
+  flex-shrink: 0;
+}
+
+/* Success: approved, synced, active, completed */
+.cfes-badge--success {
+  background-color: var(--cfes-status-success-bg);
+  color: var(--cfes-status-success-text);
+  border-color: var(--cfes-status-success-border);
+}
+.cfes-badge--success .cfes-badge-dot {
+  background-color: var(--cfes-status-success-solid);
+}
+
+/* Warning: pending, draft, in-progress */
+.cfes-badge--warning {
+  background-color: var(--cfes-status-warning-bg);
+  color: var(--cfes-status-warning-text);
+  border-color: var(--cfes-status-warning-border);
+}
+.cfes-badge--warning .cfes-badge-dot {
+  background-color: var(--cfes-status-warning-solid);
+}
+
+/* Danger: rejected, failed, disconnected, error, inactive */
+.cfes-badge--danger {
+  background-color: var(--cfes-status-danger-bg);
+  color: var(--cfes-status-danger-text);
+  border-color: var(--cfes-status-danger-border);
+}
+.cfes-badge--danger .cfes-badge-dot {
+  background-color: var(--cfes-status-danger-solid);
+}
+
+/* Info: submitted, syncing */
+.cfes-badge--info {
+  background-color: var(--cfes-status-info-bg);
+  color: var(--cfes-status-info-text);
+  border-color: var(--cfes-status-info-border);
+}
+.cfes-badge--info .cfes-badge-dot {
+  background-color: var(--cfes-status-info-solid);
+}
+
+/* Neutral: not-uploaded, unconfigured */
+.cfes-badge--neutral {
+  background-color: var(--cfes-status-neutral-bg);
+  color: var(--cfes-status-neutral-text);
+  border-color: var(--cfes-status-neutral-border);
+}
+.cfes-badge--neutral .cfes-badge-dot {
+  background-color: var(--cfes-slate-400);
+}

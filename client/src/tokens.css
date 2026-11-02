@@ -1,0 +1,111 @@
+/**
+ * CFES Enterprise Design Tokens
+ * Course File Editing & Submission System (Iqra University)
+ * Central design tokens providing institutional consistency across all roles and modules.
+ */
+
+:root {
+  /* ── 1. Institutional Brand Colors (Iqra University Navy) ── */
+  --cfes-navy-950: #0a0e3f;
+  --cfes-navy-900: #121858;
+  --cfes-navy-800: #1a237e; /* Primary Brand Navy */
+  --cfes-navy-700: #283593;
+  --cfes-navy-600: #303f9f;
+  --cfes-navy-500: #3949ab;
+  --cfes-navy-100: #e8eaf6;
+  --cfes-navy-50:  #f3f4fb;
+
+  /* ── 2. Primary Action Blues ── */
+  --cfes-blue-700: #1d4ed8;
+  --cfes-blue-600: #2563eb; /* Primary Interactive Button */
+  --cfes-blue-500: #3b82f6;
+  --cfes-blue-100: #dbeafe;
+  --cfes-blue-50:  #eff6ff;
+
+  /* ── 3. Neutral Slate Palette (Surfaces & Typography) ── */
+  --cfes-slate-900: #0f172a; /* Primary Headings */
+  --cfes-slate-800: #1e293b; /* Primary Text / Body */
+  --cfes-slate-700: #334155; /* Labels / Secondary Text */
+  --cfes-slate-600: #475569; /* Table Headers / Sub-headers */
+  --cfes-slate-500: #64748b; /* Muted Text / Meta / Timestamps */
+  --cfes-slate-400: #94a3b8; /* Placeholders / Inactive Icons */
+  --cfes-slate-300: #cbd5e1; /* Input Borders / Outer Dividers */
+  --cfes-slate-200: #e2e8f0; /* Subtle Borders / Table Lines */
+  --cfes-slate-100: #f1f5f9; /* Table Header Background / Separators */
+  --cfes-slate-50:  #f8fafc; /* Application Canvas Background */
+  --cfes-white:     #ffffff; /* Surface Background (Cards, Modals) */
+
+  /* ── 4. Semantic Status System ── */
+  /* Success: Synced, Approved, Active */
+  --cfes-status-success-text: #065f46;
+  --cfes-status-success-bg: #ecfdf5;
+  --cfes-status-success-border: #a7f3d0;
+  --cfes-status-success-solid: #10b981;
+
+  /* Warning: Pending, In Progress, Draft */
+  --cfes-status-warning-text: #92400e;
+  --cfes-status-warning-bg: #fffbeb;
+  --cfes-status-warning-border: #fde68a;
+  --cfes-status-warning-solid: #f59e0b;
+
+  /* Danger / Destructive: Error, Failed, Disconnected, Rejected */
+  --cfes-status-danger-text: #991b1b;
+  --cfes-status-danger-bg: #fef2f2;
+  --cfes-status-danger-border: #fecaca;
+  --cfes-status-danger-solid: #ef4444;
+
+  /* Info / Subtle Accent: Multi-item incomplete, Uploading */
+  --cfes-status-info-text: #1e40af;
+  --cfes-status-info-bg: #eff6ff;
+  --cfes-status-info-border: #bfdbfe;
+  --cfes-status-info-solid: #3b82f6;
+
+  /* Neutral: Not uploaded, Inactive, Optional */
+  --cfes-status-neutral-text: #475569;
+  --cfes-status-neutral-bg: #f1f5f9;
+  --cfes-status-neutral-border: #e2e8f0;
+
+  /* ── 5. Standard Typography Scale (16px Baseline) ── */
+  --cfes-font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --cfes-font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  --cfes-font-xs: 0.75rem;    /* 12px: badges, helper text, table captions */
+  --cfes-font-sm: 0.8125rem;  /* 13px: secondary buttons, table data, sub-labels */
+  --cfes-font-base: 0.875rem; /* 14px: standard body, input values, primary labels */
+  --cfes-font-md: 0.9375rem;  /* 15px: list headers, table row titles */
+  --cfes-font-lg: 1.125rem;   /* 18px: card headers, sub-sections */
+  --cfes-font-xl: 1.375rem;   /* 22px: section titles */
+  --cfes-font-2xl: 1.625rem;  /* 26px: main page headings */
+  --cfes-font-3xl: 2rem;      /* 32px: dashboard stat metrics */
+
+  /* ── 6. Spacing Scale ── */
+  --cfes-space-1: 0.25rem;  /* 4px */
+  --cfes-space-2: 0.5rem;   /* 8px */
+  --cfes-space-3: 0.75rem;  /* 12px */
+  --cfes-space-4: 1rem;     /* 16px */
+  --cfes-space-5: 1.25rem;  /* 20px */
+  --cfes-space-6: 1.5rem;   /* 24px */
+  --cfes-space-8: 2rem;     /* 32px */
+  --cfes-space-10: 2.5rem;  /* 40px */
+
+  /* ── 7. Elevation & Border Radii ── */
+  --cfes-radius-xs: 3px;
+  --cfes-radius-sm: 4px;
+  --cfes-radius-md: 6px;
+  --cfes-radius-lg: 8px;
+  --cfes-radius-xl: 12px;
+  --cfes-radius-full: 9999px;
+
+  --cfes-shadow-xs: 0 1px 2px 0 rgba(15, 23, 42, 0.05);
+  --cfes-shadow-sm: 0 1px 3px 0 rgba(15, 23, 42, 0.08), 0 1px 2px -1px rgba(15, 23, 42, 0.05);
+  --cfes-shadow-md: 0 4px 6px -1px rgba(15, 23, 42, 0.08), 0 2px 4px -2px rgba(15, 23, 42, 0.05);
+  --cfes-shadow-lg: 0 10px 15px -3px rgba(15, 23, 42, 0.1), 0 4px 6px -4px rgba(15, 23, 42, 0.05);
+
+  /* ── 8. Layout Constants ── */
+  --cfes-sidebar-width: 240px;
+  --cfes-topbar-height: 58px;
+
+  /* ── 9. Transitions ── */
+  --cfes-transition-fast: 0.15s ease;
+  --cfes-transition-base: 0.2s ease;
+}

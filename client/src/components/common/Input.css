@@ -1,0 +1,84 @@
+/* ── CFES Input Component ──────────────────────────────────────────── */
+.cfes-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cfes-space-1);
+}
+
+.cfes-form-group--full {
+  width: 100%;
+}
+
+.cfes-form-label {
+  font-size: var(--cfes-font-sm);
+  font-weight: 600;
+  color: var(--cfes-slate-700);
+  line-height: 1.25;
+}
+
+.cfes-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.cfes-input {
+  width: 100%;
+  height: 36px;
+  padding: 0 0.8rem;
+  font-family: var(--cfes-font-sans);
+  font-size: var(--cfes-font-base);
+  color: var(--cfes-slate-800);
+  background-color: var(--cfes-white);
+  border: 1px solid var(--cfes-slate-300);
+  border-radius: var(--cfes-radius-md);
+  outline: none;
+  transition: border-color var(--cfes-transition-fast),
+              box-shadow var(--cfes-transition-fast);
+  box-sizing: border-box;
+}
+
+.cfes-input--sm {
+  height: 30px;
+  padding: 0 0.65rem;
+  font-size: var(--cfes-font-xs);
+}
+
+.cfes-input::placeholder {
+  color: var(--cfes-slate-400);
+}
+
+.cfes-input:focus {
+  border-color: var(--cfes-blue-600);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+.cfes-input:disabled {
+  background-color: var(--cfes-slate-50);
+  color: var(--cfes-slate-400);
+  cursor: not-allowed;
+  border-color: var(--cfes-slate-200);
+}
+
+.cfes-input--error {
+  border-color: var(--cfes-status-danger-solid);
+}
+
+.cfes-input--error:focus {
+  border-color: var(--cfes-status-danger-solid);
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
+}
+
+.cfes-form-error {
+  font-size: var(--cfes-font-xs);
+  color: var(--cfes-status-danger-text);
+  margin-top: 0.15rem;
+  font-weight: 500;
+}
+
+.cfes-form-helper {
+  font-size: var(--cfes-font-xs);
+  color: var(--cfes-slate-500);
+  margin-top: 0.15rem;
+}

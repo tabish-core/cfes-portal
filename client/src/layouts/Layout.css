@@ -1,13 +1,13 @@
-/* ── App Shell Layout ─────────────────────────────────────── */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+/* ── CFES App Shell Layout ─────────────────────────────────────── */
 
 .app-shell {
   display: flex;
   height: 100vh;
   height: 100dvh;
-  background: #f5f6fa;
-  font-family: 'Inter', sans-serif;
+  background-color: var(--cfes-slate-50);
+  font-family: var(--cfes-font-sans);
   overflow: hidden;
+  position: relative;
 }
 
 .main-area {
@@ -22,11 +22,30 @@
 
 .page-content {
   flex: 1;
-  padding: 2rem;
+  padding: var(--cfes-space-6) var(--cfes-space-6);
   overflow-y: auto;
+  overflow-x: hidden;
   min-height: 0;
+  box-sizing: border-box;
 }
 
+/* ── Responsive Adaptations ──────────────────────────────────── */
+
+/* Widescreen Desktops (>= 1440px) */
+@media (min-width: 1440px) {
+  .page-content {
+    padding: var(--cfes-space-6) var(--cfes-space-8);
+  }
+}
+
+/* Laptops & Standard Displays (1024px - 1439px) */
+@media (max-width: 1439px) and (min-width: 993px) {
+  .page-content {
+    padding: 1.25rem 1.5rem;
+  }
+}
+
+/* Tablets (<= 992px) */
 @media (max-width: 992px) {
   .app-shell {
     flex-direction: column;
@@ -45,7 +64,14 @@
   }
 
   .page-content {
-    padding: 1rem;
+    padding: var(--cfes-space-4);
     overflow-y: visible;
+  }
+}
+
+/* Mobile (<= 576px) */
+@media (max-width: 576px) {
+  .page-content {
+    padding: 0.875rem 0.75rem;
   }
 }

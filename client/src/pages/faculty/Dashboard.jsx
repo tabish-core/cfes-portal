@@ -4,7 +4,8 @@ import useAuth from '../../hooks/useAuth';
 import { getSemesters } from '../../services/semester.service';
 import { getMyOfferings, getMyDashboardStats } from '../../services/courseOffering.service';
 import useToast from '../../hooks/useToast';
-import '../dean/Dashboard.css';
+import Icon from '../../components/common/Icon';
+import './FacultyDashboard.css';
 
 const FacultyDashboard = () => {
   const { user } = useAuth();
@@ -26,10 +27,10 @@ const FacultyDashboard = () => {
       setLoadingSemesters(true);
       try {
         const { semesters } = await getSemesters();
-        setSemesters(semesters);
+        setSemesters(semesters || []);
 
         // Auto-select the active semester
-        const active = semesters.find((s) => s.status === 'active');
+        const active = (semesters || []).find((s) => s.status === 'active');
         if (active) setSelectedSemesterId(active._id);
       } catch (err) {
         toast.error(err.response?.data?.message || 'Failed to load semesters.');
@@ -39,7 +40,7 @@ const FacultyDashboard = () => {
     };
 
     loadSemesters();
-  }, []);
+  }, [toast]);
 
   /* ── Load offerings + stats when semester changes ─────────────────────── */
   useEffect(() => {
@@ -57,8 +58,8 @@ const FacultyDashboard = () => {
           getMyOfferings(selectedSemesterId),
           getMyDashboardStats(selectedSemesterId),
         ]);
-        setOfferings(offeringsRes.offerings);
-        setStats(statsRes.stats);
+        setOfferings(offeringsRes.offerings || []);
+        setStats(statsRes.stats || null);
       } catch (err) {
         toast.error(err.response?.data?.message || 'Failed to load dashboard data.');
       } finally {
@@ -68,121 +69,127 @@ const FacultyDashboard = () => {
     };
 
     loadData();
-  }, [selectedSemesterId]);
+  }, [selectedSemesterId, toast]);
 
   const selectedSemesterName = semesters.find((s) => s._id === selectedSemesterId)?.name || '';
 
   /* ── Stat card configuration ─────────────────────────────────────────── */
   const statCards = stats
     ? [
-      { label: 'Assigned Courses', value: stats.totalCourses, color: 'blue' },
-      { label: 'Total Forms Available', value: stats.totalForms, color: 'purple' },
-      { label: 'Draft Forms', value: stats.draftForms, color: 'yellow' },
-      { label: 'Submitted Forms', value: stats.submittedForms, color: 'green' },
-      { label: 'Pending Forms', value: stats.pendingForms, color: 'red' },
+      { label: 'Assigned Courses', value: stats.totalCourses ?? 0, color: 'blue' },
+      { label: 'Total Forms Available', value: stats.totalForms ?? 0, color: 'purple' },
+      { label: 'Draft Forms', value: stats.draftForms ?? 0, color: 'yellow' },
+      { label: 'Submitted Forms', value: stats.submittedForms ?? 0, color: 'green' },
+      { label: 'Pending Forms', value: stats.pendingForms ?? 0, color: 'red' },
     ]
     : [];
 
   return (
-    <div className="dashboard">
-      <h1 className="dashboard-heading">Welcome, {user?.name}</h1>
-      <p className="dashboard-sub">Select a semester to view your assigned courses.</p>
+    <div className="faculty-dashboard">
+      <div className="faculty-header">
+        <h1 className="faculty-heading">Welcome, {user?.name || 'Faculty Member'}</h1>
+        <p className="faculty-sub">Select an academic semester to view your assigned courses and submission progress.</p>
+      </div>
 
       {/* ── Semester Picker ──────────────────────────────────────────────── */}
-      <div className="dashboard-panel" style={{ marginBottom: '1.5rem' }}>
-        <h2 className="dashboard-section-title">Semester</h2>
+      <div className="faculty-panel">
+        <h2 className="faculty-section-title">Academic Semester</h2>
         {loadingSemesters ? (
-          <div className="empty-state">
+          <div className="faculty-empty-state">
             <p>Loading semesters...</p>
           </div>
         ) : semesters.length === 0 ? (
-          <div className="empty-state">
-            <p>No semesters available. Please contact admin.</p>
+          <div className="faculty-empty-state">
+            <p>No semesters available. Please contact administrator.</p>
           </div>
         ) : (
-          <select
-            value={selectedSemesterId}
-            onChange={(e) => setSelectedSemesterId(e.target.value)}
-            style={{
-              width: '100%',
-              maxWidth: '320px',
-              padding: '0.6rem 0.8rem',
-              border: '1px solid #cbd5e1',
-              borderRadius: '6px',
-              fontSize: '0.95rem',
-              color: '#1e293b',
-              backgroundColor: '#ffffff',
-              outline: 'none',
-            }}
-          >
-            <option value="">-- Select semester --</option>
-            {semesters.map((sem) => (
-              <option key={sem._id} value={sem._id}>
-                {sem.name} {sem.status === 'active' ? '(Active)' : ''}
-              </option>
-            ))}
-          </select>
+          <div className="faculty-select-wrapper">
+            <select
+              className="faculty-select"
+              value={selectedSemesterId}
+              onChange={(e) => setSelectedSemesterId(e.target.value)}
+              aria-label="Select academic semester"
+            >
+              <option value="">-- Select semester --</option>
+              {semesters.map((sem) => (
+                <option key={sem._id} value={sem._id}>
+                  {sem.name} {sem.status === 'active' ? '(Active)' : ''}
+                </option>
+              ))}
+            </select>
+            <span className="faculty-select-icon">
+              <Icon name="chevron-down" size={16} />
+            </span>
+          </div>
         )}
       </div>
 
       {/* ── Stats Cards ──────────────────────────────────────────────────── */}
       {selectedSemesterId && (
-        <div style={{ marginBottom: '1.5rem' }}>
+        <div className="faculty-stats-grid">
           {loadingStats ? (
-            <div className="stats-grid">
-              {[...Array(5)].map((_, i) => (
-                <div key={i} className="stat-card" style={{ opacity: 0.5 }}>
-                  <span className="stat-value" style={{ color: '#cbd5e1' }}>—</span>
-                  <span className="stat-label">Loading...</span>
-                </div>
-              ))}
-            </div>
+            [...Array(5)].map((_, i) => (
+              <div key={i} className="faculty-stat-card" style={{ opacity: 0.6 }}>
+                <span className="faculty-stat-value" style={{ color: 'var(--cfes-slate-300)' }}>—</span>
+                <span className="faculty-stat-label">Loading...</span>
+              </div>
+            ))
           ) : stats ? (
-            <div className="stats-grid">
-              {statCards.map((card) => (
-                <div key={card.label} className={`stat-card stat-card--${card.color}`}>
-                  <span className="stat-value">{card.value}</span>
-                  <span className="stat-label">{card.label}</span>
-                </div>
-              ))}
-            </div>
+            statCards.map((card) => (
+              <div key={card.label} className={`faculty-stat-card faculty-stat-card--${card.color}`}>
+                <span className="faculty-stat-value">{card.value}</span>
+                <span className="faculty-stat-label">{card.label}</span>
+              </div>
+            ))
           ) : null}
         </div>
       )}
 
       {/* ── Course List ──────────────────────────────────────────────────── */}
-      <div className="dashboard-panel">
-        <h2 className="dashboard-section-title">
-          Assigned Courses{selectedSemesterName ? ` for ${selectedSemesterName}` : ''}
+      <div className="faculty-panel">
+        <h2 className="faculty-section-title">
+          Assigned Courses{selectedSemesterName ? ` — ${selectedSemesterName}` : ''}
         </h2>
 
         {!selectedSemesterId ? (
-          <div className="empty-state">
-            <p>Select a semester above to view courses.</p>
+          <div className="faculty-empty-state">
+            <p>Select an academic semester above to view your courses.</p>
           </div>
         ) : loadingCourses ? (
-          <div className="empty-state">
+          <div className="faculty-empty-state">
             <p>Loading assigned courses...</p>
           </div>
         ) : offerings.length === 0 ? (
-          <div className="empty-state">
+          <div className="faculty-empty-state">
             <p>No courses assigned for this semester.</p>
           </div>
         ) : (
-          <div className="course-list">
+          <div className="faculty-course-list">
             {offerings.map((offering) => (
               <Link
                 key={offering._id}
                 to={`/faculty/offering/${offering._id}`}
-                className="course-list-item"
+                className="faculty-course-item"
               >
-                <span className="course-list-code">{offering.course.courseCode}</span>
-                <span className="course-list-name">
-                  {offering.course.courseName}
-                  {offering.section ? ` (Section ${offering.section})` : ''}
+                <div className="faculty-course-content">
+                  <div className="faculty-course-header-row">
+                    <span className="faculty-course-code">
+                      {offering.course?.courseCode || 'COURSE'}
+                    </span>
+                    {offering.section && (
+                      <span className="faculty-course-section-badge">
+                        Section {offering.section}
+                      </span>
+                    )}
+                  </div>
+                  <span className="faculty-course-name">
+                    {offering.course?.courseName || 'Untitled Course'}
+                  </span>
+                </div>
+                <span className="faculty-course-arrow">
+                  <Icon name="chevron-right" size={20} />
                 </span>
               </Link>
-
             ))}
           </div>
         )}

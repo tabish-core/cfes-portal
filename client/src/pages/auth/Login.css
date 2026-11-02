@@ -226,6 +226,44 @@
   font-weight: 500;
 }
 
+/* ── Legal links bar (Subtle & Discreet) ──────────────────── */
+.login-legal-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  margin-top: 1rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid #f1f5f9;
+  font-size: 0.72rem;
+}
+
+.login-legal-link {
+  color: #64748b;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.15s ease-in-out;
+}
+
+.login-legal-link:hover {
+  color: #1a237e;
+  text-decoration: underline;
+}
+
+.login-legal-link--secondary {
+  color: #94a3b8;
+  font-weight: 400;
+}
+
+.login-legal-link--secondary:hover {
+  color: #64748b;
+}
+
+.login-legal-dot {
+  color: #cbd5e1;
+  font-size: 0.65rem;
+}
+
 /* ── Global auth loading spinner ────────────────────────── */
 .auth-loading {
   min-height: 100vh;

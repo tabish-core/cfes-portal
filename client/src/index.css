@@ -1,111 +1,102 @@
+@import './tokens.css';
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+/* ── Universal Reset & Box-Sizing ────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
 :root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
-  --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
-  --social-bg: rgba(244, 243, 236, 0.5);
-  --shadow:
-    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
-
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, Consolas, monospace;
-
-  font: 18px/145% var(--sans);
-  letter-spacing: 0.18px;
-  color-scheme: light dark;
-  color: var(--text);
-  background: var(--bg);
-  font-synthesis: none;
+  /* Standard 16px Root Font Baseline */
+  font-size: 16px;
+  line-height: 1.5;
+  font-family: var(--cfes-font-sans);
+  color-scheme: light;
+  color: var(--cfes-slate-800);
+  background-color: var(--cfes-slate-50);
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 
-  @media (max-width: 1024px) {
-    font-size: 16px;
-  }
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-    --code-bg: #1f2028;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
-    --social-bg: rgba(47, 48, 58, 0.5);
-    --shadow:
-      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
-  }
-
-  #social .button-icon {
-    filter: invert(1) brightness(2);
-  }
+  /* Backward Compatibility Aliases for Legacy Styles */
+  --text: var(--cfes-slate-700);
+  --text-h: var(--cfes-slate-900);
+  --bg: #ffffff;
+  --border: var(--cfes-slate-200);
+  --code-bg: var(--cfes-slate-100);
+  --sans: var(--cfes-font-sans);
+  --heading: var(--cfes-font-sans);
+  --mono: var(--cfes-font-mono);
+  --shadow: var(--cfes-shadow-sm);
 }
 
 body {
   margin: 0;
+  padding: 0;
+  font-family: var(--cfes-font-sans);
+  font-size: var(--cfes-font-base);
+  color: var(--cfes-slate-800);
+  background-color: var(--cfes-slate-50);
+  min-height: 100vh;
+  min-height: 100dvh;
 }
 
 #root {
   width: 100%;
-  max-width: none;
-  margin: 0;
-  text-align: left;
-  border-inline: 0;
-  min-height: 100svh;
+  min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
-  box-sizing: border-box;
 }
 
-h1,
-h2 {
-  font-family: var(--heading);
-  font-weight: 500;
-  color: var(--text-h);
+/* ── Typography Resets ──────────────────────────────────── */
+h1, h2, h3, h4, h5, h6 {
+  color: var(--cfes-slate-900);
+  font-family: var(--cfes-font-sans);
+  font-weight: 600;
+  margin: 0;
+  line-height: 1.25;
 }
 
-h1 {
-  font-size: 56px;
-  letter-spacing: -1.68px;
-  margin: 0 0 12px;
-  @media (max-width: 1024px) {
-    font-size: 36px;
-    margin: 0 0 10px;
-  }
-}
-h2 {
-  font-size: 24px;
-  line-height: 118%;
-  letter-spacing: -0.24px;
-  margin: 0 0 8px;
-  @media (max-width: 1024px) {
-    font-size: 20px;
-  }
-}
 p {
   margin: 0;
 }
 
-code,
-.counter {
-  font-family: var(--mono);
-  display: inline-flex;
-  border-radius: 4px;
-  color: var(--text-h);
+a {
+  color: var(--cfes-navy-600);
+  text-decoration: none;
+  transition: color var(--cfes-transition-fast);
 }
 
-code {
-  font-size: 15px;
-  line-height: 135%;
-  padding: 4px 8px;
-  background: var(--code-bg);
+a:hover {
+  color: var(--cfes-blue-700);
+}
+
+button {
+  font-family: var(--cfes-font-sans);
+}
+
+input, select, textarea {
+  font-family: var(--cfes-font-sans);
+}
+
+/* ── Custom Scrollbars ──────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--cfes-slate-300);
+  border-radius: var(--cfes-radius-full);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--cfes-slate-400);
 }

@@ -3,7 +3,7 @@
  * Iqra University branding, clean form, role-based redirect via AuthContext.
  */
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import useAuth from '../../hooks/useAuth';
 import { loginUser } from '../../services/auth.service';
 import './Login.css';
@@ -143,6 +143,16 @@ const Login = () => {
             Don&apos;t have an account?{' '}
             <span className="login-footer-note">Contact your administrator.</span>
           </p>
+
+          <div className="login-legal-bar" aria-label="Legal Disclosures">
+            <Link to="/privacy-policy" className="login-legal-link">
+              Privacy Policy
+            </Link>
+            <span className="login-legal-dot">•</span>
+            <Link to="/terms" className="login-legal-link login-legal-link--secondary">
+              Terms of Service
+            </Link>
+          </div>
         </div>
       </div>
     </div>

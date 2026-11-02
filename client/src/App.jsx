@@ -34,6 +34,10 @@ import CourseForm from './pages/faculty/CourseForm';
 import CISImportTest from './pages/faculty/CISImportTest';
 import OBEWorkspace from './pages/faculty/OBEWorkspace';
 
+// Public Institutional pages
+import PrivacyPolicy from './pages/public/PrivacyPolicy';
+import TermsOfService from './pages/public/TermsOfService';
+
 function App() {
   return (
     <BrowserRouter>
@@ -42,6 +46,8 @@ function App() {
         <Routes>
           {/* Public */}
           <Route path="/login" element={<Login />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+          <Route path="/terms" element={<TermsOfService />} />
           <Route path="/" element={<Navigate to="/login" replace />} />
 
           {/* Dean routes */}

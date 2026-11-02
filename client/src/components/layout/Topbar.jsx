@@ -1,7 +1,8 @@
 /**
- * Topbar.jsx — Page header with user info and logout shortcut.
+ * Topbar.jsx — Institutional top header with user information and mobile menu toggle.
  */
 import useAuth from '../../hooks/useAuth';
+import Icon from '../common/Icon';
 import './Topbar.css';
 
 const Topbar = ({ onToggleMenu, isMenuOpen }) => {
@@ -17,11 +18,9 @@ const Topbar = ({ onToggleMenu, isMenuOpen }) => {
           aria-label="Toggle navigation menu"
           aria-expanded={isMenuOpen}
         >
-          <span />
-          <span />
-          <span />
+          <Icon name={isMenuOpen ? 'close' : 'menu'} size={18} />
         </button>
-        <span className="topbar-title">Course File Editing & Submission System</span>
+        <span className="topbar-title">Course File Editing &amp; Submission System</span>
       </div>
       <div className="topbar-right">
         <div className="topbar-user">
@@ -29,8 +28,8 @@ const Topbar = ({ onToggleMenu, isMenuOpen }) => {
             {user?.name?.[0]?.toUpperCase() ?? 'U'}
           </div>
           <div className="topbar-user-info">
-            <span className="topbar-name">{user?.name}</span>
-            <span className="topbar-role">{user?.role}</span>
+            <span className="topbar-name">{user?.name || 'Faculty Member'}</span>
+            <span className="topbar-role">{user?.designation || user?.role || 'Faculty'}</span>
           </div>
         </div>
       </div>

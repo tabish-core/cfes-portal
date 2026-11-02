@@ -1,0 +1,110 @@
+/* ── CFES Modal Component ──────────────────────────────────────────── */
+.cfes-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(2px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--cfes-space-4);
+  animation: cfes-fade-in 0.15s ease-out;
+}
+
+.cfes-modal {
+  background-color: var(--cfes-white);
+  border-radius: var(--cfes-radius-xl);
+  box-shadow: var(--cfes-shadow-lg);
+  border: 1px solid var(--cfes-slate-200);
+  width: 100%;
+  max-height: calc(100vh - 2rem);
+  max-height: calc(100dvh - 2rem);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: cfes-modal-slide 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-sizing: border-box;
+}
+
+.cfes-modal--sm {
+  max-width: 400px;
+}
+
+.cfes-modal--md {
+  max-width: 520px;
+}
+
+.cfes-modal--lg {
+  max-width: 720px;
+}
+
+.cfes-modal-header {
+  padding: 1.1rem 1.4rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--cfes-slate-200);
+  background-color: var(--cfes-white);
+  flex-shrink: 0;
+}
+
+.cfes-modal-title {
+  font-size: var(--cfes-font-lg);
+  font-weight: 600;
+  color: var(--cfes-slate-900);
+  margin: 0;
+}
+
+.cfes-modal-close-btn {
+  background: transparent;
+  border: none;
+  color: var(--cfes-slate-400);
+  cursor: pointer;
+  padding: 0.3rem;
+  border-radius: var(--cfes-radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color var(--cfes-transition-fast), background-color var(--cfes-transition-fast);
+}
+
+.cfes-modal-close-btn:hover {
+  color: var(--cfes-slate-700);
+  background-color: var(--cfes-slate-100);
+}
+
+.cfes-modal-body {
+  padding: 1.4rem;
+  overflow-y: auto;
+  font-size: var(--cfes-font-base);
+  color: var(--cfes-slate-700);
+  line-height: 1.5;
+}
+
+.cfes-modal-footer {
+  padding: 1rem 1.4rem;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--cfes-space-3);
+  border-top: 1px solid var(--cfes-slate-200);
+  background-color: var(--cfes-slate-50);
+  flex-shrink: 0;
+}
+
+@keyframes cfes-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes cfes-modal-slide {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
