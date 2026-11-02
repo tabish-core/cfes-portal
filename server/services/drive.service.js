@@ -11,6 +11,50 @@ const { google } = require('googleapis');
 const googleDriveConfig = require('../config/googleDrive');
 
 /**
+ * Detects whether an error from Google Drive or Google OAuth indicates
+ * an expired, revoked, or invalid refresh token ('invalid_grant').
+ *
+ * @param {any} err
+ * @returns {boolean}
+ */
+const isInvalidGrantError = (err) => {
+  if (!err) return false;
+  if (err.isInvalidGrant || err.code === 'INVALID_GRANT') return true;
+  const msg = (err.message || '').toLowerCase();
+  const desc = (err.response?.data?.error_description || '').toLowerCase();
+  const errCode = (err.response?.data?.error || '').toLowerCase();
+  return (
+    msg.includes('invalid_grant') ||
+    desc.includes('invalid_grant') ||
+    errCode === 'invalid_grant' ||
+    msg.includes('token has been expired or revoked')
+  );
+};
+
+/**
+ * Normalizes Google Drive errors into clear, actionable application errors.
+ * Specifically converts `invalid_grant` / revoked refresh tokens to HTTP 503
+ * with code `INVALID_GRANT` indicating admin reconnect is required.
+ *
+ * @param {Error} err
+ * @returns {Error}
+ */
+const normalizeDriveError = (err) => {
+  if (!err) return err;
+  if (isInvalidGrantError(err)) {
+    const error = new Error(
+      'Google Drive authorization has expired or been revoked (invalid_grant). An administrator must re-authorize Google Drive via /api/course-files/google/auth.'
+    );
+    error.statusCode = 503;
+    error.code = 'INVALID_GRANT';
+    error.isInvalidGrant = true;
+    error.originalError = err.message;
+    return error;
+  }
+  return err;
+};
+
+/**
  * Instantiates an authenticated Google Drive API v3 client.
  *
  * @returns {Promise<import('googleapis').drive_v3.Drive>}
@@ -81,6 +125,10 @@ const verifyFolderAccess = async (folderId = googleDriveConfig.DESTINATION_FOLDE
         : 'Warning: Account can view the folder but lacks permission to add files (canAddChildren is false).',
     };
   } catch (err) {
+    if (isInvalidGrantError(err)) {
+      throw normalizeDriveError(err);
+    }
+
     // Enhance Google API error messages with actionable explanations
     if (err.code === 404 || err.status === 404) {
       const error = new Error(
@@ -100,16 +148,7 @@ const verifyFolderAccess = async (folderId = googleDriveConfig.DESTINATION_FOLDE
       throw error;
     }
 
-    if (err.message && err.message.includes('invalid_grant')) {
-      const error = new Error(
-        'Google Drive authorization has expired or been revoked. Please re-authorize via /api/course-files/google/auth.'
-      );
-      error.statusCode = 503;
-      error.code = 'INVALID_GRANT';
-      throw error;
-    }
-
-    throw err;
+    throw normalizeDriveError(err);
   }
 };
 
@@ -212,13 +251,16 @@ const uploadDocumentBuffer = async ({
         isUpdated: true,
       };
     } catch (err) {
+      if (isInvalidGrantError(err)) {
+        throw normalizeDriveError(err);
+      }
       // If file was deleted in Drive (404), log warning and proceed to re-create
       if (err.code === 404 || err.status === 404) {
         console.warn(
           `File ${existingFileId} not found in Google Drive; creating a new file in ${folderId}`
         );
       } else {
-        throw err;
+        throw normalizeDriveError(err);
       }
     }
   }
@@ -234,12 +276,17 @@ const uploadDocumentBuffer = async ({
     body: Readable.from(buffer),
   };
 
-  const response = await drive.files.create({
-    requestBody: fileMetadata,
-    media,
-    supportsAllDrives: true,
-    fields: 'id, name, mimeType, size, webViewLink, webContentLink, createdTime, modifiedTime',
-  });
+  let response;
+  try {
+    response = await drive.files.create({
+      requestBody: fileMetadata,
+      media,
+      supportsAllDrives: true,
+      fields: 'id, name, mimeType, size, webViewLink, webContentLink, createdTime, modifiedTime',
+    });
+  } catch (err) {
+    throw normalizeDriveError(err);
+  }
 
   return {
     fileId: response.data.id,
@@ -267,12 +314,16 @@ const getFileStream = async (fileId) => {
 
   const drive = await module.exports.getDriveClient();
 
-  const response = await drive.files.get(
-    { fileId, alt: 'media', supportsAllDrives: true },
-    { responseType: 'stream' }
-  );
+  try {
+    const response = await drive.files.get(
+      { fileId, alt: 'media', supportsAllDrives: true },
+      { responseType: 'stream' }
+    );
 
-  return response.data;
+    return response.data;
+  } catch (err) {
+    throw normalizeDriveError(err);
+  }
 };
 
 /**
@@ -290,13 +341,17 @@ const getFileMetadata = async (fileId) => {
 
   const drive = await module.exports.getDriveClient();
 
-  const response = await drive.files.get({
-    fileId,
-    supportsAllDrives: true,
-    fields: 'id, name, mimeType, size, webViewLink, webContentLink, trashed',
-  });
+  try {
+    const response = await drive.files.get({
+      fileId,
+      supportsAllDrives: true,
+      fields: 'id, name, mimeType, size, webViewLink, webContentLink, trashed',
+    });
 
-  return response.data;
+    return response.data;
+  } catch (err) {
+    throw normalizeDriveError(err);
+  }
 };
 
 /**
@@ -321,12 +376,15 @@ const deleteFile = async (fileId) => {
     });
     return true;
   } catch (err) {
+    if (isInvalidGrantError(err)) {
+      throw normalizeDriveError(err);
+    }
     // If the file does not exist (404), treat as safely removed
     if (err.code === 404 || err.status === 404) {
       console.warn(`File '${fileId}' not found in Google Drive (already deleted).`);
       return true;
     }
-    throw err;
+    throw normalizeDriveError(err);
   }
 };
 
@@ -446,14 +504,19 @@ const executeGetOrCreateFolder = async (safeName, parentFolderId, options = {}) 
   const query = `mimeType='application/vnd.google-apps.folder' and name='${safeName}' and '${parentFolderId}' in parents and trashed=false`;
 
   // 1. Initial lookup
-  const res = await drive.files.list({
-    q: query,
-    supportsAllDrives: true,
-    includeItemsFromAllDrives: true,
-    fields: 'files(id, name, appProperties, createdTime)',
-  });
+  let res;
+  try {
+    res = await drive.files.list({
+      q: query,
+      supportsAllDrives: true,
+      includeItemsFromAllDrives: true,
+      fields: 'files(id, name, appProperties, createdTime)',
+    });
+  } catch (listErr) {
+    throw normalizeDriveError(listErr);
+  }
 
-  const existingFiles = res.data.files || [];
+  const existingFiles = res.data?.files || [];
   const matchedId = matchFolderByIdentity(existingFiles, safeName, parentFolderId, options.appProperties);
   if (matchedId) {
     return matchedId;
@@ -477,6 +540,11 @@ const executeGetOrCreateFolder = async (safeName, parentFolderId, options = {}) 
       fields: 'id, name, appProperties, createdTime',
     });
   } catch (createErr) {
+    // If token is invalid or revoked, fail closed immediately without attempting re-checks
+    if (isInvalidGrantError(createErr)) {
+      throw normalizeDriveError(createErr);
+    }
+
     // Re-check Google Drive after a creation error or conflict:
     // If another request or process created the folder in the meantime, reuse it
     const recheckRes = await drive.files.list({
@@ -486,7 +554,7 @@ const executeGetOrCreateFolder = async (safeName, parentFolderId, options = {}) 
       fields: 'files(id, name, appProperties, createdTime)',
     }).catch(() => null);
 
-    if (recheckRes && recheckRes.data.files && recheckRes.data.files.length > 0) {
+    if (recheckRes && recheckRes.data?.files && recheckRes.data.files.length > 0) {
       const recoveredId = matchFolderByIdentity(
         recheckRes.data.files,
         safeName,
@@ -495,7 +563,7 @@ const executeGetOrCreateFolder = async (safeName, parentFolderId, options = {}) 
       );
       if (recoveredId) return recoveredId;
     }
-    throw createErr;
+    throw normalizeDriveError(createErr);
   }
 
   const newFolderId = created.data.id;
@@ -510,7 +578,7 @@ const executeGetOrCreateFolder = async (safeName, parentFolderId, options = {}) 
       fields: 'files(id, name, appProperties, createdTime)',
     });
 
-    const postFiles = postCheckRes.data.files || [];
+    const postFiles = postCheckRes.data?.files || [];
     if (postFiles.length > 1) {
       // Race detected: multiple same-name folders exist under this parent
       const matchingFolders = postFiles.filter((f) => {
@@ -610,6 +678,11 @@ const getOrCreateFolder = async (
   try {
     return await executeGetOrCreateFolder(safeName, parentFolderId, options);
   } catch (err) {
+    // If it is an invalid_grant error, ALWAYS rethrow immediately!
+    // Never silently fall back to parentFolderId on invalid_grant, even if throwOnError is false.
+    if (isInvalidGrantError(err)) {
+      throw normalizeDriveError(err);
+    }
     if (options && options.throwOnError) {
       throw err;
     }
@@ -645,5 +718,7 @@ module.exports = {
   getOrCreateFolder,
   matchFolderByIdentity,
   inFlightFolderResolutions,
+  isInvalidGrantError,
+  normalizeDriveError,
 };
 

@@ -336,6 +336,7 @@ const resolveOfferingHierarchyFolder = async ({
     );
     error.statusCode = err.statusCode || 500;
     error.code = err.code || 'FOLDER_RESOLUTION_FAILED';
+    if (err.isInvalidGrant) error.isInvalidGrant = true;
     throw error;
   }
 
@@ -354,6 +355,7 @@ const resolveOfferingHierarchyFolder = async ({
     );
     error.statusCode = err.statusCode || 500;
     error.code = err.code || 'FOLDER_RESOLUTION_FAILED';
+    if (err.isInvalidGrant) error.isInvalidGrant = true;
     throw error;
   }
 
@@ -374,6 +376,7 @@ const resolveOfferingHierarchyFolder = async ({
     );
     error.statusCode = err.statusCode || 500;
     error.code = err.code || 'FOLDER_RESOLUTION_FAILED';
+    if (err.isInvalidGrant) error.isInvalidGrant = true;
     throw error;
   }
 
@@ -393,6 +396,7 @@ const resolveOfferingHierarchyFolder = async ({
     );
     error.statusCode = err.statusCode || 500;
     error.code = err.code || 'FOLDER_RESOLUTION_FAILED';
+    if (err.isInvalidGrant) error.isInvalidGrant = true;
     throw error;
   }
 

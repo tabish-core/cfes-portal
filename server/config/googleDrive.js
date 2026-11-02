@@ -79,16 +79,36 @@ const getClientConfigStatus = () => {
 };
 
 /**
- * Retrieves the refresh token from environment variables or decrypted from MongoDB.
+ * Retrieves the refresh token from MongoDB (primary source of truth) or fallback to environment variable.
  *
  * Priority:
- *  1. Environment variable GOOGLE_OAUTH_REFRESH_TOKEN (static override)
- *  2. Decrypted token stored in MongoDB (via OAuth authorization callback)
+ *  1. Authoritative: Decrypted token stored in MongoDB (via OAuth authorization callback)
+ *  2. Secondary Fallback: Static environment variable GOOGLE_OAUTH_REFRESH_TOKEN (only when no DB token exists)
  *
- * @returns {Promise<{ refreshToken: string, source: 'env' | 'database', email?: string } | null>}
+ * Stale environment variables are never permitted to override a valid database token.
+ *
+ * @returns {Promise<{ refreshToken: string, source: 'database' | 'env', email?: string } | null>}
  */
 const getStoredRefreshToken = async () => {
-  // 1. Static environment variable override
+  // 1. Authoritative source of truth: Encrypted MongoDB token
+  try {
+    const tokenDoc = await GoogleOAuthToken.findOne().sort({ updatedAt: -1 });
+    if (tokenDoc && tokenDoc.encryptedRefreshToken) {
+      const decrypted = decrypt(tokenDoc.encryptedRefreshToken);
+      if (decrypted) {
+        return {
+          refreshToken: decrypted,
+          source: 'database',
+          email: tokenDoc.authorizedEmail,
+        };
+      }
+    }
+  } catch (err) {
+    console.error('Error decrypting stored Google OAuth token from database:', err.message);
+  }
+
+  // 2. Secondary fallback only: Legacy static environment variable override
+  // Used only when NO valid database token document exists
   const staticToken = cleanEnv(process.env.GOOGLE_OAUTH_REFRESH_TOKEN);
   if (staticToken) {
     return {
@@ -97,23 +117,7 @@ const getStoredRefreshToken = async () => {
     };
   }
 
-  // 2. Database persistent token
-  try {
-    const tokenDoc = await GoogleOAuthToken.findOne().sort({ updatedAt: -1 });
-    if (!tokenDoc || !tokenDoc.encryptedRefreshToken) {
-      return null;
-    }
-
-    const decrypted = decrypt(tokenDoc.encryptedRefreshToken);
-    return {
-      refreshToken: decrypted,
-      source: 'database',
-      email: tokenDoc.authorizedEmail,
-    };
-  } catch (err) {
-    console.error('Error decrypting stored Google OAuth token:', err.message);
-    return null;
-  }
+  return null;
 };
 
 /**

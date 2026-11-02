@@ -118,17 +118,15 @@ const handleGoogleCallback = async (req, res, next) => {
     const oauth2Client = googleDriveConfig.getOAuth2Client();
     const { tokens } = await oauth2Client.getToken(code);
 
-    if (!tokens.refresh_token) {
-      // Check if we already have a stored token
-      const existing = await driveService.getConnectionStatus();
-      if (!existing.isConfigured) {
-        return res.status(400).send(renderCallbackHtml({
-          success: false,
-          title: 'Missing Refresh Token',
-          message:
-            'Google did not return a refresh token. Please remove this app from your Google Account Authorized Apps (myaccount.google.com/permissions) and try again with prompt=consent.',
-        }));
-      }
+    // Require Google to return a new refresh token.
+    // Never treat an authorization response without a refresh token as a successful reconnect.
+    if (!tokens || !tokens.refresh_token) {
+      return res.status(400).send(renderCallbackHtml({
+        success: false,
+        title: 'Missing Refresh Token',
+        message:
+          'Google did not return a new refresh token. Reauthorization requires a new refresh token to replace the previous credentials. Please ensure you grant full permissions on the consent screen, or remove existing app access at myaccount.google.com/permissions and try again with prompt=consent.',
+      }));
     }
 
     // 4. Retrieve authorized user info from token
@@ -141,13 +139,22 @@ const handleGoogleCallback = async (req, res, next) => {
       console.warn('Could not retrieve token info email:', err.message);
     }
 
-    // 5. Encrypt and persist the refresh token if provided
-    if (tokens.refresh_token) {
+    // 5. Encrypt and persist the new refresh token in MongoDB
+    // If encryption or database persistence fails, return failure and preserve existing token.
+    try {
       await googleDriveConfig.storeRefreshToken(tokens.refresh_token, {
         email: authorizedEmail,
         scopes: googleDriveConfig.SCOPES,
         expiryDate: tokens.expiry_date,
       });
+    } catch (persistErr) {
+      console.error('Failed to securely persist new Google OAuth refresh token:', persistErr.message);
+      return res.status(500).send(renderCallbackHtml({
+        success: false,
+        title: 'Token Persistence Failed',
+        message:
+          'Failed to securely encrypt or save the new refresh token in the database. The previous token record was preserved. Please try again.',
+      }));
     }
 
     // 6. Return secure HTML confirmation (never leaks tokens)

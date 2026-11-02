@@ -116,12 +116,34 @@ describe('Stage 1: Google Drive OAuth & Client Verification Suite', () => {
       );
     });
 
-    test('getStoredRefreshToken prioritizes static GOOGLE_OAUTH_REFRESH_TOKEN env var', async () => {
+    test('getStoredRefreshToken falls back to static GOOGLE_OAUTH_REFRESH_TOKEN env var when DB has no record', async () => {
+      jest.spyOn(GoogleOAuthToken, 'findOne').mockReturnValue({
+        sort: jest.fn().mockResolvedValue(null),
+      });
       process.env.GOOGLE_OAUTH_REFRESH_TOKEN = '1//static_env_refresh_token';
       const tokenInfo = await googleDriveConfig.getStoredRefreshToken();
       expect(tokenInfo).toBeDefined();
       expect(tokenInfo.refreshToken).toBe('1//static_env_refresh_token');
       expect(tokenInfo.source).toBe('env');
+    });
+
+    test('getStoredRefreshToken prioritizes MongoDB token over stale GOOGLE_OAUTH_REFRESH_TOKEN env var', async () => {
+      process.env.GOOGLE_OAUTH_REFRESH_TOKEN = '1//stale_env_refresh_token';
+      const dbToken = '1//authoritative_db_refresh_token';
+      const encrypted = encrypt(dbToken);
+
+      jest.spyOn(GoogleOAuthToken, 'findOne').mockReturnValue({
+        sort: jest.fn().mockResolvedValue({
+          encryptedRefreshToken: encrypted,
+          authorizedEmail: 'admin@iu.edu.pk',
+        }),
+      });
+
+      const tokenInfo = await googleDriveConfig.getStoredRefreshToken();
+      expect(tokenInfo).toBeDefined();
+      expect(tokenInfo.refreshToken).toBe('1//authoritative_db_refresh_token');
+      expect(tokenInfo.source).toBe('database');
+      expect(tokenInfo.email).toBe('admin@iu.edu.pk');
     });
 
     test('getStoredRefreshToken retrieves and decrypts token from MongoDB when env var is absent', async () => {
