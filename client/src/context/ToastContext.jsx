@@ -9,7 +9,7 @@
  *
  * Toasts auto-dismiss after a configurable duration and can be manually closed.
  */
-import { createContext, useState, useCallback, useRef } from 'react';
+import { createContext, useState, useCallback, useMemo, useRef } from 'react';
 
 export const ToastContext = createContext(null);
 
@@ -40,12 +40,12 @@ export const ToastProvider = ({ children }) => {
     return id;
   }, [removeToast]);
 
-  const toast = {
+  const toast = useMemo(() => ({
     success: (message, duration) => addToast(message, 'success', duration ?? 4000),
     error:   (message, duration) => addToast(message, 'error',   duration ?? 6000),
     warning: (message, duration) => addToast(message, 'warning', duration ?? 5000),
     info:    (message, duration) => addToast(message, 'info',    duration ?? 4000),
-  };
+  }), [addToast]);
 
   return (
     <ToastContext.Provider value={toast}>

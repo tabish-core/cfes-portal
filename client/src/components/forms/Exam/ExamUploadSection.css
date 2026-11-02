@@ -1,0 +1,304 @@
+/* ── CFES Exam Document Management Styles ────────────────────────── */
+
+.exam-section {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Standalone Page Mode (isCard={false}) */
+.exam-section--standalone {
+  padding: 0;
+}
+
+/* Expanded Inside Checklist Row Mode (isCard={true}) */
+.exam-section--card {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  margin: 0;
+}
+
+/* ── Progress Header (Shown on Standalone Page) ─────────────────────── */
+.exam-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--cfes-space-4);
+  padding-bottom: var(--cfes-space-4);
+  border-bottom: 1px solid var(--cfes-slate-200);
+  margin-bottom: var(--cfes-space-4);
+}
+
+.exam-header-left {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cfes-space-1);
+}
+
+.exam-header-title-row {
+  display: flex;
+  align-items: center;
+  gap: var(--cfes-space-3);
+  flex-wrap: wrap;
+}
+
+.exam-header-title {
+  margin: 0;
+  font-size: var(--cfes-font-lg);
+  font-weight: 700;
+  color: var(--cfes-slate-900);
+}
+
+.exam-header-desc {
+  margin: 0;
+  font-size: var(--cfes-font-xs);
+  color: var(--cfes-slate-500);
+  line-height: 1.4;
+}
+
+.exam-header-progress-wrap {
+  min-width: 160px;
+}
+
+.exam-header-progress-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--cfes-font-xs);
+  color: var(--cfes-slate-500);
+  margin-bottom: var(--cfes-space-1);
+  font-weight: 600;
+}
+
+.exam-header-progress-track {
+  height: 8px;
+  background-color: var(--cfes-slate-200);
+  border-radius: var(--cfes-radius-full);
+  overflow: hidden;
+}
+
+.exam-header-progress-bar {
+  height: 100%;
+  background-color: #10b981;
+  border-radius: var(--cfes-radius-full);
+  transition: width var(--cfes-transition-normal);
+}
+
+.exam-header-progress-bar--partial {
+  background-color: var(--cfes-blue-600);
+}
+
+/* ── 2x2 Grid of Exam Slots ────────────────────────────────────────── */
+.exam-slots-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--cfes-space-4);
+}
+
+/* ── Individual Slot Card ──────────────────────────────────────────── */
+.exam-slot-card {
+  background-color: var(--cfes-white);
+  border: 1px solid var(--cfes-slate-200);
+  border-radius: var(--cfes-radius-lg);
+  padding: var(--cfes-space-4);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-shadow: var(--cfes-shadow-xs);
+  transition: border-color var(--cfes-transition-fast), box-shadow var(--cfes-transition-fast);
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+.exam-slot-card:hover {
+  border-color: var(--cfes-slate-300);
+}
+
+.exam-slot-card--uploaded {
+  background-color: #fafdfc;
+  border-color: #bbf7d0;
+}
+
+.exam-slot-card--uploaded:hover {
+  border-color: #86efac;
+}
+
+/* ── Slot Top Section ──────────────────────────────────────────────── */
+.exam-slot-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--cfes-space-2);
+  margin-bottom: var(--cfes-space-2);
+}
+
+.exam-slot-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: var(--cfes-space-2);
+  min-width: 0;
+}
+
+.exam-slot-icon-box {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--cfes-radius-sm);
+  background-color: var(--cfes-slate-100);
+  color: var(--cfes-navy-800);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.exam-slot-card--uploaded .exam-slot-icon-box {
+  background-color: #ecfdf5;
+  color: #047857;
+}
+
+.exam-slot-title {
+  margin: 0;
+  font-size: var(--cfes-font-sm);
+  font-weight: 600;
+  color: var(--cfes-slate-900);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.exam-slot-badge {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.exam-slot-desc {
+  margin: 0 0 var(--cfes-space-3);
+  font-size: var(--cfes-font-xs);
+  color: var(--cfes-slate-500);
+  line-height: 1.4;
+}
+
+/* ── Uploaded File Metadata Display ────────────────────────────────── */
+.exam-slot-file-panel {
+  background-color: var(--cfes-white);
+  border: 1px solid var(--cfes-slate-200);
+  border-radius: var(--cfes-radius-md);
+  padding: var(--cfes-space-2) var(--cfes-space-3);
+  margin-bottom: var(--cfes-space-3);
+}
+
+.exam-slot-file-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--cfes-space-2);
+}
+
+.exam-slot-filename {
+  display: flex;
+  align-items: center;
+  gap: var(--cfes-space-2);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--cfes-font-xs);
+  font-weight: 600;
+  color: var(--cfes-slate-800);
+}
+
+.exam-slot-filename-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.exam-slot-format-badge {
+  display: inline-block;
+  padding: 0.1rem 0.35rem;
+  border-radius: var(--cfes-radius-xs);
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  flex-shrink: 0;
+}
+
+.exam-slot-format-badge--pdf {
+  background-color: #fef2f2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
+.exam-slot-format-badge--doc,
+.exam-slot-format-badge--docx {
+  background-color: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+}
+
+.exam-slot-format-badge--default {
+  background-color: var(--cfes-slate-100);
+  color: var(--cfes-slate-700);
+  border: 1px solid var(--cfes-slate-200);
+}
+
+.exam-slot-file-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--cfes-space-2);
+  margin-top: 0.2rem;
+  font-size: var(--cfes-font-xs);
+  color: var(--cfes-slate-500);
+}
+
+/* ── Inline Feedback Messages ──────────────────────────────────────── */
+.exam-slot-feedback {
+  display: flex;
+  align-items: center;
+  gap: var(--cfes-space-2);
+  padding: var(--cfes-space-2) var(--cfes-space-3);
+  border-radius: var(--cfes-radius-sm);
+  font-size: var(--cfes-font-xs);
+  margin-bottom: var(--cfes-space-3);
+  line-height: 1.35;
+}
+
+.exam-slot-feedback--error {
+  background-color: var(--cfes-status-danger-bg);
+  border: 1px solid var(--cfes-status-danger-border);
+  color: var(--cfes-status-danger-text);
+}
+
+.exam-slot-feedback--success {
+  background-color: var(--cfes-status-success-bg);
+  border: 1px solid var(--cfes-status-success-border);
+  color: var(--cfes-status-success-text);
+}
+
+/* ── Actions Bar ───────────────────────────────────────────────────── */
+.exam-slot-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--cfes-space-2);
+  flex-wrap: wrap;
+  margin-top: auto;
+  padding-top: var(--cfes-space-2);
+}
+
+/* ── Responsive Behavior ────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .exam-slots-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .exam-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .exam-header-progress-wrap {
+    width: 100%;
+  }
+}

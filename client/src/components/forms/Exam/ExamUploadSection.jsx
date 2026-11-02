@@ -1,6 +1,10 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import useToast from '../../../hooks/useToast';
 import { uploadExamDocument } from '../../../services/courseFile.service';
+import Button from '../../common/Button';
+import StatusBadge from '../../common/StatusBadge';
+import Icon from '../../common/Icon';
+import './ExamUploadSection.css';
 
 export const EXAM_SLOTS = {
   MIDTERM: [
@@ -8,25 +12,25 @@ export const EXAM_SLOTS = {
       documentType: 'MIDTERM_EXAM_PAPER',
       category: 'Exam Paper',
       description: 'Official Midterm examination question paper.',
-      icon: '📝',
+      icon: 'document',
     },
     {
       documentType: 'MIDTERM_BEST_COPY',
       category: 'Best Student Copy',
       description: 'Highest-scoring evaluated student answer script.',
-      icon: '⭐',
+      icon: 'star',
     },
     {
       documentType: 'MIDTERM_AVERAGE_COPY',
       category: 'Average Student Copy',
       description: 'Average / median evaluated student answer script.',
-      icon: '📊',
+      icon: 'book',
     },
     {
       documentType: 'MIDTERM_WORST_COPY',
       category: 'Worst Student Copy',
       description: 'Minimum-passing evaluated student answer script.',
-      icon: '📉',
+      icon: 'file',
     },
   ],
   FINAL: [
@@ -34,25 +38,25 @@ export const EXAM_SLOTS = {
       documentType: 'FINAL_EXAM_PAPER',
       category: 'Exam Paper',
       description: 'Official Final examination question paper.',
-      icon: '📝',
+      icon: 'document',
     },
     {
       documentType: 'FINAL_BEST_COPY',
       category: 'Best Student Copy',
       description: 'Highest-scoring evaluated student answer script.',
-      icon: '⭐',
+      icon: 'star',
     },
     {
       documentType: 'FINAL_AVERAGE_COPY',
       category: 'Average Student Copy',
       description: 'Average / median evaluated student answer script.',
-      icon: '📊',
+      icon: 'book',
     },
     {
       documentType: 'FINAL_WORST_COPY',
       category: 'Worst Student Copy',
       description: 'Minimum-passing evaluated student answer script.',
-      icon: '📉',
+      icon: 'file',
     },
   ],
 };
@@ -72,29 +76,13 @@ const formatFileSize = (bytes) => {
 };
 
 /**
- * Format badge style
+ * Format badge CSS modifier
  */
-const getFormatBadgeStyle = (format) => {
-  const normalized = (format || '').toLowerCase();
-  if (normalized === 'pdf') {
-    return {
-      backgroundColor: '#fef2f2',
-      color: '#b91c1c',
-      border: '1px solid #fecaca',
-    };
-  }
-  if (normalized === 'docx' || normalized === 'doc') {
-    return {
-      backgroundColor: '#eff6ff',
-      color: '#1d4ed8',
-      border: '1px solid #bfdbfe',
-    };
-  }
-  return {
-    backgroundColor: '#f1f5f9',
-    color: '#475569',
-    border: '1px solid #cbd5e1',
-  };
+const getFormatBadgeClass = (format) => {
+  const norm = (format || '').toLowerCase();
+  if (norm === 'pdf') return 'exam-slot-format-badge--pdf';
+  if (norm === 'doc' || norm === 'docx') return 'exam-slot-format-badge--doc';
+  return 'exam-slot-format-badge--default';
 };
 
 /**
@@ -106,13 +94,8 @@ const getFormatBadgeStyle = (format) => {
  * 3. Average Student Copy
  * 4. Worst Student Copy
  *
- * Each slot provides:
- * - Category label & icon
- * - Upload status badge (Not Uploaded / Synced v{version})
- * - Original filename & file format badge
- * - Upload button (when empty) / Replace button (when uploaded)
- * - View in Google Drive link
- * - Upload progress indicator and clear validation errors
+ * Supports both standalone page rendering (isCard={false}) with full progress header
+ * and checklist expanded row rendering (isCard={true}) with compact, clean presentation.
  */
 const ExamUploadSection = ({
   examType = 'MIDTERM', // 'MIDTERM' | 'FINAL'
@@ -131,7 +114,7 @@ const ExamUploadSection = ({
   const fileInputRefs = useRef({});
 
   // Map existing CourseFile records by documentType
-  const filesByType = React.useMemo(() => {
+  const filesByType = useMemo(() => {
     const map = {};
     courseFiles.forEach((file) => {
       if (file.documentType) {
@@ -142,7 +125,7 @@ const ExamUploadSection = ({
   }, [courseFiles]);
 
   // Compute uploaded count and completion status
-  const uploadedCount = React.useMemo(() => {
+  const uploadedCount = useMemo(() => {
     return slots.filter((slot) => {
       const file = filesByType[slot.documentType];
       return file && file.status === 'synced';
@@ -225,143 +208,64 @@ const ExamUploadSection = ({
     }
   };
 
-  const containerStyle = isCard
-    ? {
-        backgroundColor: '#ffffff',
-        border: '1px solid #e2e8f0',
-        borderRadius: '12px',
-        padding: '1.5rem',
-        marginTop: '0.75rem',
-        marginBottom: '1rem',
-        boxShadow: '0 2px 4px rgba(0,0,0,0.03)',
-      }
-    : {};
-
   return (
-    <div style={containerStyle} data-testid={`exam-section-${examType.toLowerCase()}`}>
-      {/* Header with Title and Progress */}
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          gap: '1rem',
-          paddingBottom: '1rem',
-          borderBottom: '1px solid #f1f5f9',
-          marginBottom: '1.25rem',
-        }}
-      >
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-            <h3
-              style={{
-                margin: 0,
-                fontSize: '1.15rem',
-                fontWeight: '700',
-                color: '#0f172a',
-              }}
-            >
-              {examTitle} Required Documents
-            </h3>
-            {/* Status badge */}
-            <span
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.35rem',
-                padding: '0.25rem 0.75rem',
-                borderRadius: '9999px',
-                fontSize: '0.8rem',
-                fontWeight: '600',
-                backgroundColor:
+    <div
+      className={`exam-section ${isCard ? 'exam-section--card' : 'exam-section--standalone'}`}
+      data-testid={`exam-section-${examType.toLowerCase()}`}
+    >
+      {/* Header with Title and Progress — Shown only when rendered as standalone page */}
+      {!isCard && (
+        <div className="exam-header">
+          <div className="exam-header-left">
+            <div className="exam-header-title-row">
+              <h3 className="exam-header-title">
+                {examTitle} Required Documents
+              </h3>
+              <StatusBadge
+                status={
                   completionStatus === 'Completed'
-                    ? '#ecfdf5'
+                    ? 'completed'
                     : completionStatus === 'In Progress'
-                    ? '#eff6ff'
-                    : '#f1f5f9',
-                color:
+                    ? 'pending'
+                    : 'neutral'
+                }
+                label={
                   completionStatus === 'Completed'
-                    ? '#047857'
+                    ? `Completed (4/4)`
                     : completionStatus === 'In Progress'
-                    ? '#1d4ed8'
-                    : '#64748b',
-                border: `1px solid ${
-                  completionStatus === 'Completed'
-                    ? '#a7f3d0'
-                    : completionStatus === 'In Progress'
-                    ? '#bfdbfe'
-                    : '#e2e8f0'
-                }`,
-              }}
-            >
-              <span>{completionStatus === 'Completed' ? '✓' : '●'}</span>
-              <span>
-                {completionStatus} ({uploadedCount}/4)
-              </span>
-            </span>
+                    ? `In Progress (${uploadedCount}/4)`
+                    : `Not Started (0/4)`
+                }
+                dot={completionStatus !== 'Not Started'}
+                size="sm"
+              />
+            </div>
+            <p className="exam-header-desc">
+              All 4 document categories must be uploaded to complete this exam checklist item.
+              Supported formats: PDF (.pdf), Word (.doc, .docx) • Max size: 25 MB per file.
+            </p>
           </div>
-          <p
-            style={{
-              margin: '0.35rem 0 0',
-              fontSize: '0.85rem',
-              color: '#64748b',
-            }}
-          >
-            All 4 document categories must be uploaded to complete this exam checklist item.
-            Supported formats: PDF (.pdf), Word (.doc, .docx) • Max size: 25 MB per file.
-          </p>
-        </div>
 
-        {/* Mini visual progress indicator */}
-        <div style={{ minWidth: '150px' }}>
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              fontSize: '0.75rem',
-              color: '#64748b',
-              marginBottom: '0.25rem',
-              fontWeight: '600',
-            }}
-          >
-            <span>Progress</span>
-            <span>{uploadedCount} of 4</span>
-          </div>
-          <div
-            style={{
-              height: '8px',
-              backgroundColor: '#e2e8f0',
-              borderRadius: '9999px',
-              overflow: 'hidden',
-            }}
-          >
-            <div
-              style={{
-                width: `${(uploadedCount / 4) * 100}%`,
-                height: '100%',
-                backgroundColor:
-                  uploadedCount === 4
-                    ? '#10b981'
-                    : uploadedCount > 0
-                    ? '#3b82f6'
-                    : 'transparent',
-                borderRadius: '9999px',
-                transition: 'width 0.3s ease',
-              }}
-            />
+          {/* Mini visual progress indicator */}
+          <div className="exam-header-progress-wrap">
+            <div className="exam-header-progress-labels">
+              <span>Progress</span>
+              <span>{uploadedCount} of 4</span>
+            </div>
+            <div className="exam-header-progress-track">
+              <div
+                className={`exam-header-progress-bar ${
+                  uploadedCount < 4 ? 'exam-header-progress-bar--partial' : ''
+                }`}
+                style={{ width: `${(uploadedCount / 4) * 100}%` }}
+              />
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
-      {/* Grid of 4 Upload Slots */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-          gap: '1rem',
-        }}
-      >
+      {/* Grid of 4 Upload Slots (2x2 on Desktop, 1-col on Mobile) */}
+      <div className="exam-slots-grid">
         {slots.map((slot, index) => {
           const file = filesByType[slot.documentType];
           const isUploaded = Boolean(file && file.status === 'synced');
@@ -373,143 +277,53 @@ const ExamUploadSection = ({
             <div
               key={slot.documentType}
               data-testid={`exam-slot-${slot.documentType.toLowerCase()}`}
-              style={{
-                backgroundColor: isUploaded ? '#fafdfb' : '#f8fafc',
-                border: `1px solid ${isUploaded ? '#bbf7d0' : '#e2e8f0'}`,
-                borderRadius: '10px',
-                padding: '1.1rem',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between',
-                transition: 'all 0.2s',
-                boxShadow: isUploaded
-                  ? '0 1px 3px rgba(16, 185, 129, 0.08)'
-                  : 'none',
-              }}
+              className={`exam-slot-card ${isUploaded ? 'exam-slot-card--uploaded' : ''}`}
             >
               {/* Slot Header */}
               <div>
-                <div
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'flex-start',
-                    marginBottom: '0.5rem',
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
-                    <span style={{ fontSize: '1.25rem' }}>{slot.icon}</span>
-                    <div>
-                      <h4
-                        style={{
-                          margin: 0,
-                          fontSize: '0.95rem',
-                          fontWeight: '700',
-                          color: '#0f172a',
-                        }}
-                      >
-                        {index + 1}. {slot.category}
-                      </h4>
+                <div className="exam-slot-header">
+                  <div className="exam-slot-title-wrap">
+                    <div className="exam-slot-icon-box">
+                      <Icon name={slot.icon || 'document'} size={16} />
                     </div>
+                    <h4 className="exam-slot-title">
+                      {index + 1}. {slot.category}
+                    </h4>
                   </div>
 
                   {/* Status Badge */}
-                  <span
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '0.25rem',
-                      padding: '0.2rem 0.55rem',
-                      borderRadius: '9999px',
-                      fontSize: '0.72rem',
-                      fontWeight: '700',
-                      backgroundColor: isUploaded ? '#ecfdf5' : '#f1f5f9',
-                      color: isUploaded ? '#047857' : '#64748b',
-                      border: `1px solid ${isUploaded ? '#a7f3d0' : '#e2e8f0'}`,
-                    }}
-                  >
-                    {isUploaded ? (
-                      <>
-                        <span>✓</span>
-                        <span>
-                          Synced{file?.version > 1 ? ` v${file.version}` : ''}
-                        </span>
-                      </>
-                    ) : (
-                      <span>Not Uploaded</span>
-                    )}
-                  </span>
+                  <StatusBadge
+                    status={isUploaded ? 'synced' : 'neutral'}
+                    label={
+                      isUploaded
+                        ? `Synced${file?.version > 1 ? ` v${file.version}` : ''}`
+                        : 'Not Uploaded'
+                    }
+                    dot={isUploaded}
+                    size="sm"
+                    className="exam-slot-badge"
+                  />
                 </div>
 
-                <p
-                  style={{
-                    margin: '0 0 0.75rem',
-                    fontSize: '0.8rem',
-                    color: '#64748b',
-                    lineHeight: '1.4',
-                  }}
-                >
+                <p className="exam-slot-desc">
                   {slot.description}
                 </p>
 
                 {/* Uploaded File Metadata Display */}
                 {isUploaded && (
-                  <div
-                    style={{
-                      backgroundColor: '#ffffff',
-                      border: '1px solid #e2e8f0',
-                      borderRadius: '8px',
-                      padding: '0.65rem 0.75rem',
-                      marginBottom: '0.75rem',
-                    }}
-                  >
-                    <div
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        gap: '0.5rem',
-                      }}
-                    >
-                      <div
-                        style={{
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
-                          fontSize: '0.85rem',
-                          fontWeight: '600',
-                          color: '#1e293b',
-                        }}
-                        title={file.filename}
-                      >
-                        📄 {file.filename}
+                  <div className="exam-slot-file-panel">
+                    <div className="exam-slot-file-row">
+                      <div className="exam-slot-filename" title={file.filename}>
+                        <Icon name="file" size={14} style={{ color: 'var(--cfes-blue-600)', flexShrink: 0 }} />
+                        <span className="exam-slot-filename-text">{file.filename}</span>
                       </div>
 
-                      {/* File format tag */}
-                      <span
-                        style={{
-                          fontSize: '0.7rem',
-                          fontWeight: '700',
-                          padding: '0.15rem 0.45rem',
-                          borderRadius: '4px',
-                          textTransform: 'uppercase',
-                          ...getFormatBadgeStyle(file.fileFormat),
-                        }}
-                      >
+                      <span className={`exam-slot-format-badge ${getFormatBadgeClass(file.fileFormat)}`}>
                         {file.fileFormat || 'PDF'}
                       </span>
                     </div>
 
-                    <div
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.6rem',
-                        marginTop: '0.35rem',
-                        fontSize: '0.75rem',
-                        color: '#64748b',
-                      }}
-                    >
+                    <div className="exam-slot-file-meta">
                       <span>{formatFileSize(file.sizeBytes)}</span>
                       {file.version > 1 && (
                         <span>• Version {file.version} (Updated)</span>
@@ -520,50 +334,23 @@ const ExamUploadSection = ({
 
                 {/* Inline Error Display */}
                 {errorMsg && (
-                  <div
-                    style={{
-                      backgroundColor: '#fef2f2',
-                      border: '1px solid #fecaca',
-                      borderRadius: '6px',
-                      padding: '0.5rem 0.65rem',
-                      fontSize: '0.78rem',
-                      color: '#b91c1c',
-                      marginBottom: '0.75rem',
-                      lineHeight: '1.35',
-                    }}
-                  >
-                    ⚠️ {errorMsg}
+                  <div className="exam-slot-feedback exam-slot-feedback--error">
+                    <Icon name="alert" size={14} style={{ flexShrink: 0 }} />
+                    <span>{errorMsg}</span>
                   </div>
                 )}
 
                 {/* Inline Success Notice */}
                 {successMsg && !errorMsg && (
-                  <div
-                    style={{
-                      backgroundColor: '#f0fdf4',
-                      border: '1px solid #bbf7d0',
-                      borderRadius: '6px',
-                      padding: '0.45rem 0.65rem',
-                      fontSize: '0.78rem',
-                      color: '#166534',
-                      marginBottom: '0.75rem',
-                    }}
-                  >
-                    ✓ {successMsg}
+                  <div className="exam-slot-feedback exam-slot-feedback--success">
+                    <Icon name="check" size={14} style={{ flexShrink: 0 }} />
+                    <span>{successMsg}</span>
                   </div>
                 )}
               </div>
 
               {/* Slot Actions */}
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  flexWrap: 'wrap',
-                  marginTop: '0.5rem',
-                }}
-              >
+              <div className="exam-slot-actions">
                 {/* Hidden File Input */}
                 <input
                   type="file"
@@ -574,56 +361,27 @@ const ExamUploadSection = ({
                 />
 
                 {/* Upload or Replace Button */}
-                <button
-                  type="button"
+                <Button
+                  variant={isUploaded ? 'secondary' : 'primary'}
+                  size="sm"
+                  icon={isUploaded ? 'refresh' : 'upload'}
+                  isLoading={isUploading}
                   onClick={() => handleSelectFileClick(slot.documentType)}
-                  disabled={isUploading}
-                  style={{
-                    padding: '0.45rem 0.85rem',
-                    backgroundColor: isUploaded ? '#ffffff' : '#2563eb',
-                    color: isUploaded ? '#334155' : '#ffffff',
-                    border: isUploaded ? '1px solid #cbd5e1' : 'none',
-                    borderRadius: '6px',
-                    fontSize: '0.82rem',
-                    fontWeight: '600',
-                    cursor: isUploading ? 'wait' : 'pointer',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '0.35rem',
-                    transition: 'all 0.15s',
-                    opacity: isUploading ? 0.7 : 1,
-                  }}
+                  disabled={isUploading || !offeringId}
                   title={
                     isUploaded
                       ? `Replace ${slot.category} with a new Word or PDF file`
                       : `Upload ${slot.category}`
                   }
                 >
-                  {isUploading ? (
-                    <>
-                      <span
-                        className="spinner-sm"
-                        style={{
-                          display: 'inline-block',
-                          animation: 'spin 1s linear infinite',
-                        }}
-                      >
-                        ⟳
-                      </span>
-                      <span>{isUploaded ? 'Replacing...' : 'Uploading...'}</span>
-                    </>
-                  ) : isUploaded ? (
-                    <>
-                      <span>🔄</span>
-                      <span>Replace Document</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>📤</span>
-                      <span>Upload Document</span>
-                    </>
-                  )}
-                </button>
+                  {isUploading
+                    ? isUploaded
+                      ? 'Replacing...'
+                      : 'Uploading...'
+                    : isUploaded
+                    ? 'Replace Document'
+                    : 'Upload Document'}
+                </Button>
 
                 {/* View in Drive Button */}
                 {isUploaded && file?.googleDriveWebViewLink && (
@@ -631,24 +389,13 @@ const ExamUploadSection = ({
                     href={file.googleDriveWebViewLink}
                     target="_blank"
                     rel="noopener noreferrer"
-                    style={{
-                      padding: '0.45rem 0.75rem',
-                      backgroundColor: '#f0fdf4',
-                      color: '#166534',
-                      border: '1px solid #bbf7d0',
-                      borderRadius: '6px',
-                      fontSize: '0.82rem',
-                      fontWeight: '600',
-                      textDecoration: 'none',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '0.3rem',
-                      transition: 'all 0.15s',
-                    }}
+                    className="cfes-btn cfes-btn--subtle cfes-btn--sm"
                     title="Open document in Google Drive in a new tab"
                   >
+                    <span className="cfes-btn-icon">
+                      <Icon name="external" size={13} />
+                    </span>
                     <span>View in Drive</span>
-                    <span style={{ fontSize: '0.75rem' }}>↗</span>
                   </a>
                 )}
               </div>

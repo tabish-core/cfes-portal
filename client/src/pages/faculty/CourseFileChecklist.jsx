@@ -230,7 +230,13 @@ const CourseFileChecklist = () => {
 
   // Fetch initial checklist, offering details, drive status, and course files on mount
   useEffect(() => {
-    if (!offeringId && !paramCourseId) return;
+    const validOfferingId = offeringId && offeringId !== 'undefined' && offeringId !== 'null' ? offeringId : null;
+    const validParamCourseId = paramCourseId && paramCourseId !== 'undefined' && paramCourseId !== 'null' ? paramCourseId : null;
+
+    if (!validOfferingId && !validParamCourseId) {
+      setLoading(false);
+      return;
+    }
 
     const fetchData = async () => {
       try {
@@ -239,9 +245,9 @@ const CourseFileChecklist = () => {
         let checklistData = null;
         let loadedFiles = [];
 
-        if (offeringId) {
+        if (validOfferingId) {
           // Fetch offering details
-          const offRes = await api.get(`/offerings/${offeringId}`);
+          const offRes = await api.get(`/offerings/${validOfferingId}`);
           const currentOffering = offRes.data?.data?.offering || offRes.data?.offering;
           setOffering(currentOffering);
 
@@ -257,11 +263,11 @@ const CourseFileChecklist = () => {
 
           // Fetch offering-scoped checklist, files, and Google Drive connection status concurrently
           const [checklistRes, files, statusInfo, quizRes, assignRes] = await Promise.all([
-            api.get(`/checklist/offering/${offeringId}`),
-            getOfferingFiles(offeringId).catch(() => []),
+            api.get(`/checklist/offering/${validOfferingId}`),
+            getOfferingFiles(validOfferingId).catch(() => []),
             getGoogleDriveStatus().catch(() => null),
-            api.get(`/quizzes/offering/${offeringId}`).catch(() => ({ data: { data: { quizzes: [] } } })),
-            api.get(`/assignments/offering/${offeringId}`).catch(() => ({ data: { data: { assignments: [] } } })),
+            api.get(`/quizzes/offering/${validOfferingId}`).catch(() => ({ data: { data: { quizzes: [] } } })),
+            api.get(`/assignments/offering/${validOfferingId}`).catch(() => ({ data: { data: { assignments: [] } } })),
           ]);
 
           loadedFiles = files || [];
@@ -283,12 +289,12 @@ const CourseFileChecklist = () => {
           if (assignRes.data?.data?.assignments) {
             setOfferingAssignments(assignRes.data.data.assignments);
           }
-        } else {
+        } else if (validParamCourseId) {
           // Legacy route by courseId
           const [checkRes, quizRes, assignRes] = await Promise.all([
-            api.get(`/checklist/${paramCourseId}`),
-            api.get(`/quizzes/course/${paramCourseId}`).catch(() => ({ data: { data: { quizzes: [] } } })),
-            api.get(`/assignments/course/${paramCourseId}`).catch(() => ({ data: { data: { assignments: [] } } })),
+            api.get(`/checklist/${validParamCourseId}`),
+            api.get(`/quizzes/course/${validParamCourseId}`).catch(() => ({ data: { data: { quizzes: [] } } })),
+            api.get(`/assignments/course/${validParamCourseId}`).catch(() => ({ data: { data: { assignments: [] } } })),
           ]);
           checklistData = checkRes.data.data?.checklist;
           if (quizRes.data?.data?.quizzes) {
@@ -708,10 +714,13 @@ const CourseFileChecklist = () => {
           )}
           <Link
             to={
-              offeringId
+              offeringId && offeringId !== 'undefined'
                 ? `/faculty/offering/${offeringId}/obe`
-                : `/faculty/course/${activeCourseId}/obe`
+                : (activeCourseId && activeCourseId !== 'undefined'
+                  ? `/faculty/course/${activeCourseId}/obe`
+                  : '/faculty/dashboard')
             }
+            state={activeCourseId && activeCourseId !== 'undefined' ? { courseId: activeCourseId } : undefined}
             className="cfes-btn cfes-btn--primary cfes-btn--md"
           >
             <Icon name="dashboard" size={16} />
@@ -1441,14 +1450,7 @@ const CourseFileChecklist = () => {
                   {/* Expandable Midterm Exam Card */}
                   {isMidtermItem && expandedExams.MIDTERM && (
                     <tr key={`${item.id}-expanded-midterm`}>
-                      <td
-                        colSpan={5}
-                        style={{
-                          padding: '0.5rem 1rem 1.25rem',
-                          backgroundColor: '#f8fafc',
-                          border: '1px solid #e2e8f0',
-                        }}
-                      >
+                      <td colSpan={5} className="checklist-expanded-exam-cell">
                         <ExamUploadSection
                           examType="MIDTERM"
                           offeringId={offeringId}
@@ -1463,14 +1465,7 @@ const CourseFileChecklist = () => {
                   {/* Expandable Final Exam Card */}
                   {isFinalItem && expandedExams.FINAL && (
                     <tr key={`${item.id}-expanded-final`}>
-                      <td
-                        colSpan={5}
-                        style={{
-                          padding: '0.5rem 1rem 1.25rem',
-                          backgroundColor: '#f8fafc',
-                          border: '1px solid #e2e8f0',
-                        }}
-                      >
+                      <td colSpan={5} className="checklist-expanded-exam-cell">
                         <ExamUploadSection
                           examType="FINAL"
                           offeringId={offeringId}

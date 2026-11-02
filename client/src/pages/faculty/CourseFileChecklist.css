@@ -381,3 +381,12 @@
     width: 100%;
   }
 }
+
+/* ── Expanded Exam Checklist Row ──────────────────────────────────── */
+.checklist-expanded-exam-cell {
+  padding: var(--cfes-space-3) var(--cfes-space-4) var(--cfes-space-4);
+  background-color: var(--cfes-slate-50);
+  border-bottom: 1px solid var(--cfes-slate-200);
+  border-top: 1px solid var(--cfes-slate-200);
+}
+

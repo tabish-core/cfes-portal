@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useLocation } from 'react-router-dom';
 import api from '../../api/axios';
 import useToast from '../../hooks/useToast';
 import OBEStudentImportModal from '../../components/obe/OBEStudentImportModal';
@@ -17,12 +17,116 @@ const WORKFLOW_STEPS = [
 ];
 
 const OBEWorkspace = () => {
-  const { courseId } = useParams();
+  const { offeringId, courseId: paramCourseId } = useParams();
+  const location = useLocation();
   const toast = useToast();
+  const isMountedRef = useRef(true);
+
   const [activeStep, setActiveStep] = useState('setup');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [offering, setOffering] = useState(null);
+  const [initError, setInitError] = useState(null);
+
+  const [resolvedCourseId, setResolvedCourseId] = useState(() => {
+    if (location.state?.courseId && location.state.courseId !== 'undefined' && location.state.courseId !== 'null') {
+      return String(location.state.courseId);
+    }
+    if (paramCourseId && paramCourseId !== 'undefined' && paramCourseId !== 'null') {
+      return String(paramCourseId);
+    }
+    return null;
+  });
+
+  const courseId = resolvedCourseId || (paramCourseId && paramCourseId !== 'undefined' && paramCourseId !== 'null' ? String(paramCourseId) : null);
+
+  const backUrl = offeringId && offeringId !== 'undefined' && offeringId !== 'null'
+    ? `/faculty/offering/${offeringId}`
+    : (courseId && courseId !== 'undefined' && courseId !== 'null'
+      ? `/faculty/course/${courseId}`
+      : '/faculty/dashboard');
+
+  // Track component mount status
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  // Resolve offering context or legacy courseId
+  useEffect(() => {
+    let active = true;
+
+    const resolveContext = async () => {
+      const validOfferingId = offeringId && offeringId !== 'undefined' && offeringId !== 'null' ? offeringId : null;
+      const validParamCourseId = paramCourseId && paramCourseId !== 'undefined' && paramCourseId !== 'null' ? paramCourseId : null;
+
+      if (!validOfferingId && !validParamCourseId) {
+        if (active) {
+          setInitError('Invalid or missing course offering identifier.');
+          setLoading(false);
+        }
+        return;
+      }
+
+      if (validOfferingId) {
+        try {
+          if (active) {
+            setLoading(true);
+            setInitError(null);
+          }
+          const { data } = await api.get(`/offerings/${validOfferingId}`);
+          const off = data.data?.offering || data.offering;
+          if (!active) return;
+
+          if (!off) {
+            setInitError('Course offering not found.');
+            setLoading(false);
+            return;
+          }
+
+          setOffering(off);
+          const c = off.course;
+          const cId = c?._id || c;
+
+          if (!cId) {
+            setInitError('Associated course not found for this offering.');
+            setLoading(false);
+            return;
+          }
+
+          if (c && typeof c === 'object') {
+            setCourseInfo((prev) => ({
+              ...prev,
+              courseName: c.courseName || prev.courseName,
+              courseCode: c.courseCode || prev.courseCode,
+              creditHours: c.creditHours || prev.creditHours,
+              type: c.type || prev.type,
+            }));
+          }
+
+          setResolvedCourseId(String(cId));
+        } catch (err) {
+          if (!active) return;
+          console.error('Failed to load offering details for OBE:', err);
+          setInitError(err.response?.data?.message || 'Failed to load course offering details.');
+          setLoading(false);
+        }
+      } else if (validParamCourseId) {
+        if (active) {
+          setResolvedCourseId(validParamCourseId);
+        }
+      }
+    };
+
+    resolveContext();
+
+    return () => {
+      active = false;
+    };
+  }, [offeringId, paramCourseId]);
 
   // --- Course Setup State ---
   const [courseInfo, setCourseInfo] = useState({ courseName: 'Loading...', courseCode: '...', creditHours: '', type: '' });
@@ -57,18 +161,18 @@ const OBEWorkspace = () => {
   const [resultsData, setResultsData] = useState(null);
 
   useEffect(() => {
-    if (courseId) {
-      if (activeStep === 'setup') fetchConfig();
-      if (activeStep === 'students') fetchStudents();
-      if (activeStep === 'assessments') {
-        fetchConfig().then(() => fetchAssessments());
-      }
-      if (activeStep === 'marks') {
-        fetchMarksData();
-      }
-      if (activeStep === 'results') {
-        fetchResults();
-      }
+    if (!courseId) return;
+
+    if (activeStep === 'setup') fetchConfig();
+    if (activeStep === 'students') fetchStudents();
+    if (activeStep === 'assessments') {
+      fetchConfig().then(() => fetchAssessments());
+    }
+    if (activeStep === 'marks') {
+      fetchMarksData();
+    }
+    if (activeStep === 'results') {
+      fetchResults();
     }
     // eslint-disable-next-line
   }, [courseId, activeStep]);
@@ -152,9 +256,14 @@ const OBEWorkspace = () => {
   // CONFIGURATION LOGIC
   // ==========================================
   const fetchConfig = async () => {
+    if (!courseId) {
+      if (isMountedRef.current) setLoading(false);
+      return;
+    }
     try {
-      setLoading(true);
+      if (isMountedRef.current) setLoading(true);
       const { data } = await api.get(`/obe/${courseId}/config`);
+      if (!isMountedRef.current) return;
       const config = data.data;
 
       if (config.course && typeof config.course === 'object') {
@@ -173,9 +282,9 @@ const OBEWorkspace = () => {
       if (config.grades) setGrades(config.grades);
       if (config.kpiThreshold !== undefined) setKpiThreshold(config.kpiThreshold);
     } catch (err) {
-      toast.error('Failed to load OBE configuration.');
+      if (isMountedRef.current) toast.error('Failed to load OBE configuration.');
     } finally {
-      setLoading(false);
+      if (isMountedRef.current) setLoading(false);
     }
   };
 
@@ -211,6 +320,7 @@ const OBEWorkspace = () => {
   };
 
   const handleSyncFromCIS = async () => {
+    if (!courseId) return toast.error('No course identifier available.');
     try {
       setSyncing(true);
       const { data } = await api.post(`/obe/${courseId}/sync-from-cis`);
@@ -230,14 +340,19 @@ const OBEWorkspace = () => {
   // STUDENTS LOGIC
   // ==========================================
   const fetchStudents = async (silent = false) => {
+    if (!courseId) {
+      if (isMountedRef.current && !silent) setLoading(false);
+      return;
+    }
     try {
-      if (!silent) setLoading(true);
+      if (!silent && isMountedRef.current) setLoading(true);
       const { data } = await api.get(`/obe/${courseId}/students`);
+      if (!isMountedRef.current) return;
       setStudents(data.data);
     } catch (err) {
-      toast.error('Failed to load students.');
+      if (isMountedRef.current) toast.error('Failed to load students.');
     } finally {
-      if (!silent) setLoading(false);
+      if (!silent && isMountedRef.current) setLoading(false);
     }
   };
 
@@ -272,9 +387,14 @@ const OBEWorkspace = () => {
   // ASSESSMENTS LOGIC
   // ==========================================
   const fetchAssessments = async () => {
+    if (!courseId) {
+      if (isMountedRef.current) setLoading(false);
+      return;
+    }
     try {
-      setLoading(true);
+      if (isMountedRef.current) setLoading(true);
       const { data } = await api.get(`/obe/${courseId}/assessments`);
+      if (!isMountedRef.current) return;
       setAssessments(data.data);
       const initialForms = {};
       data.data.forEach(a => {
@@ -282,9 +402,9 @@ const OBEWorkspace = () => {
       });
       setComponentForms(initialForms);
     } catch (err) {
-      toast.error('Failed to load assessments.');
+      if (isMountedRef.current) toast.error('Failed to load assessments.');
     } finally {
-      setLoading(false);
+      if (isMountedRef.current) setLoading(false);
     }
   };
 
@@ -360,13 +480,18 @@ const OBEWorkspace = () => {
   // MARKS ENTRY LOGIC
   // ==========================================
   const fetchMarksData = async () => {
+    if (!courseId) {
+      if (isMountedRef.current) setLoading(false);
+      return;
+    }
     try {
-      setLoading(true);
+      if (isMountedRef.current) setLoading(true);
       const [studentsRes, assessmentsRes, marksRes] = await Promise.all([
         api.get(`/obe/${courseId}/students`),
         api.get(`/obe/${courseId}/assessments`),
         api.get(`/obe/${courseId}/marks`)
       ]);
+      if (!isMountedRef.current) return;
       setStudents(studentsRes.data.data);
       setAssessments(assessmentsRes.data.data);
 
@@ -377,9 +502,9 @@ const OBEWorkspace = () => {
       setMarksData(loadedMarks);
       setOriginalMarks({ ...loadedMarks });
     } catch (err) {
-      toast.error('Failed to load marks data.');
+      if (isMountedRef.current) toast.error('Failed to load marks data.');
     } finally {
-      setLoading(false);
+      if (isMountedRef.current) setLoading(false);
     }
   };
 
@@ -432,19 +557,24 @@ const OBEWorkspace = () => {
   // RESULTS LOGIC
   // ==========================================
   const fetchResults = async () => {
+    if (!courseId) {
+      if (isMountedRef.current) setLoading(false);
+      return;
+    }
     try {
-      setLoading(true);
+      if (isMountedRef.current) setLoading(true);
       // We also need config for column headers
       const configRes = await api.get(`/obe/${courseId}/config`);
       const res = await api.get(`/obe/${courseId}/results`);
+      if (!isMountedRef.current) return;
 
       setClos(configRes.data.data.clos || []);
       setGas(configRes.data.data.gas || []);
       setResultsData(res.data.data);
     } catch (err) {
-      toast.error('Failed to load OBE results.');
+      if (isMountedRef.current) toast.error('Failed to load OBE results.');
     } finally {
-      setLoading(false);
+      if (isMountedRef.current) setLoading(false);
     }
   };
 
@@ -1074,7 +1204,7 @@ const OBEWorkspace = () => {
   return (
     <div className="dashboard">
       <div className="dashboard-header-container">
-        <Link to={`/faculty/course/${courseId}`} className="back-link">← Back to Course</Link>
+        <Link to={backUrl} className="back-link">← Back to Course</Link>
         <h1 className="dashboard-heading">OBE Workspace</h1>
         <p className="dashboard-sub">{courseInfo.courseCode} - {courseInfo.courseName}</p>
       </div>
@@ -1100,7 +1230,19 @@ const OBEWorkspace = () => {
         </div>
 
         <div style={{ flex: 1, minWidth: 0, padding: activeStep === 'marks' ? '0' : '0 1rem', overflowY: activeStep === 'marks' ? 'visible' : 'auto' }}>
-          {loading ? (
+          {initError ? (
+            <div style={{ backgroundColor: '#fff', borderRadius: '8px', padding: '3rem', textAlign: 'center', border: '1px solid #fee2e2' }}>
+              <div style={{ color: '#ef4444', fontSize: '1.25rem', fontWeight: '600', marginBottom: '0.75rem' }}>
+                Failed to load OBE Workspace
+              </div>
+              <p style={{ color: '#64748b', maxWidth: '450px', margin: '0 auto 1.5rem auto', lineHeight: '1.5' }}>
+                {initError}
+              </p>
+              <Link to={backUrl} className="btn-primary" style={{ display: 'inline-block', padding: '0.6rem 1.5rem', textDecoration: 'none' }}>
+                Return to Course Checklist
+              </Link>
+            </div>
+          ) : loading ? (
             <div style={{ textAlign: 'center', padding: '3rem', color: '#64748b' }}>Loading data...</div>
           ) : activeStep === 'setup' ? (
             renderCourseSetup()
@@ -1122,6 +1264,7 @@ const OBEWorkspace = () => {
               </p>
               <button
                 onClick={async () => {
+                  if (!courseId) return toast.error('No course identifier available.');
                   try {
                     setSaving(true);
                     const response = await api.get(`/obe/${courseId}/export/excel`, { responseType: 'blob' });

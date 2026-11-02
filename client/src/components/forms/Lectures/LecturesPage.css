@@ -1,0 +1,391 @@
+/* ── CFES Manage Lectures Styles ───────────────────────────────────── */
+
+.lectures-page {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.lectures-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--cfes-space-3);
+  margin-bottom: var(--cfes-space-4);
+  padding: var(--cfes-space-3) var(--cfes-space-4);
+  background-color: var(--cfes-slate-50);
+  border: 1px solid var(--cfes-slate-200);
+  border-radius: var(--cfes-radius-md);
+}
+
+.lectures-banner-desc {
+  margin: 0;
+  color: var(--cfes-slate-600);
+  font-size: var(--cfes-font-sm);
+  line-height: 1.5;
+}
+
+.lectures-banner-count {
+  font-size: var(--cfes-font-xs);
+  color: var(--cfes-slate-500);
+  white-space: nowrap;
+}
+
+.lectures-banner-count strong {
+  color: var(--cfes-slate-800);
+}
+
+/* ── Compact Upload Dropzone ───────────────────────────────────────── */
+.lectures-dropzone {
+  background-color: var(--cfes-white);
+  border: 2px dashed var(--cfes-slate-300);
+  border-radius: var(--cfes-radius-lg);
+  padding: var(--cfes-space-5) var(--cfes-space-4);
+  text-align: center;
+  margin-bottom: var(--cfes-space-5);
+  transition: border-color var(--cfes-transition-fast), background-color var(--cfes-transition-fast), box-shadow var(--cfes-transition-fast);
+  cursor: pointer;
+}
+
+.lectures-dropzone:hover {
+  border-color: var(--cfes-blue-400);
+  background-color: var(--cfes-slate-50);
+}
+
+.lectures-dropzone--dragging {
+  border-color: var(--cfes-blue-500);
+  background-color: var(--cfes-blue-50);
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+}
+
+.lectures-dropzone-icon {
+  margin-bottom: var(--cfes-space-2);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: var(--cfes-blue-600);
+}
+
+.lectures-dropzone-title {
+  font-size: var(--cfes-font-md);
+  font-weight: 600;
+  color: var(--cfes-slate-900);
+  margin-bottom: var(--cfes-space-1);
+}
+
+.lectures-dropzone-subtitle {
+  margin: 0 0 var(--cfes-space-3);
+  font-size: var(--cfes-font-xs);
+  color: var(--cfes-slate-500);
+  line-height: 1.4;
+}
+
+.lectures-dropzone-actions {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: var(--cfes-space-2);
+}
+
+.lectures-dropzone-warning {
+  margin-top: var(--cfes-space-2);
+  font-size: var(--cfes-font-xs);
+  color: var(--cfes-status-danger-text);
+  font-weight: 500;
+}
+
+/* ── Staged Selected Files Pending Upload ─────────────────────────── */
+.lectures-staged-panel {
+  background-color: var(--cfes-white);
+  border: 1px solid var(--cfes-blue-100);
+  border-radius: var(--cfes-radius-lg);
+  padding: var(--cfes-space-4);
+  margin-bottom: var(--cfes-space-5);
+  box-shadow: var(--cfes-shadow-xs);
+}
+
+.lectures-staged-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--cfes-space-3);
+  flex-wrap: wrap;
+  gap: var(--cfes-space-2);
+}
+
+.lectures-staged-title {
+  margin: 0;
+  font-size: var(--cfes-font-sm);
+  font-weight: 600;
+  color: var(--cfes-slate-900);
+}
+
+.lectures-staged-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--cfes-space-2);
+}
+
+.lectures-progress-indicator {
+  padding: var(--cfes-space-2) 0;
+  color: var(--cfes-blue-600);
+  font-size: var(--cfes-font-xs);
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: var(--cfes-space-2);
+}
+
+.lectures-staged-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cfes-space-2);
+}
+
+.lectures-staged-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--cfes-space-2) var(--cfes-space-3);
+  background-color: var(--cfes-slate-50);
+  border: 1px solid var(--cfes-slate-200);
+  border-radius: var(--cfes-radius-sm);
+  font-size: var(--cfes-font-sm);
+  gap: var(--cfes-space-2);
+}
+
+.lectures-staged-item-info {
+  display: flex;
+  align-items: center;
+  gap: var(--cfes-space-2);
+  min-width: 0;
+  overflow: hidden;
+}
+
+.lectures-staged-item-name {
+  font-weight: 500;
+  color: var(--cfes-slate-800);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lectures-staged-item-size {
+  font-size: var(--cfes-font-xs);
+  color: var(--cfes-slate-500);
+  flex-shrink: 0;
+}
+
+.lectures-staged-remove-btn {
+  background: none;
+  border: none;
+  color: var(--cfes-slate-400);
+  cursor: pointer;
+  padding: var(--cfes-space-1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--cfes-radius-xs);
+  transition: color var(--cfes-transition-fast), background-color var(--cfes-transition-fast);
+}
+
+.lectures-staged-remove-btn:hover {
+  color: var(--cfes-slate-700);
+  background-color: var(--cfes-slate-200);
+}
+
+/* ── Repository Table Card ─────────────────────────────────────────── */
+.lectures-card {
+  background-color: var(--cfes-white);
+  border: 1px solid var(--cfes-slate-200);
+  border-radius: var(--cfes-radius-lg);
+  overflow: hidden;
+  box-shadow: var(--cfes-shadow-xs);
+}
+
+.lectures-card-header {
+  padding: var(--cfes-space-3) var(--cfes-space-4);
+  background-color: var(--cfes-slate-50);
+  border-bottom: 1px solid var(--cfes-slate-200);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--cfes-space-2);
+}
+
+.lectures-card-title {
+  margin: 0;
+  font-size: var(--cfes-font-base);
+  font-weight: 600;
+  color: var(--cfes-slate-900);
+}
+
+.lectures-card-count {
+  font-size: var(--cfes-font-xs);
+  color: var(--cfes-slate-500);
+}
+
+.lectures-table-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.lectures-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: var(--cfes-font-sm);
+  min-width: 650px;
+}
+
+.lectures-table thead tr {
+  background-color: var(--cfes-slate-100);
+  border-bottom: 1px solid var(--cfes-slate-200);
+}
+
+.lectures-table th {
+  padding: 0.65rem 0.85rem;
+  font-size: var(--cfes-font-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--cfes-slate-600);
+  border-right: 1px solid var(--cfes-slate-200);
+  white-space: nowrap;
+}
+
+.lectures-table th:last-child {
+  border-right: none;
+}
+
+.lectures-table td {
+  padding: 0.75rem 0.85rem;
+  border-bottom: 1px solid var(--cfes-slate-200);
+  border-right: 1px solid var(--cfes-slate-200);
+  vertical-align: middle;
+}
+
+.lectures-table td:last-child {
+  border-right: none;
+}
+
+.lectures-table tbody tr:hover {
+  background-color: #fafbfd;
+}
+
+.lectures-filename-cell {
+  display: flex;
+  align-items: center;
+  gap: var(--cfes-space-2);
+  min-width: 0;
+}
+
+.lectures-filename-text {
+  font-weight: 600;
+  color: var(--cfes-slate-900);
+  word-break: break-word;
+  max-width: 380px;
+}
+
+.lectures-format-badge {
+  display: inline-block;
+  padding: 0.15rem 0.45rem;
+  border-radius: var(--cfes-radius-xs);
+  font-size: var(--cfes-font-xs);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border: 1px solid var(--cfes-slate-200);
+  background-color: var(--cfes-slate-100);
+  color: var(--cfes-slate-700);
+}
+
+.lectures-format-badge--pdf {
+  background-color: #fef2f2;
+  color: #991b1b;
+  border-color: #fecaca;
+}
+
+.lectures-format-badge--ppt,
+.lectures-format-badge--pptx {
+  background-color: #fff7ed;
+  color: #9a3412;
+  border-color: #ffedd5;
+}
+
+.lectures-format-badge--doc,
+.lectures-format-badge--docx {
+  background-color: #eff6ff;
+  color: #1d4ed8;
+  border-color: #bfdbfe;
+}
+
+.lectures-actions-cell {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--cfes-space-2);
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+
+/* ── Empty & Loading States ────────────────────────────────────────── */
+.lectures-empty-state {
+  padding: var(--cfes-space-6) var(--cfes-space-4);
+  text-align: center;
+  color: var(--cfes-slate-500);
+}
+
+.lectures-empty-icon {
+  margin-bottom: var(--cfes-space-2);
+  color: var(--cfes-slate-400);
+  display: flex;
+  justify-content: center;
+}
+
+.lectures-empty-title {
+  font-size: var(--cfes-font-base);
+  font-weight: 600;
+  color: var(--cfes-slate-800);
+  margin-bottom: var(--cfes-space-1);
+}
+
+.lectures-empty-desc {
+  margin: 0 0 var(--cfes-space-4);
+  font-size: var(--cfes-font-sm);
+  color: var(--cfes-slate-500);
+}
+
+.lectures-loading-state {
+  padding: var(--cfes-space-6);
+  text-align: center;
+  color: var(--cfes-slate-500);
+  font-size: var(--cfes-font-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--cfes-space-2);
+}
+
+/* ── Responsive ─────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .lectures-banner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .lectures-dropzone {
+    padding: var(--cfes-space-4) var(--cfes-space-3);
+  }
+
+  .lectures-staged-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .lectures-card-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
