@@ -9,6 +9,8 @@ const Course           = require('../models/Course.model');
 const User             = require('../models/User.model');
 const Semester         = require('../models/Semester.model');
 const Department       = require('../models/Department.model');
+const CourseChecklist  = require('../models/CourseChecklist.model');
+const CourseFile       = require('../models/CourseFile.model');
 
 /* ── helpers ───────────────────────────────────────────────────────────── */
 const fail = (message, statusCode = 400) => {
@@ -109,8 +111,10 @@ const removeOffering = async (offeringId, user) => {
 
 /**
  * List all offerings for a given semester, populated with faculty + course info.
+ * If includeProgress is true, enriches each offering with CourseChecklist completion
+ * and CourseFile Google Drive sync metadata.
  */
-const listOfferingsBySemester = async (semesterId, departmentFilter = {}) => {
+const listOfferingsBySemester = async (semesterId, departmentFilter = {}, includeProgress = false) => {
   if (!mongoose.Types.ObjectId.isValid(semesterId)) fail('Invalid semester ID', 400);
 
   let courseFilter = {};
@@ -123,11 +127,132 @@ const listOfferingsBySemester = async (semesterId, departmentFilter = {}) => {
     return [];
   }
 
-  return CourseOffering.find({ semester: semesterId, ...courseFilter })
+  const query = CourseOffering.find({ semester: semesterId, ...courseFilter })
     .populate('faculty', 'name email department')
-    .populate('course', 'courseCode courseName type creditHours department')
+    .populate({
+      path: 'course',
+      select: 'courseCode courseName type creditHours department',
+      populate: { path: 'department', select: 'name code' },
+    })
     .populate('semester', 'name status')
     .sort({ 'course.courseCode': 1 });
+
+  if (!includeProgress) {
+    return query;
+  }
+
+  const offerings = await query.lean();
+  if (offerings.length === 0) {
+    return [];
+  }
+
+  const offeringIds = offerings.map((o) => o._id);
+
+  const [checklists, courseFiles] = await Promise.all([
+    CourseChecklist.find({
+      $or: [
+        { courseOffering: { $in: offeringIds } },
+        { semester: semesterId },
+      ],
+    }).lean(),
+    CourseFile.find({
+      courseOffering: { $in: offeringIds },
+      status: 'synced',
+    })
+      .select('courseOffering documentType googleDriveFolderId googleDriveWebViewLink')
+      .lean(),
+  ]);
+
+  // Index checklists by courseOffering ID and by composite fallback (course_faculty_section)
+  const checklistByOfferingId = new Map();
+  const checklistByFallback = new Map();
+  checklists.forEach((cl) => {
+    if (cl.courseOffering) {
+      checklistByOfferingId.set(cl.courseOffering.toString(), cl);
+    }
+    const courseIdStr = cl.course ? cl.course.toString() : '';
+    const facultyIdStr = cl.faculty ? cl.faculty.toString() : '';
+    const sectionStr = cl.section || 'A';
+    if (courseIdStr && facultyIdStr) {
+      checklistByFallback.set(`${courseIdStr}_${facultyIdStr}_${sectionStr}`, cl);
+    }
+  });
+
+  // Group synced files by offeringId
+  const filesByOfferingId = new Map();
+  courseFiles.forEach((file) => {
+    if (file.courseOffering) {
+      const key = file.courseOffering.toString();
+      if (!filesByOfferingId.has(key)) {
+        filesByOfferingId.set(key, []);
+      }
+      filesByOfferingId.get(key).push(file);
+    }
+  });
+
+  const DEFAULT_ITEMS_COUNT = 19;
+
+  return offerings.map((offering) => {
+    const offIdStr = offering._id.toString();
+
+    // 1. Resolve checklist
+    let cl = checklistByOfferingId.get(offIdStr);
+    if (!cl) {
+      const courseIdStr = offering.course?._id ? offering.course._id.toString() : '';
+      const facultyIdStr = offering.faculty?._id ? offering.faculty._id.toString() : '';
+      const sectionStr = offering.section || 'A';
+      cl = checklistByFallback.get(`${courseIdStr}_${facultyIdStr}_${sectionStr}`);
+    }
+
+    let completedCount = 0;
+    let totalCount = DEFAULT_ITEMS_COUNT;
+    if (cl && Array.isArray(cl.checklistItems) && cl.checklistItems.length > 0) {
+      totalCount = cl.checklistItems.length;
+      completedCount = cl.checklistItems.filter((item) => item.completed).length;
+    }
+
+    const completionPercentage = totalCount > 0
+      ? Math.round((completedCount / totalCount) * 1000) / 10
+      : 0;
+
+    let checklistStatus = 'Not Started';
+    if (completedCount === totalCount && totalCount > 0) {
+      checklistStatus = 'Complete';
+    } else if (completedCount > 0) {
+      checklistStatus = 'In Progress';
+    }
+
+    // 2. Resolve Drive files and folder URL
+    const files = filesByOfferingId.get(offIdStr) || [];
+    const syncedFilesCount = files.length;
+    const sampleFolderId = files.find((f) => f.googleDriveFolderId)?.googleDriveFolderId || null;
+    const folderUrl = sampleFolderId ? `https://drive.google.com/drive/folders/${sampleFolderId}` : null;
+
+    let driveStatus = 'Not Synced';
+    if (syncedFilesCount > 0) {
+      if (completedCount > 0 && syncedFilesCount >= completedCount) {
+        driveStatus = 'Synced';
+      } else {
+        driveStatus = 'Partially Synced';
+      }
+    }
+
+    return {
+      ...offering,
+      progress: {
+        completedCount,
+        totalCount,
+        completionPercentage,
+        status: checklistStatus,
+      },
+      drive: {
+        syncedFilesCount,
+        folderId: sampleFolderId,
+        folderUrl,
+        status: driveStatus,
+      },
+    };
+  });
 };
 
 /**

@@ -51,13 +51,17 @@ const removeOffering = async (req, res, next) => {
  */
 const listBySemester = async (req, res, next) => {
   try {
-    const { semester } = req.query;
+    const { semester, includeProgress } = req.query;
 
     if (!semester) {
       return sendError(res, 'semester query parameter is required', 400);
     }
 
-    const offerings = await offeringService.listOfferingsBySemester(semester, req.departmentFilter || {});
+    const offerings = await offeringService.listOfferingsBySemester(
+      semester,
+      req.departmentFilter || {},
+      includeProgress === 'true'
+    );
     return sendSuccess(res, { offerings }, 'Offerings fetched');
   } catch (err) {
     next(err);

@@ -13,8 +13,11 @@ export const removeOffering = async (offeringId) => {
   return data.data; // { offering }
 };
 
-export const getOfferingsBySemester = async (semesterId) => {
-  const { data } = await api.get(`/offerings?semester=${semesterId}`);
+export const getOfferingsBySemester = async (semesterId, includeProgress = false) => {
+  const url = includeProgress
+    ? `/offerings?semester=${semesterId}&includeProgress=true`
+    : `/offerings?semester=${semesterId}`;
+  const { data } = await api.get(url);
   return data.data; // { offerings }
 };
 
