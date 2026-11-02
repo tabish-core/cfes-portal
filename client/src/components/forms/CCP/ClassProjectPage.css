@@ -1,0 +1,381 @@
+/**
+ * ClassProjectPage.css
+ * CFES Faculty Portal — Complex Computing Problem (CCP) / Class Project
+ */
+
+.cfes-ccp-container {
+  width: 100%;
+  max-width: 980px;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+/* ── Document Header ── */
+.cfes-ccp-header {
+  text-align: center;
+  margin-bottom: var(--cfes-space-6);
+  padding-bottom: var(--cfes-space-5);
+  border-bottom: 2px solid var(--cfes-slate-200);
+}
+
+.cfes-ccp-inst-title {
+  font-size: var(--cfes-font-2xl);
+  font-weight: 800;
+  color: var(--cfes-navy-950);
+  margin: 0 0 var(--cfes-space-1) 0;
+  letter-spacing: -0.02em;
+}
+
+.cfes-ccp-faculty-name {
+  font-size: var(--cfes-font-base);
+  font-weight: 600;
+  color: var(--cfes-slate-700);
+  margin: 0 0 var(--cfes-space-2) 0;
+}
+
+.cfes-ccp-doc-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--cfes-space-2);
+  padding: 0.35rem 0.85rem;
+  background-color: var(--cfes-navy-50);
+  color: var(--cfes-navy-800);
+  border: 1px solid var(--cfes-navy-100);
+  border-radius: var(--cfes-radius-full);
+  font-size: var(--cfes-font-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: var(--cfes-space-2);
+}
+
+.cfes-ccp-doc-title {
+  font-size: var(--cfes-font-lg);
+  font-weight: 700;
+  color: var(--cfes-navy-700);
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* ── Section Cards ── */
+.cfes-ccp-card {
+  background-color: var(--cfes-white);
+  border: 1px solid var(--cfes-slate-200);
+  border-radius: var(--cfes-radius-lg);
+  box-shadow: var(--cfes-shadow-xs);
+  padding: var(--cfes-space-6);
+  margin-bottom: var(--cfes-space-6);
+  transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.cfes-ccp-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--cfes-space-2);
+  border-bottom: 2px solid var(--cfes-slate-100);
+  padding-bottom: var(--cfes-space-3);
+  margin-bottom: var(--cfes-space-5);
+}
+
+.cfes-ccp-card-title {
+  display: flex;
+  align-items: center;
+  gap: var(--cfes-space-2);
+  color: var(--cfes-slate-900);
+  font-size: var(--cfes-font-lg);
+  font-weight: 700;
+  margin: 0;
+}
+
+.cfes-ccp-card-tag {
+  font-size: var(--cfes-font-xs);
+  font-weight: 600;
+  color: var(--cfes-slate-500);
+  background-color: var(--cfes-slate-100);
+  padding: 0.2rem 0.5rem;
+  border-radius: var(--cfes-radius-sm);
+}
+
+/* ── Form Grids ── */
+.cfes-ccp-grid-info {
+  display: grid;
+  grid-templateColumns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--cfes-space-4);
+}
+
+.cfes-ccp-grid-mapping {
+  display: grid;
+  grid-templateColumns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--cfes-space-4);
+}
+
+.cfes-ccp-form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.cfes-ccp-label {
+  display: block;
+  font-size: var(--cfes-font-sm);
+  font-weight: 600;
+  color: var(--cfes-slate-700);
+  margin-bottom: var(--cfes-space-1);
+}
+
+.cfes-ccp-label--error {
+  color: var(--cfes-status-danger-text);
+}
+
+.cfes-ccp-required {
+  color: var(--cfes-status-danger-solid);
+  margin-left: 2px;
+}
+
+.cfes-ccp-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.6rem 0.85rem;
+  border: 1px solid var(--cfes-slate-300);
+  background-color: var(--cfes-white);
+  color: var(--cfes-slate-800);
+  border-radius: var(--cfes-radius-md);
+  font-size: var(--cfes-font-base);
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.cfes-ccp-input:focus {
+  border-color: var(--cfes-blue-500);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.cfes-ccp-input--error {
+  border-color: var(--cfes-status-danger-solid);
+  background-color: var(--cfes-status-danger-bg);
+}
+
+.cfes-ccp-input--error:focus {
+  border-color: var(--cfes-status-danger-solid);
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.12);
+}
+
+.cfes-ccp-help-text {
+  font-size: var(--cfes-font-xs);
+  color: var(--cfes-slate-500);
+  margin-top: 4px;
+  line-height: 1.4;
+}
+
+.cfes-ccp-error-text {
+  font-size: var(--cfes-font-xs);
+  color: var(--cfes-status-danger-solid);
+  margin-top: 4px;
+  display: block;
+  font-weight: 500;
+}
+
+/* ── Narrative Sections ── */
+.cfes-ccp-narrative-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cfes-space-5);
+}
+
+.cfes-ccp-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid var(--cfes-slate-300);
+  background-color: var(--cfes-white);
+  color: var(--cfes-slate-800);
+  border-radius: var(--cfes-radius-md);
+  font-size: var(--cfes-font-base);
+  font-family: inherit;
+  outline: none;
+  resize: vertical;
+  line-height: 1.6;
+  min-height: 90px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.cfes-ccp-textarea:focus {
+  border-color: var(--cfes-blue-500);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.cfes-ccp-textarea--error {
+  border-color: var(--cfes-status-danger-solid);
+  background-color: var(--cfes-status-danger-bg);
+}
+
+.cfes-ccp-textarea--error:focus {
+  border-color: var(--cfes-status-danger-solid);
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.12);
+}
+
+/* ── Deliverables Table ── */
+.cfes-ccp-deliverables-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--cfes-space-3);
+  margin-bottom: var(--cfes-space-4);
+  flex-wrap: wrap;
+}
+
+.cfes-ccp-deliverables-input-wrap {
+  flex: 1;
+  min-width: 260px;
+  max-width: 440px;
+}
+
+.cfes-ccp-add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--cfes-space-2);
+  padding: 0.5rem 0.95rem;
+  background-color: var(--cfes-navy-50);
+  color: var(--cfes-navy-800);
+  border: 1px solid var(--cfes-navy-100);
+  border-radius: var(--cfes-radius-md);
+  font-size: var(--cfes-font-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.cfes-ccp-add-btn:hover {
+  background-color: var(--cfes-navy-100);
+  border-color: var(--cfes-navy-500);
+  color: var(--cfes-navy-950);
+}
+
+.cfes-ccp-delete-btn {
+  background: none;
+  border: none;
+  color: var(--cfes-slate-400);
+  cursor: pointer;
+  padding: 0.35rem 0.5rem;
+  border-radius: var(--cfes-radius-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.cfes-ccp-delete-btn:hover {
+  color: var(--cfes-status-danger-solid);
+  background-color: var(--cfes-status-danger-bg);
+}
+
+/* ── WP Attributes Table ── */
+.cfes-ccp-wp-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.cfes-ccp-wp-table th {
+  padding: 0.75rem 0.85rem;
+  background-color: var(--cfes-slate-100);
+  border-bottom: 2px solid var(--cfes-slate-300);
+  color: var(--cfes-slate-700);
+  font-weight: 700;
+  font-size: var(--cfes-font-sm);
+  text-align: left;
+}
+
+.cfes-ccp-wp-table td {
+  padding: 0.75rem 0.85rem;
+  border-bottom: 1px solid var(--cfes-slate-200);
+  vertical-align: top;
+}
+
+.cfes-ccp-wp-code-badge {
+  display: inline-block;
+  font-weight: 700;
+  font-size: var(--cfes-font-sm);
+  color: var(--cfes-slate-700);
+  padding: 0.2rem 0.5rem;
+  background-color: var(--cfes-slate-100);
+  border-radius: var(--cfes-radius-sm);
+}
+
+.cfes-ccp-wp-code-badge--active {
+  color: var(--cfes-navy-800);
+  background-color: var(--cfes-navy-50);
+  border: 1px solid var(--cfes-navy-100);
+}
+
+.cfes-ccp-wp-title {
+  font-weight: 600;
+  color: var(--cfes-slate-900);
+  font-size: var(--cfes-font-sm);
+  margin-bottom: 3px;
+}
+
+.cfes-ccp-wp-desc {
+  font-size: var(--cfes-font-xs);
+  color: var(--cfes-slate-500);
+  line-height: 1.45;
+}
+
+.cfes-ccp-checkbox {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--cfes-navy-800);
+  cursor: pointer;
+}
+
+.cfes-ccp-wp-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--cfes-slate-300);
+  background-color: var(--cfes-white);
+  color: var(--cfes-slate-800);
+  border-radius: var(--cfes-radius-sm);
+  font-size: var(--cfes-font-sm);
+  font-family: inherit;
+  outline: none;
+  min-height: 65px;
+  resize: vertical;
+  line-height: 1.45;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.cfes-ccp-wp-textarea:focus {
+  border-color: var(--cfes-blue-500);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.12);
+}
+
+.cfes-ccp-wp-textarea--active {
+  border-color: var(--cfes-slate-400);
+}
+
+@media (max-width: 640px) {
+  .cfes-ccp-card {
+    padding: var(--cfes-space-4);
+  }
+
+  .cfes-ccp-grid-info,
+  .cfes-ccp-grid-mapping {
+    grid-template-columns: 1fr;
+  }
+
+  .cfes-ccp-deliverables-header-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .cfes-ccp-deliverables-input-wrap {
+    max-width: 100%;
+  }
+
+  .cfes-ccp-add-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}

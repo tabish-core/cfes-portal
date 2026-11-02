@@ -59,16 +59,17 @@ const EMPTY_ROW = {
  */
 const WeeklyPlanTable = ({ data, onChange, onAddRow, onRemoveRow }) => (
   <div style={{ marginBottom: '2rem' }}>
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem', borderBottom: '2px solid #e2e8f0', paddingBottom: '0.5rem' }}>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '1rem', borderBottom: '2px solid #e2e8f0', paddingBottom: '0.5rem' }}>
       <h3 style={{ fontSize: '1rem', fontWeight: '700', color: '#1e293b', margin: 0 }}>
         Weekly Teaching Plan
       </h3>
-      <div style={{ display: 'flex', gap: '0.5rem' }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
         <button
           type="button"
           onClick={() => onAddRow('lecture')}
           style={{ ...btnStyle, backgroundColor: '#f1f5f9', color: '#334155', border: '1px solid #cbd5e1' }}
           title="Add another lecture to the current week"
+          aria-label="Add lecture to current week"
         >
           + Add Lecture
         </button>
@@ -77,22 +78,23 @@ const WeeklyPlanTable = ({ data, onChange, onAddRow, onRemoveRow }) => (
           onClick={() => onAddRow('next-week')}
           style={{ ...btnStyle, backgroundColor: '#3949ab', color: '#fff' }}
           title="Start a new week"
+          aria-label="Add next week to teaching plan"
         >
           + Add Next Week
         </button>
       </div>
     </div>
 
-    <div style={{ overflowX: 'auto' }}>
-      <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '750px' }}>
+    <div className="cfes-table-scroll-container" style={{ overflowX: 'auto', width: '100%', maxWidth: '100%', WebkitOverflowScrolling: 'touch', border: '1px solid #cbd5e1', borderRadius: '8px' }}>
+      <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '780px' }}>
         <thead>
           <tr>
-            <th style={{ ...thStyle, width: '80px' }}>Week</th>
-            <th style={{ ...thStyle, width: '100px' }}>Lecture No</th>
-            <th style={{ ...thStyle, minWidth: '280px' }}>Topic Covered</th>
-            <th style={{ ...thStyle, width: '120px' }}>CLO</th>
-            <th style={{ ...thStyle, width: '180px' }}>Assessment Tool</th>
-            <th style={{ ...thStyle, width: '60px', textAlign: 'center' }}></th>
+            <th style={{ ...thStyle, width: '80px', whiteSpace: 'nowrap' }}>Week</th>
+            <th style={{ ...thStyle, width: '100px', whiteSpace: 'nowrap' }}>Lecture No</th>
+            <th style={{ ...thStyle, minWidth: '260px' }}>Topic Covered</th>
+            <th style={{ ...thStyle, width: '110px', whiteSpace: 'nowrap' }}>CLO</th>
+            <th style={{ ...thStyle, width: '160px', whiteSpace: 'nowrap' }}>Assessment Tool</th>
+            <th style={{ ...thStyle, width: '70px', textAlign: 'center', whiteSpace: 'nowrap' }}></th>
           </tr>
         </thead>
         <tbody>
@@ -162,6 +164,7 @@ const WeeklyPlanTable = ({ data, onChange, onAddRow, onRemoveRow }) => (
                     type="button"
                     onClick={() => onAddRow('lecture', index)}
                     title="Add a lecture to this week"
+                    aria-label={`Add lecture to week ${row.week || index + 1}`}
                     style={{
                       ...btnStyle,
                       backgroundColor: '#f1f5f9',
@@ -180,6 +183,7 @@ const WeeklyPlanTable = ({ data, onChange, onAddRow, onRemoveRow }) => (
                     type="button"
                     onClick={() => onRemoveRow(index)}
                     title="Remove row"
+                    aria-label={`Remove row ${index + 1}`}
                     style={{
                       ...btnStyle,
                       backgroundColor: '#fef2f2',

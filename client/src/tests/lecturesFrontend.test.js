@@ -351,8 +351,9 @@ describe('Lectures File Manager Frontend Integration Suite', () => {
 
       assert.equal(linkWithOffering, '/offering/offering_123/form/LECTURES');
 
-      const linkWithoutOffering = null
-        ? `/offering/${null}/form/LECTURES`
+      const offeringNull = null;
+      const linkWithoutOffering = offeringNull
+        ? `/offering/${offeringNull}/form/LECTURES`
         : `/course/${courseId}/form/LECTURES`;
 
       assert.equal(linkWithoutOffering, '/course/course_456/form/LECTURES');

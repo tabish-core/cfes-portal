@@ -36,7 +36,7 @@ const getFormatBadge = (ext = '') => {
   };
 };
 
-const LecturesPage = ({ courseId, offeringId }) => {
+const LecturesPage = ({ offeringId }) => {
   const toast = useToast();
   const fileInputRef = useRef(null);
 

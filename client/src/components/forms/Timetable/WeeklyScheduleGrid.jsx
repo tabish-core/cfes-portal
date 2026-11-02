@@ -88,17 +88,17 @@ const WeeklyScheduleGrid = ({
         Section 3: Weekly Schedule Grid
       </h3>
 
-      <div className="grid-table-wrapper">
-        <table className="tt-grid-matrix">
+      <div className="grid-table-wrapper" style={{ overflowX: 'auto', width: '100%', maxWidth: '100%', WebkitOverflowScrolling: 'touch' }}>
+        <table className="tt-grid-matrix" style={{ minWidth: `${Math.max(720, 90 + slotCount * 115)}px` }}>
           <thead>
             <tr>
-              <th style={{ width: '80px', backgroundColor: '#ffffff', color: '#000000', border: '1px solid #000' }}>
+              <th style={{ width: '90px', minWidth: '90px', backgroundColor: '#f8fafc', color: '#0f172a', border: '1px solid #cbd5e1', padding: '10px 8px', whiteSpace: 'nowrap' }}>
                 Days
               </th>
               {sortedSlots.map((slot) => (
                 <th
                   key={slot.slotId}
-                  style={{ backgroundColor: '#ffffff', color: '#000000', border: '1px solid #000' }}
+                  style={{ minWidth: '110px', backgroundColor: '#f8fafc', color: '#0f172a', border: '1px solid #cbd5e1', padding: '10px 8px', whiteSpace: 'nowrap' }}
                 >
                   <div style={{ fontWeight: 700 }}>
                     {slot.startTime}–{slot.endTime}
@@ -117,7 +117,7 @@ const WeeklyScheduleGrid = ({
                   <tr key={dayName}>
                     <td
                       className="tt-grid-day-cell"
-                      style={{ fontWeight: 700, border: '1px solid #000', textAlign: 'center' }}
+                      style={{ fontWeight: 700, border: '1px solid #cbd5e1', textAlign: 'center', backgroundColor: '#f8fafc' }}
                     >
                       {dayLabel}
                     </td>
@@ -125,11 +125,11 @@ const WeeklyScheduleGrid = ({
                       colSpan={slotCount}
                       className="tt-offday-banner"
                       style={{
-                        backgroundColor: '#b0b0b0',
-                        color: '#000000',
+                        backgroundColor: '#f1f5f9',
+                        color: '#64748b',
                         fontWeight: 700,
-                        border: '1px solid #000',
-                        letterSpacing: '1.5px',
+                        border: '1px solid #cbd5e1',
+                        letterSpacing: '2px',
                         textAlign: 'center'
                       }}
                     >
@@ -173,11 +173,21 @@ const WeeklyScheduleGrid = ({
                       style={{
                         textAlign: 'center',
                         verticalAlign: 'middle',
-                        border: '1px solid #000',
-                        padding: '8px 4px'
+                        border: '1px solid #cbd5e1',
+                        padding: '8px 4px',
+                        cursor: 'pointer'
                       }}
                       onClick={() => onEditActivity && onEditActivity(act)}
-                      title={`Click to edit activity: ${act.title || act.id}`}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          onEditActivity && onEditActivity(act);
+                        }
+                      }}
+                      tabIndex={0}
+                      role="button"
+                      aria-label={`Edit activity: ${act.title || act.id}`}
+                      title={`Click or press Enter to edit activity: ${act.title || act.id}`}
                     >
                       <div className="tt-act-title" style={{ fontWeight: 700, fontSize: '0.9rem', color: '#000000' }}>
                         {act.title || 'Scheduled Activity'}
@@ -201,14 +211,24 @@ const WeeklyScheduleGrid = ({
                     <td
                       key={`empty-${dayName}-${k}`}
                       className="tt-empty-cell"
-                      style={{ border: '1px solid #000' }}
+                      style={{ border: '1px solid #cbd5e1', cursor: 'pointer' }}
                       onClick={() =>
                         onAddActivityOnSlot &&
                         onAddActivityOnSlot(dayName, currentSlot.slotId)
                       }
-                      title={`Click to schedule activity on ${dayName} at ${currentSlot.startTime}`}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          onAddActivityOnSlot &&
+                          onAddActivityOnSlot(dayName, currentSlot.slotId);
+                        }
+                      }}
+                      tabIndex={0}
+                      role="button"
+                      aria-label={`Schedule activity on ${dayName} at ${currentSlot.startTime}`}
+                      title={`Click or press Enter to schedule activity on ${dayName} at ${currentSlot.startTime}`}
                     >
-                      <span style={{ fontSize: '0.75rem', color: '#cbd5e1' }}>+</span>
+                      <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>+</span>
                     </td>
                   );
                   k++;
@@ -219,7 +239,7 @@ const WeeklyScheduleGrid = ({
                 <tr key={dayName}>
                   <td
                     className="tt-grid-day-cell"
-                    style={{ fontWeight: 700, border: '1px solid #000', textAlign: 'center' }}
+                    style={{ fontWeight: 700, border: '1px solid #cbd5e1', textAlign: 'center', backgroundColor: '#f8fafc' }}
                   >
                     {dayLabel}
                   </td>

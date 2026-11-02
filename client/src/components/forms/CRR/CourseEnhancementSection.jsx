@@ -1,89 +1,58 @@
 import React from 'react';
+import Icon from '../../common/Icon';
 
 const CourseEnhancementSection = ({ data, onChange }) => {
-  const sectionHeaderStyle = {
-    marginBottom: '1.5rem',
-    color: '#1e293b',
-    fontSize: '1.2rem',
-    fontWeight: '600',
-    borderBottom: '2px solid #e2e8f0',
-    paddingBottom: '0.75rem'
-  };
-
-  const textareaStyle = {
-    width: '100%',
-    padding: '0.6rem 0.8rem',
-    border: '1px solid #cbd5e1',
-    borderRadius: '6px',
-    backgroundColor: '#ffffff',
-    color: '#1e293b',
-    fontSize: '0.95rem',
-    boxSizing: 'border-box',
-    outline: 'none',
-    resize: 'vertical',
-    minHeight: '80px',
-    lineHeight: '1.5',
-    marginTop: '0.5rem',
-    transition: 'border-color 0.2s'
-  };
-
-  const labelStyle = {
-    display: 'flex',
-    flexDirection: 'column',
-    marginBottom: '2rem'
-  };
-
-  const questionTitleStyle = {
-    color: '#334155',
-    fontSize: '0.95rem',
-    fontWeight: '600',
-    marginBottom: '0.5rem'
-  };
-
   return (
-    <div style={{ marginBottom: '2.5rem' }}>
-      <h3 style={sectionHeaderStyle}>Course Enhancement</h3>
-      
-      <div>
-        
-        <div style={labelStyle}>
-          <div style={questionTitleStyle}>
-            1. Course Enhancement / Improvement
-          </div>
-          <textarea 
-            style={textareaStyle} 
-            value={data.courseEnhancementComment || ''} 
-            onChange={(e) => onChange('courseEnhancement', { ...data, courseEnhancementComment: e.target.value })}
-            placeholder="Enter details..."
-          />
-        </div>
-
-        <div style={labelStyle}>
-          <div style={questionTitleStyle}>
-            2. Implementation of changes proposed in earlier Course Review Reports
-          </div>
-          <textarea 
-            style={textareaStyle} 
-            value={data.implementationComments || ''} 
-            onChange={(e) => onChange('courseEnhancement', { ...data, implementationComments: e.target.value })}
-            placeholder="Enter details..."
-          />
-        </div>
-
-        <div style={labelStyle}>
-          <div style={questionTitleStyle}>
-            3. Continuing appropriateness of the Course Curriculum
-          </div>
-          <textarea 
-            style={textareaStyle} 
-            value={data.appropriatenessComments || ''} 
-            onChange={(e) => onChange('courseEnhancement', { ...data, appropriatenessComments: e.target.value })}
-            placeholder="Enter details..."
-          />
-        </div>
-
+    <section className="cfes-crr-card" aria-labelledby="crr-enhancement-heading">
+      <div className="cfes-crr-card-header">
+        <h2 id="crr-enhancement-heading" className="cfes-crr-card-title">
+          <Icon name="refresh" size={18} />
+          <span>Continuous Quality Improvement (CQI)</span>
+        </h2>
+        <span className="cfes-crr-card-tag">Course Enhancement</span>
       </div>
-    </div>
+
+      <div>
+        <div className="cfes-crr-enhancement-block">
+          <label htmlFor="crr-enhancement-comment" className="cfes-crr-enhancement-title" style={{ display: 'block' }}>
+            1. Course Enhancement / Improvement Actions for Next Offering
+          </label>
+          <textarea
+            id="crr-enhancement-comment"
+            className="cfes-crr-textarea"
+            value={data.courseEnhancementComment || ''}
+            onChange={(e) => onChange('courseEnhancement', { ...data, courseEnhancementComment: e.target.value })}
+            placeholder="Document concrete pedagogical improvements, lab revisions, or pedagogical enhancements..."
+          />
+        </div>
+
+        <div className="cfes-crr-enhancement-block">
+          <label htmlFor="crr-implementation-comments" className="cfes-crr-enhancement-title" style={{ display: 'block' }}>
+            2. Implementation of Changes Proposed in Earlier Course Review Reports
+          </label>
+          <textarea
+            id="crr-implementation-comments"
+            className="cfes-crr-textarea"
+            value={data.implementationComments || ''}
+            onChange={(e) => onChange('courseEnhancement', { ...data, implementationComments: e.target.value })}
+            placeholder="Assess how recommendations from the previous semester were incorporated..."
+          />
+        </div>
+
+        <div className="cfes-crr-enhancement-block">
+          <label htmlFor="crr-appropriateness-comments" className="cfes-crr-enhancement-title" style={{ display: 'block' }}>
+            3. Continuing Appropriateness of the Course Curriculum &amp; Textbooks
+          </label>
+          <textarea
+            id="crr-appropriateness-comments"
+            className="cfes-crr-textarea"
+            value={data.appropriatenessComments || ''}
+            onChange={(e) => onChange('courseEnhancement', { ...data, appropriatenessComments: e.target.value })}
+            placeholder="Review textbook relevancy, software versions, and topic alignment with emerging trends..."
+          />
+        </div>
+      </div>
+    </section>
   );
 };
 

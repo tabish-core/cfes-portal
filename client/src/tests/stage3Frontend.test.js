@@ -71,7 +71,7 @@ const uploadOfferingDocument = async (offeringId, payload) => {
   return data;
 };
 
-const getCourseFileById = async (fileId) => {
+const _getCourseFileById = async (fileId) => {
   const { data } = await mockApi.get(`/course-files/${fileId}/view`);
   return data.data;
 };

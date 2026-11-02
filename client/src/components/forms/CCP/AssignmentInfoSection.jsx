@@ -1,36 +1,5 @@
 import React from 'react';
-
-const inputStyle = {
-  padding: '0.5rem 0.8rem',
-  border: '1px solid #cbd5e1',
-  backgroundColor: '#ffffff',
-  color: '#1e293b',
-  borderRadius: '6px',
-  fontSize: '0.9rem',
-  outline: 'none',
-  colorScheme: 'light',
-  width: '100%',
-  boxSizing: 'border-box',
-};
-
-const inputErrorStyle = {
-  ...inputStyle,
-  border: '1px solid #ef4444',
-  backgroundColor: '#fef2f2',
-};
-
-const labelStyle = {
-  marginBottom: '0.3rem',
-  fontSize: '0.8rem',
-  fontWeight: '600',
-  color: '#475569',
-  display: 'block',
-};
-
-const labelErrorStyle = {
-  ...labelStyle,
-  color: '#b91c1c',
-};
+import Icon from '../../common/Icon';
 
 /**
  * AssignmentInfoSection — Header details for CCP / Class Project
@@ -51,43 +20,40 @@ const AssignmentInfoSection = ({ data, onChange, validationErrors = [] }) => {
   const getError = (key) => validationErrors.find((e) => e.field === `headerInfo.${key}`)?.message;
 
   return (
-    <div style={{ marginBottom: '2rem' }}>
-      <h3
-        style={{
-          fontSize: '1rem',
-          fontWeight: '700',
-          color: '#1e293b',
-          marginBottom: '1rem',
-          borderBottom: '2px solid #e2e8f0',
-          paddingBottom: '0.5rem',
-        }}
-      >
-        Assignment Information
-      </h3>
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-          gap: '1rem',
-        }}
-      >
+    <section className="cfes-ccp-card" aria-labelledby="ccp-assignment-info-heading">
+      <div className="cfes-ccp-card-header">
+        <h2 id="ccp-assignment-info-heading" className="cfes-ccp-card-title">
+          <Icon name="document" size={18} />
+          <span>Section A: Assignment Information</span>
+        </h2>
+        <span className="cfes-ccp-card-tag">Project Overview</span>
+      </div>
+
+      <div className="cfes-ccp-grid-info">
         {fields.map((field) => {
           const isInvalid = hasError(field.key);
+          const inputId = `ccp-info-${field.key}`;
           return (
-            <div key={field.key}>
-              <label style={isInvalid ? labelErrorStyle : labelStyle}>
+            <div key={field.key} className="cfes-ccp-form-group">
+              <label
+                htmlFor={inputId}
+                className={`cfes-ccp-label ${isInvalid ? 'cfes-ccp-label--error' : ''}`}
+              >
                 {field.label}
-                {field.required && <span style={{ color: '#ef4444', marginLeft: '4px' }}>*</span>}
+                {field.required && <span className="cfes-ccp-required">*</span>}
               </label>
               <input
+                id={inputId}
                 type={field.type || 'text'}
                 value={data[field.key] || ''}
                 onChange={(e) => onChange(field.key, e.target.value)}
                 placeholder={field.placeholder || `Enter ${field.label}`}
-                style={isInvalid ? inputErrorStyle : inputStyle}
+                className={`cfes-ccp-input ${isInvalid ? 'cfes-ccp-input--error' : ''}`}
+                aria-required={field.required}
+                aria-invalid={isInvalid}
               />
               {isInvalid && (
-                <span style={{ fontSize: '0.75rem', color: '#ef4444', marginTop: '0.2rem', display: 'block' }}>
+                <span className="cfes-ccp-error-text" role="alert">
                   {getError(field.key)}
                 </span>
               )}
@@ -95,7 +61,7 @@ const AssignmentInfoSection = ({ data, onChange, validationErrors = [] }) => {
           );
         })}
       </div>
-    </div>
+    </section>
   );
 };
 

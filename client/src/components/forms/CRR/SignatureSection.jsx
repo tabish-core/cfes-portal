@@ -1,135 +1,69 @@
 import React from 'react';
+import Icon from '../../common/Icon';
 
 const SignatureSection = ({ data, onChange, facultyName }) => {
-  const sectionHeaderStyle = {
-    marginBottom: '1.5rem',
-    color: '#1e293b',
-    fontSize: '1.2rem',
-    fontWeight: '600',
-    borderBottom: '2px solid #e2e8f0',
-    paddingBottom: '0.75rem'
-  };
-
-  const containerStyle = {
-    marginTop: '1rem',
-    display: 'flex',
-    flexDirection: 'row',
-    justifyContent: 'flex-start',
-    flexWrap: 'wrap',
-    gap: '4rem'
-  };
-
-  const signatureBoxStyle = {
-    textAlign: 'center', 
-    width: '250px',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center'
-  };
-
-  const signatureLineStyle = {
-    height: '80px',
-    width: '100%',
-    borderBottom: '2px solid #cbd5e1',
-    marginBottom: '0.5rem',
-    display: 'flex',
-    alignItems: 'flex-end',
-    justifyContent: 'center',
-    color: '#94a3b8',
-    fontStyle: 'italic',
-    fontSize: '0.9rem',
-    paddingBottom: '0.5rem'
-  };
-
-  const nameStyle = { 
-    fontSize: '1rem', 
-    fontWeight: '700', 
-    color: '#1e293b', 
-    marginTop: '0.5rem', 
-    textTransform: 'uppercase',
-    minHeight: '24px'
-  };
-
-  const roleStyle = { 
-    fontSize: '0.85rem', 
-    color: '#64748b', 
-    marginTop: '0.25rem' 
-  };
-
-  const dateContainerStyle = {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    marginTop: '1.5rem',
-    width: '100%'
-  };
-
-  const dateInputStyle = {
-    padding: '0.6rem 0.8rem',
-    border: '1px solid #cbd5e1',
-    backgroundColor: '#ffffff',
-    color: '#1e293b',
-    borderRadius: '6px',
-    fontSize: '0.95rem',
-    outline: 'none',
-    textAlign: 'center',
-    width: '100%',
-    boxSizing: 'border-box',
-    transition: 'border-color 0.2s'
-  };
-
   return (
-    <div style={{ marginBottom: '1rem' }}>
-      <h3 style={sectionHeaderStyle}>Instructor Information</h3>
-      
-      <div style={containerStyle}>
-        
-        {/* Instructor Signature Block */}
-        <div style={signatureBoxStyle}>
-          <div style={signatureLineStyle}>
-            Signature
+    <section className="cfes-crr-card" aria-labelledby="crr-signatures-heading">
+      <div className="cfes-crr-card-header">
+        <h2 id="crr-signatures-heading" className="cfes-crr-card-title">
+          <Icon name="users" size={18} />
+          <span>Institutional Review &amp; Signatures</span>
+        </h2>
+        <span className="cfes-crr-card-tag">Formal Endorsements</span>
+      </div>
+
+      <div className="cfes-crr-signatures-grid">
+        {/* Course Instructor */}
+        <div className="cfes-crr-signature-box">
+          <div className="cfes-crr-signature-line">
+            Digital Signature / Endorsement
           </div>
-          <div style={nameStyle}>
+          <div className="cfes-crr-signature-name">
             {facultyName || 'Course Instructor'}
           </div>
-          <div style={roleStyle}>
-            (COURSE INSTRUCTOR)
+          <div className="cfes-crr-signature-role">
+            Course Instructor
           </div>
-          <div style={dateContainerStyle}>
-            <label style={{ marginBottom: '0.35rem', fontSize: '0.85rem', fontWeight: '600', color: '#475569', alignSelf: 'flex-start' }}>Date</label>
-            <input 
-              type="date" 
-              style={dateInputStyle} 
-              value={data.instructorDate || ''} 
+          <div className="cfes-crr-signature-date">
+            <label htmlFor="crr-instructor-date" className="cfes-crr-signature-date-label">
+              Instructor Review Date
+            </label>
+            <input
+              id="crr-instructor-date"
+              type="date"
+              className="cfes-crr-signature-date-input"
+              value={data.instructorDate || ''}
               onChange={(e) => onChange('signatures', { ...data, instructorDate: e.target.value })}
             />
           </div>
         </div>
 
-        {/* Head of Department Signature Block */}
-        <div style={signatureBoxStyle}>
-          <div style={signatureLineStyle}>
-            Signature
+        {/* Head of Department */}
+        <div className="cfes-crr-signature-box">
+          <div className="cfes-crr-signature-line">
+            Departmental Approval
           </div>
-          <div style={nameStyle}>
+          <div className="cfes-crr-signature-name">
             Head of Department
           </div>
-          <div style={roleStyle}>
-            (HEAD OF DEPARTMENT)
+          <div className="cfes-crr-signature-role">
+            Head of Department (HOD)
           </div>
-          <div style={dateContainerStyle}>
-            <label style={{ marginBottom: '0.35rem', fontSize: '0.85rem', fontWeight: '600', color: '#475569', alignSelf: 'flex-start' }}>Date</label>
-            <input 
-              type="date" 
-              style={dateInputStyle} 
-              value={data.hodDate || ''} 
+          <div className="cfes-crr-signature-date">
+            <label htmlFor="crr-hod-date" className="cfes-crr-signature-date-label">
+              HOD Endorsement Date
+            </label>
+            <input
+              id="crr-hod-date"
+              type="date"
+              className="cfes-crr-signature-date-input"
+              value={data.hodDate || ''}
               onChange={(e) => onChange('signatures', { ...data, hodDate: e.target.value })}
             />
           </div>
         </div>
-
       </div>
-    </div>
+    </section>
   );
 };
 

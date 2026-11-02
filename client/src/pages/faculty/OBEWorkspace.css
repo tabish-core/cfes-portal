@@ -1,0 +1,461 @@
+/**
+ * OBEWorkspace.css
+ * CFES Faculty Portal — Outcome-Based Education (OBE) Workspace
+ * Compact, institutional, ERP-style styling aligned with CFES tokens.
+ */
+
+.obe-workspace-container {
+  width: 100%;
+  max-width: 1440px;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+/* ── Top Header & Context Bar ── */
+.obe-header-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--cfes-space-3);
+  margin-bottom: var(--cfes-space-5);
+  padding-bottom: var(--cfes-space-4);
+  border-bottom: 1px solid var(--cfes-slate-200);
+}
+
+.obe-header-left {
+  display: flex;
+  align-items: center;
+  gap: var(--cfes-space-4);
+  flex-wrap: wrap;
+}
+
+.obe-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--cfes-space-2);
+  color: var(--cfes-slate-600);
+  font-size: var(--cfes-font-sm);
+  font-weight: 600;
+  text-decoration: none;
+  padding: 0.45rem 0.8rem;
+  background-color: var(--cfes-white);
+  border: 1px solid var(--cfes-slate-300);
+  border-radius: var(--cfes-radius-md);
+  transition: all 0.15s ease;
+}
+
+.obe-back-link:hover {
+  color: var(--cfes-navy-800);
+  background-color: var(--cfes-slate-50);
+  border-color: var(--cfes-slate-400);
+}
+
+.obe-title-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.obe-heading {
+  font-size: var(--cfes-font-xl);
+  font-weight: 700;
+  color: var(--cfes-slate-900);
+  margin: 0;
+  letter-spacing: -0.015em;
+  line-height: 1.2;
+}
+
+.obe-context-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--cfes-space-2);
+  font-size: var(--cfes-font-xs);
+  font-weight: 600;
+  color: var(--cfes-navy-800);
+  background-color: var(--cfes-navy-50);
+  padding: 0.25rem 0.65rem;
+  border-radius: var(--cfes-radius-full);
+  border: 1px solid var(--cfes-navy-100);
+}
+
+/* ── Workspace 2-Column Responsive Layout ── */
+.obe-workspace-layout {
+  display: flex;
+  gap: var(--cfes-space-5);
+  align-items: flex-start;
+  min-height: 600px;
+}
+
+/* ── Sidebar Navigation ── */
+.obe-sidebar-nav {
+  width: 230px;
+  flex-shrink: 0;
+  background: var(--cfes-white);
+  border: 1px solid var(--cfes-slate-200);
+  border-radius: var(--cfes-radius-lg);
+  padding: var(--cfes-space-3);
+  box-shadow: var(--cfes-shadow-xs);
+  display: flex;
+  flex-direction: column;
+  gap: var(--cfes-space-1);
+  position: sticky;
+  top: 1rem;
+}
+
+.obe-sidebar-label {
+  font-size: var(--cfes-font-xs);
+  font-weight: 700;
+  color: var(--cfes-slate-500);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: var(--cfes-space-1) var(--cfes-space-2) var(--cfes-space-2) var(--cfes-space-2);
+  border-bottom: 1px solid var(--cfes-slate-100);
+  margin-bottom: var(--cfes-space-1);
+}
+
+.obe-step-btn {
+  text-align: left;
+  padding: 0.6rem 0.85rem;
+  border: 1px solid transparent;
+  border-radius: var(--cfes-radius-md);
+  background-color: transparent;
+  color: var(--cfes-slate-700);
+  font-size: var(--cfes-font-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.obe-step-btn:hover {
+  background-color: var(--cfes-slate-50);
+  color: var(--cfes-slate-900);
+}
+
+.obe-step-btn--active {
+  background-color: var(--cfes-navy-50) !important;
+  color: var(--cfes-navy-800) !important;
+  font-weight: 600 !important;
+  border-color: var(--cfes-navy-100) !important;
+  border-left: 3px solid var(--cfes-navy-700) !important;
+}
+
+/* ── Main Content Area ── */
+.obe-content-area {
+  flex: 1;
+  min-width: 0;
+  background-color: var(--cfes-white);
+  border: 1px solid var(--cfes-slate-200);
+  border-radius: var(--cfes-radius-lg);
+  box-shadow: var(--cfes-shadow-xs);
+  padding: var(--cfes-space-5);
+  box-sizing: border-box;
+}
+
+.obe-content-area--marks {
+  padding: var(--cfes-space-4);
+  background-color: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+/* ── Section Cards inside Steps ── */
+.obe-section-card {
+  background: var(--cfes-white);
+  border: 1px solid var(--cfes-slate-200);
+  border-radius: var(--cfes-radius-md);
+  padding: var(--cfes-space-4);
+  margin-bottom: var(--cfes-space-5);
+}
+
+.obe-section-card:last-child {
+  margin-bottom: 0;
+}
+
+.obe-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--cfes-space-2);
+  margin-bottom: var(--cfes-space-3);
+  padding-bottom: var(--cfes-space-2);
+  border-bottom: 1px solid var(--cfes-slate-100);
+}
+
+.obe-section-title {
+  font-size: var(--cfes-font-md);
+  font-weight: 700;
+  color: var(--cfes-slate-900);
+  margin: 0;
+}
+
+.obe-section-subtitle {
+  font-size: var(--cfes-font-xs);
+  color: var(--cfes-slate-500);
+  margin: 0;
+}
+
+/* ── Grids ── */
+.obe-grid-info {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--cfes-space-3);
+  background: var(--cfes-slate-50);
+  border: 1px solid var(--cfes-slate-200);
+  border-radius: var(--cfes-radius-md);
+  padding: var(--cfes-space-3) var(--cfes-space-4);
+}
+
+.obe-info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.obe-info-label {
+  font-size: var(--cfes-font-xs);
+  font-weight: 600;
+  color: var(--cfes-slate-500);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.obe-info-value {
+  font-size: var(--cfes-font-sm);
+  font-weight: 600;
+  color: var(--cfes-slate-800);
+}
+
+.obe-grid-4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--cfes-space-4);
+}
+
+.obe-grid-6 {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: var(--cfes-space-3);
+}
+
+.obe-add-student-form {
+  display: flex;
+  align-items: center;
+  gap: var(--cfes-space-3);
+  margin-bottom: var(--cfes-space-4);
+  background: var(--cfes-slate-50);
+  border: 1px solid var(--cfes-slate-200);
+  border-radius: var(--cfes-radius-md);
+  padding: var(--cfes-space-3);
+  flex-wrap: wrap;
+}
+
+.obe-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.obe-label {
+  font-size: var(--cfes-font-xs);
+  font-weight: 600;
+  color: var(--cfes-slate-700);
+}
+
+.obe-input,
+.obe-select {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--cfes-slate-300);
+  background-color: var(--cfes-white);
+  color: var(--cfes-slate-800);
+  border-radius: var(--cfes-radius-md);
+  font-size: var(--cfes-font-sm);
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.obe-input:focus,
+.obe-select:focus {
+  border-color: var(--cfes-blue-500);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.12);
+}
+
+/* ── Config Rows (CLO & GA) ── */
+.obe-config-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cfes-space-2);
+}
+
+.obe-config-row {
+  display: flex;
+  align-items: center;
+  gap: var(--cfes-space-2);
+  background: var(--cfes-slate-50);
+  border: 1px solid var(--cfes-slate-200);
+  border-radius: var(--cfes-radius-md);
+  padding: var(--cfes-space-2) var(--cfes-space-3);
+}
+
+.obe-code-input {
+  width: 90px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.obe-desc-input {
+  flex: 1;
+}
+
+.obe-delete-btn {
+  background: none;
+  border: none;
+  color: var(--cfes-slate-400);
+  cursor: pointer;
+  padding: 0.35rem 0.5rem;
+  border-radius: var(--cfes-radius-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.obe-delete-btn:hover {
+  color: var(--cfes-status-danger-solid);
+  background-color: var(--cfes-status-danger-bg);
+}
+
+/* ── Standard OBE Table ── */
+.obe-table-wrapper {
+  overflow-x: auto;
+  border: 1px solid var(--cfes-slate-200);
+  border-radius: var(--cfes-radius-md);
+  background: var(--cfes-white);
+}
+
+.obe-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--cfes-font-sm);
+  text-align: left;
+}
+
+.obe-table th {
+  padding: 0.65rem 0.85rem;
+  background-color: var(--cfes-slate-100);
+  border-bottom: 2px solid var(--cfes-slate-300);
+  color: var(--cfes-slate-700);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.obe-table td {
+  padding: 0.6rem 0.85rem;
+  border-bottom: 1px solid var(--cfes-slate-200);
+  vertical-align: middle;
+}
+
+.obe-table tbody tr:hover {
+  background-color: var(--cfes-slate-50);
+}
+
+/* ── Action Bar at Bottom ── */
+.obe-action-bar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--cfes-space-3);
+  margin-top: var(--cfes-space-5);
+  padding-top: var(--cfes-space-4);
+  border-top: 1px solid var(--cfes-slate-200);
+}
+
+/* ── Responsive Adaptations ── */
+@media (max-width: 1023px) {
+  .obe-workspace-layout {
+    flex-direction: column;
+    gap: var(--cfes-space-4);
+  }
+
+  .obe-sidebar-nav {
+    width: 100%;
+    position: static;
+    flex-direction: row;
+    overflow-x: auto;
+    padding: var(--cfes-space-2);
+    gap: var(--cfes-space-2);
+  }
+
+  .obe-sidebar-label {
+    display: none;
+  }
+
+  .obe-step-btn {
+    white-space: nowrap;
+    width: auto;
+    padding: 0.45rem 0.75rem;
+  }
+
+  .obe-step-btn--active {
+    border-left: 1px solid var(--cfes-navy-100) !important;
+    border-bottom: 3px solid var(--cfes-navy-700) !important;
+  }
+
+  .obe-grid-6 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .obe-grid-4 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .obe-grid-6 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .obe-content-area {
+    padding: var(--cfes-space-3);
+  }
+
+  .obe-section-card {
+    padding: var(--cfes-space-3);
+  }
+
+  .obe-config-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .obe-code-input {
+    width: 100%;
+    text-align: left;
+  }
+}
+
+@media (max-width: 390px) {
+  .obe-grid-4,
+  .obe-grid-6 {
+    grid-template-columns: 1fr;
+  }
+
+  .obe-header-container {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .obe-back-link {
+    width: 100%;
+    justify-content: center;
+  }
+}

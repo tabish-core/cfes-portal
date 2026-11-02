@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 import api from '../../../api/axios';
 import useToast from '../../../hooks/useToast';
+import Icon from '../../common/Icon';
 import UniversityHeader from './UniversityHeader';
 import CourseSummarySection from './CourseSummarySection';
 import BasicInfoSection from './BasicInfoSection';
@@ -11,6 +13,7 @@ import TextbooksTable, { EMPTY_ROW as EMPTY_TEXTBOOK_ROW } from './TextbooksTabl
 import OBATable, { EMPTY_ROW as EMPTY_OBA_ROW } from './OBATable';
 import WeeklyPlanTable, { EMPTY_ROW as EMPTY_WEEKLY_ROW } from './WeeklyPlanTable';
 import GradingPolicySection from './GradingPolicySection';
+import FormActionBar from '../FormActionBar';
 import { syncCISDocument, getOfferingFiles } from '../../../services/courseFile.service';
 
 /* ── Initial State Defaults ──────────────────────────────── */
@@ -105,6 +108,24 @@ const CourseInformationSheetPage = ({ courseId, offeringId }) => {
   // Stage 3 Google Drive state
   const [isSyncingDrive, setIsSyncingDrive] = useState(false);
   const [driveFileLink, setDriveFileLink] = useState('');
+
+  // Weekly Plan focus support (when routed from /form/WP or #weekly-plan)
+  const location = useLocation();
+  const isWeeklyPlanFocused =
+    (typeof window !== 'undefined' && window.location.hash === '#weekly-plan') ||
+    location?.state?.focusSection === 'weekly-plan';
+
+  useEffect(() => {
+    if (isWeeklyPlanFocused) {
+      const timer = setTimeout(() => {
+        const el = document.getElementById('weekly-plan');
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [isWeeklyPlanFocused]);
 
   const handleImportClick = () => {
     if (fileInputRef.current) {
@@ -232,7 +253,7 @@ const CourseInformationSheetPage = ({ courseId, offeringId }) => {
         })
         .catch(() => {});
     }
-  }, [courseId, offeringId]);
+  }, [courseId, offeringId, toast]);
 
   const handleSyncToDrive = async () => {
     if (!offeringId) {
@@ -650,158 +671,62 @@ const CourseInformationSheetPage = ({ courseId, offeringId }) => {
           onRemoveRow={handleRemoveObaRow}
         />
 
-        <WeeklyPlanTable
-          data={weeklyPlan}
-          onChange={handleTableChange(setWeeklyPlan)}
-          onAddRow={handleAddWeeklyRow}
-          onRemoveRow={handleRemoveWeeklyRow}
-        />
+        <div id="weekly-plan" style={{ scrollMarginTop: '2rem', marginBottom: '1.5rem' }}>
+          {isWeeklyPlanFocused && (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.75rem',
+                padding: '0.85rem 1rem',
+                marginBottom: '1rem',
+                backgroundColor: 'var(--cfes-blue-50, #eff6ff)',
+                border: '1px solid var(--cfes-blue-100, #dbeafe)',
+                borderRadius: '8px',
+                color: 'var(--cfes-blue-700, #1d4ed8)',
+                fontSize: '0.875rem',
+              }}
+              role="status"
+            >
+              <Icon name="document" size={18} />
+              <span>
+                <strong>Weekly Plan Section:</strong> The Weekly Plan is an integral part of the Course Information Sheet (CIS). Any changes saved here update this offering&apos;s official CIS document.
+              </span>
+            </div>
+          )}
+          <WeeklyPlanTable
+            data={weeklyPlan}
+            onChange={handleTableChange(setWeeklyPlan)}
+            onAddRow={handleAddWeeklyRow}
+            onRemoveRow={handleRemoveWeeklyRow}
+          />
+        </div>
 
         <GradingPolicySection
           data={grading}
           onChange={handleSectionChange(setGrading, 'gradingPolicy')}
         />
 
-        <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'flex-end', gap: '1rem', flexWrap: 'wrap' }}>
-          <button
-            type="button"
-            onClick={handleClearForm}
-            disabled={isSaving || isExporting || isImporting}
-            style={{
-              padding: '0.75rem 1.5rem',
-              backgroundColor: '#f8fafc',
-              color: '#334155',
-              border: '1px solid #cbd5e1',
-              borderRadius: '6px',
-              fontSize: '0.95rem',
-              cursor: (isSaving || isExporting || isImporting) ? 'wait' : 'pointer',
-              fontWeight: '600',
-              transition: 'all 0.2s'
-            }}
-            onMouseOver={(e) => { if (!isSaving && !isExporting && !isImporting) e.currentTarget.style.backgroundColor = '#e2e8f0'; }}
-            onMouseOut={(e) => { if (!isSaving && !isExporting && !isImporting) e.currentTarget.style.backgroundColor = '#f8fafc'; }}
-          >
-            Clear Form
-          </button>
-
-          <button
-            type="button"
-            onClick={() => handleDownload('docx')}
-            disabled={isExporting === 'docx' || isSaving}
-            style={{
-              padding: '0.75rem 1.5rem',
-              backgroundColor: '#f8fafc',
-              color: '#334155',
-              border: '1px solid #cbd5e1',
-              borderRadius: '6px',
-              fontSize: '0.95rem',
-              cursor: isExporting === 'docx' ? 'wait' : 'pointer',
-              fontWeight: '600',
-              transition: 'all 0.2s'
-            }}
-            onMouseOver={(e) => { if (isExporting !== 'docx') e.currentTarget.style.backgroundColor = '#e2e8f0'; }}
-            onMouseOut={(e) => { if (isExporting !== 'docx') e.currentTarget.style.backgroundColor = '#f8fafc'; }}
-          >
-            {isExporting === 'docx' ? 'Generating...' : 'Download Word (.docx)'}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => handleDownload('pdf')}
-            disabled={isExporting === 'pdf' || isSaving}
-            style={{
-              padding: '0.75rem 1.5rem',
-              backgroundColor: '#fef2f2',
-              color: '#991b1b',
-              border: '1px solid #fecaca',
-              borderRadius: '6px',
-              fontSize: '0.95rem',
-              cursor: isExporting === 'pdf' ? 'wait' : 'pointer',
-              fontWeight: '600',
-              transition: 'all 0.2s'
-            }}
-            onMouseOver={(e) => { if (isExporting !== 'pdf') e.currentTarget.style.backgroundColor = '#fee2e2'; }}
-            onMouseOut={(e) => { if (isExporting !== 'pdf') e.currentTarget.style.backgroundColor = '#fef2f2'; }}
-          >
-            {isExporting === 'pdf' ? 'Generating...' : 'Download PDF'}
-          </button>
-
-          {offeringId && (
-            <button
-              type="button"
-              onClick={handleSyncToDrive}
-              disabled={isSyncingDrive || isSaving || isExporting}
-              style={{
-                padding: '0.75rem 1.4rem',
-                backgroundColor: '#eff6ff',
-                color: '#1d4ed8',
-                border: '1px solid #bfdbfe',
-                borderRadius: '6px',
-                fontSize: '0.95rem',
-                cursor: isSyncingDrive ? 'wait' : 'pointer',
-                fontWeight: '600',
-                transition: 'all 0.2s',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.4rem',
-              }}
-              onMouseOver={(e) => {
-                if (!isSyncingDrive) e.currentTarget.style.backgroundColor = '#dbeafe';
-              }}
-              onMouseOut={(e) => {
-                if (!isSyncingDrive) e.currentTarget.style.backgroundColor = '#eff6ff';
-              }}
-              title="Save and synchronize CIS to Google Drive"
-            >
-              {isSyncingDrive ? 'Syncing to Drive...' : '⚡ Sync to Google Drive'}
-            </button>
-          )}
-
-          {driveFileLink && (
-            <a
-              href={driveFileLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                padding: '0.75rem 1.25rem',
-                backgroundColor: '#f0fdf4',
-                color: '#166534',
-                border: '1px solid #bbf7d0',
-                borderRadius: '6px',
-                fontSize: '0.95rem',
-                fontWeight: '600',
-                textDecoration: 'none',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.35rem',
-              }}
-              title="Open synchronized document in Google Drive"
-            >
-              <span>View in Drive</span>
-              <span style={{ fontSize: '0.8rem' }}>↗</span>
-            </a>
-          )}
-
-          <button
-            type="submit"
-            disabled={isSaving || isExporting}
-            style={{
-              padding: '0.75rem 2rem',
-              backgroundColor: isSaving ? '#94a3b8' : '#3949ab',
-              color: 'white',
-              border: 'none',
-              borderRadius: '6px',
-              fontSize: '1rem',
-              cursor: isSaving ? 'wait' : 'pointer',
-              fontWeight: '600',
-              transition: 'all 0.2s'
-            }}
-            onMouseOver={(e) => { if (!isSaving) e.currentTarget.style.backgroundColor = '#303f9f'; }}
-            onMouseOut={(e) => { if (!isSaving) e.currentTarget.style.backgroundColor = '#3949ab'; }}
-          >
-            {isSaving ? 'Saving...' : 'Save Course Information Sheet'}
-          </button>
-        </div>
+        <FormActionBar
+          onClear={handleClearForm}
+          clearDisabled={isSaving || Boolean(isExporting) || isImporting}
+          onExportDocx={() => handleDownload('docx')}
+          isExportingDocx={isExporting === 'docx'}
+          docxDisabled={isExporting === 'docx' || isSaving}
+          onExportPdf={() => handleDownload('pdf')}
+          isExportingPdf={isExporting === 'pdf'}
+          pdfDisabled={isExporting === 'pdf' || isSaving}
+          showSyncDrive={Boolean(offeringId)}
+          onSyncDrive={handleSyncToDrive}
+          isSyncingDrive={isSyncingDrive}
+          syncDriveDisabled={isSyncingDrive || isSaving || Boolean(isExporting)}
+          syncDriveTitle="Save and synchronize CIS to Google Drive"
+          driveWebViewLink={driveFileLink}
+          saveButtonType="submit"
+          saveLabel="Save Course Information Sheet"
+          isSaving={isSaving}
+          saveDisabled={isSaving || Boolean(isExporting)}
+        />
       </form>
     </div>
   );

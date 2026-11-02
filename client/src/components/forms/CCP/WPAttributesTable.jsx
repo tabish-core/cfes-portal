@@ -1,36 +1,5 @@
 import React from 'react';
-
-const cellStyle = {
-  padding: '0.65rem 0.75rem',
-  border: '1px solid #e2e8f0',
-  color: '#334155',
-  fontSize: '0.88rem',
-  verticalAlign: 'top',
-};
-
-const thStyle = {
-  ...cellStyle,
-  fontWeight: '700',
-  color: '#0f172a',
-  backgroundColor: '#f1f5f9',
-};
-
-const textareaStyle = {
-  width: '100%',
-  padding: '0.5rem 0.7rem',
-  border: '1px solid #cbd5e1',
-  backgroundColor: '#ffffff',
-  color: '#1e293b',
-  borderRadius: '4px',
-  fontSize: '0.85rem',
-  boxSizing: 'border-box',
-  outline: 'none',
-  colorScheme: 'light',
-  minHeight: '65px',
-  resize: 'vertical',
-  fontFamily: 'inherit',
-  lineHeight: '1.5',
-};
+import Icon from '../../common/Icon';
 
 /**
  * WPAttributesTable — Table for Washington Accord / Computing Accord
@@ -44,33 +13,39 @@ const WPAttributesTable = ({ attributes = [], onChange }) => {
   };
 
   return (
-    <div style={{ marginBottom: '2rem' }}>
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'baseline',
-          marginBottom: '1rem',
-          borderBottom: '2px solid #e2e8f0',
-          paddingBottom: '0.5rem',
-        }}
-      >
-        <h3 style={{ fontSize: '1rem', fontWeight: '700', color: '#1e293b', margin: 0 }}>
-          CCP / CEP Attributes Mapped (WP1 – WP8)
-        </h3>
-        <span style={{ fontSize: '0.78rem', color: '#64748b' }}>
-          Check &ldquo;Mapped&rdquo; for applicable attributes and provide course-specific justification
-        </span>
+    <section className="cfes-ccp-card" aria-labelledby="ccp-wp-attributes-heading">
+      <div className="cfes-ccp-card-header">
+        <h2 id="ccp-wp-attributes-heading" className="cfes-ccp-card-title">
+          <Icon name="document" size={18} />
+          <span>Section E: CCP / CEP Attributes Mapped (WP1 – WP8)</span>
+        </h2>
+        <span className="cfes-ccp-card-tag">Washington Accord / NCEAC</span>
       </div>
 
-      <div style={{ overflowX: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+      <p style={{ margin: '0 0 var(--cfes-space-4) 0', fontSize: 'var(--cfes-font-sm)', color: 'var(--cfes-slate-600)' }}>
+        Check &ldquo;Mapped&rdquo; for applicable complex problem-solving attributes and provide a course-specific justification.
+      </p>
+
+      <div
+        className="cfes-table-scroll-container"
+        tabIndex={0}
+        aria-label="Washington Accord WP1 through WP8 complex problem solving attributes table"
+        style={{
+          overflowX: 'auto',
+          width: '100%',
+          maxWidth: '100%',
+          WebkitOverflowScrolling: 'touch',
+          border: '1px solid var(--cfes-slate-300)',
+          borderRadius: 'var(--cfes-radius-lg)',
+        }}
+      >
+        <table className="cfes-ccp-wp-table" style={{ minWidth: '660px' }}>
           <thead>
             <tr>
-              <th style={{ ...thStyle, width: '65px', textAlign: 'center' }}>WP</th>
-              <th style={{ ...thStyle, width: '38%' }}>Attributes of Complex Problem Solving</th>
-              <th style={{ ...thStyle, width: '85px', textAlign: 'center' }}>Mapped</th>
-              <th style={thStyle}>Justification</th>
+              <th style={{ width: '70px', textAlign: 'center', whiteSpace: 'nowrap' }}>WP</th>
+              <th style={{ width: '40%', minWidth: '240px' }}>Attributes of Complex Problem Solving</th>
+              <th style={{ width: '90px', textAlign: 'center', whiteSpace: 'nowrap' }}>Mapped</th>
+              <th style={{ minWidth: '260px' }}>Course Justification</th>
             </tr>
           </thead>
           <tbody>
@@ -80,46 +55,37 @@ const WPAttributesTable = ({ attributes = [], onChange }) => {
                 <tr
                   key={attr.code || index}
                   style={{
-                    backgroundColor: isChecked ? '#f8fafc' : '#ffffff',
+                    backgroundColor: isChecked ? 'var(--cfes-slate-50)' : 'var(--cfes-white)',
                     transition: 'background-color 0.15s ease',
                   }}
                 >
-                  <td
-                    style={{
-                      ...cellStyle,
-                      textAlign: 'center',
-                      fontWeight: '700',
-                      color: isChecked ? '#3949ab' : '#64748b',
-                    }}
-                  >
-                    {attr.code}
+                  <td style={{ textAlign: 'center' }}>
+                    <span
+                      className={`cfes-ccp-wp-code-badge ${
+                        isChecked ? 'cfes-ccp-wp-code-badge--active' : ''
+                      }`}
+                    >
+                      {attr.code}
+                    </span>
                   </td>
-                  <td style={cellStyle}>
-                    <div style={{ fontWeight: '600', color: '#1e293b', marginBottom: '0.2rem' }}>
-                      {attr.title}
-                    </div>
+                  <td>
+                    <div className="cfes-ccp-wp-title">{attr.title}</div>
                     {attr.description && (
-                      <div style={{ fontSize: '0.78rem', color: '#64748b', lineHeight: '1.4' }}>
-                        {attr.description}
-                      </div>
+                      <div className="cfes-ccp-wp-desc">{attr.description}</div>
                     )}
                   </td>
-                  <td style={{ ...cellStyle, textAlign: 'center' }}>
+                  <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
                     <label style={{ display: 'inline-flex', cursor: 'pointer', padding: '0.25rem' }}>
                       <input
                         type="checkbox"
                         checked={isChecked}
                         onChange={(e) => handleFieldChange(index, 'isMapped', e.target.checked)}
-                        style={{
-                          width: '18px',
-                          height: '18px',
-                          accentColor: '#3949ab',
-                          cursor: 'pointer',
-                        }}
+                        className="cfes-ccp-checkbox"
+                        aria-label={`Map ${attr.code}: ${attr.title}`}
                       />
                     </label>
                   </td>
-                  <td style={cellStyle}>
+                  <td>
                     <textarea
                       value={attr.justification || ''}
                       onChange={(e) => handleFieldChange(index, 'justification', e.target.value)}
@@ -128,10 +94,8 @@ const WPAttributesTable = ({ attributes = [], onChange }) => {
                           ? 'Explain how this project addresses this complex problem attribute...'
                           : 'Enter justification (or NA if not mapped)...'
                       }
-                      style={{
-                        ...textareaStyle,
-                        border: isChecked ? '1px solid #94a3b8' : '1px solid #cbd5e1',
-                      }}
+                      className={`cfes-ccp-wp-textarea ${isChecked ? 'cfes-ccp-wp-textarea--active' : ''}`}
+                      aria-label={`Justification for ${attr.code}`}
                     />
                   </td>
                 </tr>
@@ -140,7 +104,7 @@ const WPAttributesTable = ({ attributes = [], onChange }) => {
           </tbody>
         </table>
       </div>
-    </div>
+    </section>
   );
 };
 

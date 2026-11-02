@@ -4,20 +4,11 @@
 
 .timetable-container {
   width: 100%;
+  max-width: 100%;
+  min-width: 0;
   box-sizing: border-box;
   font-family: inherit;
   color: #1e293b;
-}
-
-.grid-table-wrapper {
-  overflow-x: auto;
-  max-width: 100%;
-}
-
-.tt-grid-matrix {
-  width: 100%;
-  border-collapse: collapse;
-  min-width: 650px;
 }
 
 /* Header & Actions Bar */
@@ -286,15 +277,38 @@
 /* Visual Timetable Grid Matrix */
 .grid-table-wrapper {
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   margin: 1rem 0;
   border: 1px solid #cbd5e1;
   border-radius: 8px;
+  background-color: #ffffff;
+  box-sizing: border-box;
+}
+
+.grid-table-wrapper::-webkit-scrollbar {
+  height: 6px;
+}
+
+.grid-table-wrapper::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+.grid-table-wrapper::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+
+.grid-table-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }
 
 .tt-grid-matrix {
   width: 100%;
   border-collapse: collapse;
-  min-width: 900px;
+  min-width: 720px;
   background-color: #ffffff;
 }
 
@@ -523,6 +537,7 @@
 /* Dedicated Consulting Hours Section */
 .consulting-hours-table {
   width: 100%;
+  min-width: 600px;
   border-collapse: collapse;
   margin-top: 0.5rem;
 }

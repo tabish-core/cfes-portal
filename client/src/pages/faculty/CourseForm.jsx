@@ -1,7 +1,9 @@
-import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useState, useEffect, useCallback } from 'react';
+import { useParams, Link, Navigate } from 'react-router-dom';
 import api from '../../api/axios';
-import '../dean/Dashboard.css';
+import Icon from '../../components/common/Icon';
+import './CourseForm.css';
+
 import CourseControlReportPage from '../../components/forms/CCR/CourseControlReportPage';
 import CourseInformationSheetPage from '../../components/forms/CIS/CourseInformationSheetPage';
 import CourseCompletionCertificatePage from '../../components/forms/CCC/CourseCompletionCertificatePage';
@@ -15,11 +17,18 @@ import LecturesPage from '../../components/forms/Lectures/LecturesPage';
 import ExamUploadSection from '../../components/forms/Exam/ExamUploadSection';
 import { getOfferingFiles } from '../../services/courseFile.service';
 
+import {
+  FORM_TITLES,
+  resolveFormTitle,
+  resolveChecklistUrl,
+  resolveTemplatesUrl,
+  resolveWpRedirectUrl,
+} from '../../services/courseNavigation.service';
 
 const CourseForm = () => {
   const { courseId: paramCourseId, offeringId, formType } = useParams();
   const [offering, setOffering] = useState(null);
-  const [loadingOffering, setLoadingOffering] = useState(Boolean(offeringId));
+  const [loadingOffering, setLoadingOffering] = useState(Boolean(offeringId && offeringId !== 'undefined' && offeringId !== 'null'));
   const [examFiles, setExamFiles] = useState([]);
 
   const isAttendance = formType === 'AR';
@@ -28,95 +37,147 @@ const CourseForm = () => {
   const isMidterm = formType === 'ASSESS_MID';
   const isFinal = formType === 'ASSESS_FINAL';
 
-  const loadExamFiles = async () => {
-    if (!offeringId) return;
+  const validOfferingId = offeringId && offeringId !== 'undefined' && offeringId !== 'null' ? offeringId : null;
+  const validParamCourseId = paramCourseId && paramCourseId !== 'undefined' && paramCourseId !== 'null' ? paramCourseId : null;
+
+  const loadExamFiles = useCallback(async () => {
+    if (!validOfferingId) return;
     try {
-      const files = await getOfferingFiles(offeringId);
+      const files = await getOfferingFiles(validOfferingId);
       setExamFiles(files || []);
     } catch (err) {
       console.warn('Could not load offering files for exam:', err);
     }
-  };
+  }, [validOfferingId]);
 
   useEffect(() => {
-    if (!offeringId) return;
+    if (!validOfferingId) return;
+    let isMounted = true;
+
     const loadOffering = async () => {
       try {
         setLoadingOffering(true);
-        const { data } = await api.get(`/offerings/${offeringId}`);
-        setOffering(data.data?.offering || data.offering);
+        const { data } = await api.get(`/offerings/${validOfferingId}`);
+        if (isMounted) {
+          setOffering(data.data?.offering || data.offering);
+        }
       } catch (err) {
         console.error('Failed to load offering details:', err);
       } finally {
-        setLoadingOffering(false);
+        if (isMounted) {
+          setLoadingOffering(false);
+        }
       }
     };
+
     loadOffering();
     if (isMidterm || isFinal) {
       loadExamFiles();
     }
-  }, [offeringId, isMidterm, isFinal]);
 
-  const activeCourseId = offering?.course?._id || paramCourseId;
+    return () => {
+      isMounted = false;
+    };
+  }, [validOfferingId, isMidterm, isFinal, loadExamFiles]);
+
+  const activeCourseId = offering?.course?._id || validParamCourseId;
+
+  // ── Weekly Plan (WP) Route Redirection ───────────────────────────
+  // Weekly Plan is canonical data inside the Course Information Sheet (CIS).
+  // Redirect to CIS with anchor #weekly-plan to prevent data duplication.
+  if (formType === 'WP') {
+    const targetUrl = resolveWpRedirectUrl(validOfferingId, activeCourseId);
+    return <Navigate to={targetUrl} state={{ focusSection: 'weekly-plan' }} replace />;
+  }
+
+  const checklistUrl = resolveChecklistUrl(validOfferingId, validParamCourseId);
+  const templatesUrl = resolveTemplatesUrl(validOfferingId, validParamCourseId);
+  const currentTitle = resolveFormTitle(formType);
 
   return (
-    <div className="dashboard">
-      <div className="dashboard-header-container">
-        <Link
-          to={offeringId ? `/faculty/offering/${offeringId}` : `/faculty/course/${paramCourseId}`}
-          className="back-link"
-        >
-          ← Back to Checklist
-        </Link>
-        <h1 className="dashboard-heading">
-          {isAttendance
-            ? 'Attendance Record'
-            : isProject
-            ? 'CCP / Class Project'
-            : isLectures
-            ? 'Lectures'
-            : isMidterm
-            ? 'Midterm Exam Documents'
-            : isFinal
-            ? 'Final Exam Documents'
-            : `Submit ${formType}`}
-        </h1>
+    <div className="cfes-form-shell">
+      {/* ── Compact Top Navigation & Breadcrumbs Bar ── */}
+      <div className="cfes-form-nav-bar">
+        <div className="cfes-form-nav-left">
+          <Link
+            to={checklistUrl}
+            className="cfes-form-back-btn"
+            title="Return to Course File Checklist"
+          >
+            <Icon name="chevron-left" size={14} />
+            <span>Back to Checklist</span>
+          </Link>
+
+          <nav aria-label="Breadcrumb" className="cfes-form-breadcrumbs">
+            <Link to={checklistUrl} className="cfes-form-crumb-link">
+              Course Checklist
+            </Link>
+            <span className="cfes-form-crumb-sep">
+              <Icon name="chevron-right" size={12} />
+            </span>
+            <Link to={templatesUrl} className="cfes-form-crumb-link">
+              Course Forms
+            </Link>
+            <span className="cfes-form-crumb-sep">
+              <Icon name="chevron-right" size={12} />
+            </span>
+            <span className="cfes-form-crumb-current" aria-current="page">
+              {currentTitle}
+            </span>
+          </nav>
+        </div>
+
         {offering && (
-          <p className="dashboard-sub">
-            {offering.course?.courseCode} - {offering.course?.courseName} ({offering.semester?.name ? `${offering.semester.name} - ` : ''}Section {offering.section || 'A'})
-          </p>
+          <div className="cfes-form-context-badge">
+            <Icon name="book" size={14} />
+            <span className="cfes-form-context-code">{offering.course?.courseCode}</span>
+            <span className="cfes-form-context-title">{offering.course?.courseName}</span>
+            <span className="cfes-form-context-section">
+              ({offering.semester?.name ? `${offering.semester.name} • ` : ''}Sec {offering.section || 'A'})
+            </span>
+          </div>
         )}
       </div>
 
-      <div className="dashboard-panel">
+      {/* ── Form Content Panel ── */}
+      <div className="cfes-form-panel">
         {loadingOffering ? (
-          <div style={{ textAlign: 'center', padding: '3rem', color: '#64748b', fontStyle: 'italic' }}>
-            Loading course offering details...
+          <div className="cfes-form-loading-state">
+            <Icon name="spinner" size={24} />
+            <span>Loading course offering details...</span>
           </div>
         ) : formType === 'CCR' ? (
-          <CourseControlReportPage courseId={activeCourseId} offeringId={offeringId} />
+          <CourseControlReportPage courseId={activeCourseId} offeringId={validOfferingId} />
         ) : formType === 'CIS' ? (
-          <CourseInformationSheetPage courseId={activeCourseId} offeringId={offeringId} />
+          <CourseInformationSheetPage courseId={activeCourseId} offeringId={validOfferingId} />
         ) : formType === 'CCC' ? (
-          <CourseCompletionCertificatePage courseId={activeCourseId} offeringId={offeringId} />
+          <CourseCompletionCertificatePage courseId={activeCourseId} offeringId={validOfferingId} />
         ) : formType === 'CRR' ? (
-          <CourseReviewReportTheoryPage courseId={activeCourseId} offeringId={offeringId} />
+          <CourseReviewReportTheoryPage courseId={activeCourseId} offeringId={validOfferingId} />
         ) : formType === 'ASSESS_QUIZ' ? (
-          <QuizManagementPage courseId={activeCourseId} offeringId={offeringId} />
+          <QuizManagementPage courseId={activeCourseId} offeringId={validOfferingId} />
         ) : formType === 'ASSESS_ASSIGN' ? (
-          <AssignmentManagementPage courseId={activeCourseId} offeringId={offeringId} />
+          <AssignmentManagementPage courseId={activeCourseId} offeringId={validOfferingId} />
         ) : formType === 'TIMETABLE' ? (
-          <TimetablePage courseId={activeCourseId} offeringId={offeringId} />
-        ) : formType === 'ASSESS_PROJECT' ? (
-          <ClassProjectPage courseId={activeCourseId} offeringId={offeringId} />
+          <TimetablePage courseId={activeCourseId} offeringId={validOfferingId} />
+        ) : isProject ? (
+          <ClassProjectPage courseId={activeCourseId} offeringId={validOfferingId} />
         ) : isAttendance ? (
-          <AttendanceRecordPage courseId={activeCourseId} offeringId={offeringId} />
+          <>
+            <div className="cfes-form-standalone-header">
+              <h1 className="cfes-form-standalone-title">Attendance Record</h1>
+              <p className="cfes-form-standalone-desc">
+                External attendance management and verification link for this course offering.
+              </p>
+            </div>
+            <AttendanceRecordPage courseId={activeCourseId} offeringId={validOfferingId} />
+          </>
         ) : isLectures ? (
-          <LecturesPage courseId={activeCourseId} offeringId={offeringId} />
+          <LecturesPage courseId={activeCourseId} offeringId={validOfferingId} />
         ) : isMidterm ? (
           <ExamUploadSection
             examType="MIDTERM"
-            offeringId={offeringId}
+            offeringId={validOfferingId}
             courseFiles={examFiles}
             onUploadSuccess={loadExamFiles}
             isCard={false}
@@ -124,21 +185,24 @@ const CourseForm = () => {
         ) : isFinal ? (
           <ExamUploadSection
             examType="FINAL"
-            offeringId={offeringId}
+            offeringId={validOfferingId}
             courseFiles={examFiles}
             onUploadSuccess={loadExamFiles}
             isCard={false}
           />
         ) : (
-          <>
-            <p>Multi-step form will be implemented in Phase 2.</p>
-            <div style={{ marginTop: '2rem', padding: '1rem', background: '#f8fafc', border: '1px solid #e5e7eb', borderRadius: '8px' }}>
-              <h3 style={{ margin: '0 0 0.5rem', fontSize: '0.9rem', color: '#3949ab' }}>Development info:</h3>
-              <p style={{ fontSize: '0.85rem' }}><strong>Course ID:</strong> {activeCourseId}</p>
-              {offeringId && <p style={{ fontSize: '0.85rem' }}><strong>Offering ID:</strong> {offeringId}</p>}
-              <p style={{ fontSize: '0.85rem' }}><strong>Form Type:</strong> {formType}</p>
-            </div>
-          </>
+          <div style={{ padding: '2rem 1rem', textAlign: 'center' }}>
+            <h2 style={{ fontSize: '1.25rem', color: '#1e293b', marginBottom: '0.5rem' }}>
+              Form Not Found
+            </h2>
+            <p style={{ color: '#64748b', fontSize: '0.875rem', marginBottom: '1.5rem' }}>
+              The requested form type <code>{formType}</code> is not available for this course offering.
+            </p>
+            <Link to={templatesUrl} className="cfes-form-back-btn">
+              <Icon name="chevron-left" size={14} />
+              <span>Return to Course Forms</span>
+            </Link>
+          </div>
         )}
       </div>
     </div>
@@ -146,4 +210,3 @@ const CourseForm = () => {
 };
 
 export default CourseForm;
-

@@ -869,7 +869,6 @@ describe('Quiz & Assignment Frontend Offering Integration Suite', () => {
   describe('10. Checklist Drive Status Computation', () => {
     const computeChecklistDriveStatus = ({
       formType,
-      checklistCompleted,
       assessments = [],
       courseFiles = [],
       rowError = null,

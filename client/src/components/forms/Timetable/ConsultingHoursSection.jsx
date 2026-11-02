@@ -190,15 +190,15 @@ const ConsultingHoursSection = ({
           </button>
         </div>
       ) : (
-        <div style={{ overflowX: 'auto' }}>
-          <table className="consulting-hours-table">
+        <div className="grid-table-wrapper" style={{ overflowX: 'auto', width: '100%', maxWidth: '100%', WebkitOverflowScrolling: 'touch' }}>
+          <table className="consulting-hours-table" style={{ minWidth: '600px' }}>
             <thead>
               <tr>
-                <th style={{ width: '15%' }}>Day</th>
-                <th style={{ width: '22%' }}>Time Window</th>
+                <th style={{ width: '15%', whiteSpace: 'nowrap' }}>Day</th>
+                <th style={{ width: '22%', whiteSpace: 'nowrap' }}>Time Window</th>
                 <th style={{ width: '25%' }}>Location / Room</th>
                 <th style={{ width: '26%' }}>Notes / Instructions</th>
-                <th style={{ width: '12%', textAlign: 'center' }}>Actions</th>
+                <th style={{ width: '12%', textAlign: 'center', whiteSpace: 'nowrap' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -221,6 +221,7 @@ const ConsultingHoursSection = ({
                         className="btn btn-secondary btn-sm"
                         style={{ padding: '0.2rem 0.5rem', fontSize: '0.75rem' }}
                         onClick={() => handleOpenEdit(ch)}
+                        aria-label={`Edit consulting hour for ${ch.day} ${ch.startTime} to ${ch.endTime}`}
                       >
                         Edit
                       </button>
@@ -229,6 +230,7 @@ const ConsultingHoursSection = ({
                         className="btn btn-danger-outline btn-sm"
                         style={{ padding: '0.2rem 0.5rem', fontSize: '0.75rem' }}
                         onClick={() => handleDelete(ch.id)}
+                        aria-label={`Delete consulting hour for ${ch.day} ${ch.startTime} to ${ch.endTime}`}
                       >
                         Delete
                       </button>

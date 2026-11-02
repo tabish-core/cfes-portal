@@ -59,20 +59,21 @@ const EMPTY_ROW = {
  */
 const CLOTable = ({ data, onChange, onAddRow, onRemoveRow }) => (
   <div style={{ marginBottom: '2rem' }}>
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem', borderBottom: '2px solid #e2e8f0', paddingBottom: '0.5rem' }}>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '1rem', borderBottom: '2px solid #e2e8f0', paddingBottom: '0.5rem' }}>
       <h3 style={{ fontSize: '1rem', fontWeight: '700', color: '#1e293b', margin: 0 }}>
         Course Learning Outcomes (CLOs)
       </h3>
       <button
         type="button"
         onClick={onAddRow}
+        aria-label="Add row to Course Learning Outcomes"
         style={{ ...btnStyle, backgroundColor: '#3949ab', color: '#fff' }}
       >
         + Add Row
       </button>
     </div>
 
-    <div style={{ overflowX: 'auto' }}>
+    <div className="cfes-table-scroll-container" style={{ overflowX: 'auto', width: '100%', maxWidth: '100%', WebkitOverflowScrolling: 'touch', border: '1px solid #cbd5e1', borderRadius: '8px' }}>
       <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '900px' }}>
         <thead>
           <tr>
@@ -177,6 +178,7 @@ const CLOTable = ({ data, onChange, onAddRow, onRemoveRow }) => (
                     type="button"
                     onClick={() => onRemoveRow(index)}
                     title="Remove row"
+                    aria-label={`Remove CLO row ${index + 1}`}
                     style={{
                       ...btnStyle,
                       backgroundColor: '#fef2f2',

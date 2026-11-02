@@ -1,40 +1,5 @@
 import React from 'react';
-
-const textareaStyle = {
-  width: '100%',
-  padding: '0.8rem',
-  border: '1px solid #cbd5e1',
-  backgroundColor: '#ffffff',
-  color: '#1e293b',
-  borderRadius: '6px',
-  fontSize: '0.9rem',
-  outline: 'none',
-  colorScheme: 'light',
-  boxSizing: 'border-box',
-  minHeight: '90px',
-  resize: 'vertical',
-  fontFamily: 'inherit',
-  lineHeight: '1.6',
-};
-
-const textareaErrorStyle = {
-  ...textareaStyle,
-  border: '1px solid #ef4444',
-  backgroundColor: '#fef2f2',
-};
-
-const labelStyle = {
-  marginBottom: '0.3rem',
-  fontSize: '0.8rem',
-  fontWeight: '600',
-  color: '#475569',
-  display: 'block',
-};
-
-const labelErrorStyle = {
-  ...labelStyle,
-  color: '#b91c1c',
-};
+import Icon from '../../common/Icon';
 
 /**
  * ProblemStatementSection — Narrative sections for CCP/CEP problem statement,
@@ -88,39 +53,40 @@ const ProblemStatementSection = ({
   ];
 
   return (
-    <div style={{ marginBottom: '2rem' }}>
-      <h3
-        style={{
-          fontSize: '1rem',
-          fontWeight: '700',
-          color: '#1e293b',
-          marginBottom: '1rem',
-          borderBottom: '2px solid #e2e8f0',
-          paddingBottom: '0.5rem',
-        }}
-      >
-        Problem Statement &amp; Specifications
-      </h3>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+    <section className="cfes-ccp-card" aria-labelledby="ccp-problem-specs-heading">
+      <div className="cfes-ccp-card-header">
+        <h2 id="ccp-problem-specs-heading" className="cfes-ccp-card-title">
+          <Icon name="document" size={18} />
+          <span>Section C: Problem Statement &amp; Specifications</span>
+        </h2>
+        <span className="cfes-ccp-card-tag">Technical Requirements</span>
+      </div>
+
+      <div className="cfes-ccp-narrative-group">
         {sections.map((sec) => {
           const isInvalid = hasError(sec.key);
+          const textareaId = `ccp-narrative-${sec.key}`;
           return (
-            <div key={sec.key}>
-              <label style={isInvalid ? labelErrorStyle : labelStyle}>
+            <div key={sec.key} className="cfes-ccp-form-group">
+              <label
+                htmlFor={textareaId}
+                className={`cfes-ccp-label ${isInvalid ? 'cfes-ccp-label--error' : ''}`}
+              >
                 {sec.label}
-                {sec.required && <span style={{ color: '#ef4444', marginLeft: '4px' }}>*</span>}
+                {sec.required && <span className="cfes-ccp-required">*</span>}
               </label>
               <textarea
+                id={textareaId}
                 value={sec.value || ''}
                 onChange={(e) => onChange(sec.key, e.target.value)}
                 placeholder={sec.placeholder}
-                style={{
-                  ...(isInvalid ? textareaErrorStyle : textareaStyle),
-                  minHeight: sec.minHeight || '90px',
-                }}
+                className={`cfes-ccp-textarea ${isInvalid ? 'cfes-ccp-textarea--error' : ''}`}
+                style={{ minHeight: sec.minHeight || '90px' }}
+                aria-required={sec.required}
+                aria-invalid={isInvalid}
               />
               {isInvalid && (
-                <span style={{ fontSize: '0.75rem', color: '#ef4444', marginTop: '0.2rem', display: 'block' }}>
+                <span className="cfes-ccp-error-text" role="alert">
                   {getError(sec.key)}
                 </span>
               )}
@@ -128,7 +94,7 @@ const ProblemStatementSection = ({
           );
         })}
       </div>
-    </div>
+    </section>
   );
 };
 

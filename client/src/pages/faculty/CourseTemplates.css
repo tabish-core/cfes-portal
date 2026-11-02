@@ -1,0 +1,264 @@
+/**
+ * CourseTemplates.css — Course Forms / Templates Directory Styles
+ * CFES Enterprise Navy/Slate Design System
+ */
+
+.cfes-templates-container {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* ── Top Navigation Bar ───────────────────────────────────── */
+.cfes-templates-nav-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1.25rem;
+  background-color: var(--cfes-white, #ffffff);
+  border: 1px solid var(--cfes-slate-200, #e2e8f0);
+  border-radius: var(--cfes-radius-lg, 8px);
+  box-shadow: var(--cfes-shadow-xs, 0 1px 2px 0 rgba(15, 23, 42, 0.05));
+  flex-wrap: wrap;
+}
+
+.cfes-templates-nav-left {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  flex-wrap: wrap;
+}
+
+.cfes-templates-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.375rem 0.75rem;
+  font-size: var(--cfes-font-sm, 0.8125rem);
+  font-weight: 600;
+  color: var(--cfes-navy-800, #1a237e);
+  background-color: var(--cfes-navy-50, #f3f4fb);
+  border: 1px solid var(--cfes-navy-100, #e8eaf6);
+  border-radius: var(--cfes-radius-md, 6px);
+  text-decoration: none;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  line-height: 1.4;
+}
+
+.cfes-templates-back-btn:hover {
+  background-color: var(--cfes-navy-100, #e8eaf6);
+  color: var(--cfes-navy-950, #0a0e3f);
+  border-color: var(--cfes-navy-200, #c5cae9);
+}
+
+.cfes-templates-back-btn:focus-visible {
+  outline: 2px solid var(--cfes-navy-600, #303f9f);
+  outline-offset: 2px;
+}
+
+.cfes-templates-breadcrumbs {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: var(--cfes-font-sm, 0.8125rem);
+  color: var(--cfes-slate-500, #64748b);
+  flex-wrap: wrap;
+}
+
+.cfes-templates-crumb-link {
+  color: var(--cfes-slate-600, #475569);
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.15s ease;
+}
+
+.cfes-templates-crumb-link:hover {
+  color: var(--cfes-navy-800, #1a237e);
+  text-decoration: underline;
+}
+
+.cfes-templates-crumb-link:focus-visible {
+  outline: 2px solid var(--cfes-navy-600, #303f9f);
+  outline-offset: 2px;
+}
+
+.cfes-templates-crumb-sep {
+  color: var(--cfes-slate-400, #94a3b8);
+  display: inline-flex;
+  align-items: center;
+}
+
+.cfes-templates-crumb-current {
+  color: var(--cfes-slate-900, #0f172a);
+  font-weight: 600;
+}
+
+/* ── Header Banner ────────────────────────────────────────── */
+.cfes-templates-header-card {
+  background: var(--cfes-white, #ffffff);
+  border: 1px solid var(--cfes-slate-200, #e2e8f0);
+  border-radius: var(--cfes-radius-lg, 8px);
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: var(--cfes-shadow-xs, 0 1px 2px 0 rgba(15, 23, 42, 0.05));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.cfes-templates-header-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.cfes-templates-title {
+  font-size: var(--cfes-font-xl, 1.375rem);
+  font-weight: 700;
+  color: var(--cfes-slate-900, #0f172a);
+  margin: 0;
+}
+
+.cfes-templates-subtitle {
+  font-size: var(--cfes-font-sm, 0.8125rem);
+  color: var(--cfes-slate-600, #475569);
+  margin: 0;
+}
+
+.cfes-templates-course-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.85rem;
+  background-color: var(--cfes-navy-50, #f3f4fb);
+  border: 1px solid var(--cfes-navy-100, #e8eaf6);
+  border-radius: var(--cfes-radius-full, 9999px);
+  font-size: var(--cfes-font-xs, 0.75rem);
+  color: var(--cfes-navy-900, #121858);
+}
+
+/* ── Templates Grid ───────────────────────────────────────── */
+.cfes-templates-panel {
+  background: var(--cfes-white, #ffffff);
+  border: 1px solid var(--cfes-slate-200, #e2e8f0);
+  border-radius: var(--cfes-radius-lg, 8px);
+  padding: 1.5rem;
+  box-shadow: var(--cfes-shadow-xs, 0 1px 2px 0 rgba(15, 23, 42, 0.05));
+}
+
+.cfes-templates-panel-heading {
+  font-size: var(--cfes-font-base, 0.875rem);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--cfes-slate-500, #64748b);
+  margin: 0 0 1.25rem 0;
+}
+
+.cfes-templates-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.25rem;
+}
+
+.cfes-template-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 1.25rem;
+  background-color: var(--cfes-slate-50, #f8fafc);
+  border: 1px solid var(--cfes-slate-200, #e2e8f0);
+  border-radius: var(--cfes-radius-lg, 8px);
+  text-decoration: none;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+}
+
+.cfes-template-card:hover {
+  background-color: var(--cfes-white, #ffffff);
+  border-color: var(--cfes-navy-600, #303f9f);
+  box-shadow: 0 4px 12px rgba(26, 35, 126, 0.08);
+  transform: translateY(-2px);
+}
+
+.cfes-template-card:focus-visible {
+  outline: 2px solid var(--cfes-navy-600, #303f9f);
+  outline-offset: 2px;
+}
+
+.cfes-template-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.cfes-template-code-badge {
+  display: inline-block;
+  padding: 0.25rem 0.55rem;
+  font-size: var(--cfes-font-xs, 0.75rem);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: var(--cfes-navy-800, #1a237e);
+  background-color: var(--cfes-navy-100, #e8eaf6);
+  border: 1px solid var(--cfes-navy-200, #c5cae9);
+  border-radius: var(--cfes-radius-xs, 3px);
+}
+
+.cfes-template-tag {
+  display: inline-block;
+  padding: 0.2rem 0.5rem;
+  font-size: var(--cfes-font-xs, 0.75rem);
+  font-weight: 600;
+  color: var(--cfes-blue-700, #1d4ed8);
+  background-color: var(--cfes-blue-50, #eff6ff);
+  border: 1px solid var(--cfes-blue-100, #dbeafe);
+  border-radius: var(--cfes-radius-full, 9999px);
+}
+
+.cfes-template-name {
+  font-size: var(--cfes-font-md, 0.9375rem);
+  font-weight: 600;
+  color: var(--cfes-slate-900, #0f172a);
+  margin: 0 0 0.5rem 0;
+  line-height: 1.4;
+}
+
+.cfes-template-desc {
+  font-size: var(--cfes-font-xs, 0.75rem);
+  color: var(--cfes-slate-600, #475569);
+  margin: 0 0 1rem 0;
+  line-height: 1.5;
+  flex-grow: 1;
+}
+
+.cfes-template-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.4rem;
+  font-size: var(--cfes-font-xs, 0.75rem);
+  font-weight: 600;
+  color: var(--cfes-navy-800, #1a237e);
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--cfes-slate-200, #e2e8f0);
+}
+
+.cfes-template-card:hover .cfes-template-footer {
+  color: var(--cfes-blue-700, #1d4ed8);
+}
+
+@media (max-width: 768px) {
+  .cfes-templates-grid {
+    grid-template-columns: 1fr;
+  }
+  .cfes-templates-nav-bar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

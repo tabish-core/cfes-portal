@@ -2,6 +2,8 @@ import React, { useState, useEffect, useContext } from 'react';
 import api from '../../../api/axios';
 import useToast from '../../../hooks/useToast';
 import { AuthContext } from '../../../context/AuthContext';
+import FormActionBar from '../FormActionBar';
+import Icon from '../../common/Icon';
 import { syncCRRDocument, getOfferingFiles } from '../../../services/courseFile.service';
 import CourseDetailsSection from './CourseDetailsSection';
 import AssessmentSummarySection from './AssessmentSummarySection';
@@ -9,6 +11,7 @@ import GradeSummarySection from './GradeSummarySection';
 import CourseLearningOutcomesSection from './CourseLearningOutcomesSection';
 import CourseEnhancementSection from './CourseEnhancementSection';
 import SignatureSection from './SignatureSection';
+import './CourseReviewReportTheoryPage.css';
 
 const INITIAL_COURSE_DETAILS = {
   teacherName: '',
@@ -176,7 +179,6 @@ const CourseReviewReportTheoryPage = ({ courseId, offeringId }) => {
     }
   }, [courseId, offeringId]);
 
-
   const handleCourseDetailsChange = (field, value) => {
     setCourseDetails(prev => ({ ...prev, [field]: value }));
   };
@@ -251,7 +253,7 @@ const CourseReviewReportTheoryPage = ({ courseId, offeringId }) => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  /* ── Download PDF ──────────────────────────────────────── */
+  /* ── Download PDF ───────────────────────────────────────── */
   const handleDownload = async (format) => {
     try {
       setIsExporting(format);
@@ -262,7 +264,6 @@ const CourseReviewReportTheoryPage = ({ courseId, offeringId }) => {
       const { data } = await api.get(exportUrl, {
         responseType: 'blob',
       });
-
 
       const url = window.URL.createObjectURL(new Blob([data]));
       const link = document.createElement('a');
@@ -283,29 +284,42 @@ const CourseReviewReportTheoryPage = ({ courseId, offeringId }) => {
   };
 
   return (
-    <div className="course-review-report" style={{ width: '100%', boxSizing: 'border-box' }}>
-      <h2 style={{
-        textAlign: 'center',
-        marginBottom: '2rem',
-        marginTop: 0,
-        color: '#0f172a',
-        fontSize: '1.8rem',
-        fontWeight: '700',
-        letterSpacing: '-0.025em'
-      }}>
-        Course Review Report
-      </h2>
+    <div className="cfes-crr-container">
+      {/* ── Document Header ── */}
+      <div className="cfes-crr-header">
+        <div className="cfes-crr-header-badge">
+          <Icon name="document" size={14} />
+          <span>Theory Course Quality Evaluation</span>
+        </div>
+        <h1 className="cfes-crr-title">Course Review Report (CRR)</h1>
+        <p className="cfes-crr-subtitle">
+          Comprehensive theory course evaluation covering CLO attainment, grade distribution,
+          CQI improvements, and faculty recommendations.
+        </p>
+      </div>
 
+      {/* ── Validation Error Banner ── */}
       {validationErrors.length > 0 && (
-        <div style={{ backgroundColor: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', padding: '1rem', marginBottom: '1.5rem' }}>
-          <p style={{ margin: '0 0 0.5rem', fontWeight: '700', color: '#991b1b', fontSize: '0.95rem' }}>Please fix the following errors:</p>
-          <ul style={{ margin: 0, paddingLeft: '1.25rem', color: '#b91c1c', fontSize: '0.88rem', lineHeight: '1.7' }}>
-            {validationErrors.map((e) => <li key={e.field}>{e.message}</li>)}
+        <div className="cfes-crr-error-banner" role="alert">
+          <div className="cfes-crr-error-title">
+            <Icon name="alert" size={16} />
+            <span>Please address the following validation errors:</span>
+          </div>
+          <ul className="cfes-crr-error-list">
+            {validationErrors.map((e, idx) => (
+              <li key={`${e.field}-${idx}`}>{e.message}</li>
+            ))}
           </ul>
         </div>
       )}
 
-      {loading && <div style={{ textAlign: 'center', marginBottom: '1rem', fontStyle: 'italic', color: '#64748b' }}>Processing...</div>}
+      {/* ── Loading Indicator ── */}
+      {loading && (
+        <div className="cfes-crr-loading-banner">
+          <Icon name="spinner" size={16} />
+          <span>Processing Course Review Report...</span>
+        </div>
+      )}
 
       <form onSubmit={handleSubmit}>
         <CourseDetailsSection data={courseDetails} onChange={handleCourseDetailsChange} />
@@ -315,119 +329,24 @@ const CourseReviewReportTheoryPage = ({ courseId, offeringId }) => {
         <CourseEnhancementSection data={courseEnhancement} onChange={handleSectionChange} />
         <SignatureSection data={signatures} onChange={handleSectionChange} facultyName={courseDetails.teacherName} />
 
-        <div style={{ marginTop: '3rem', display: 'flex', justifyContent: 'flex-end', gap: '1rem', borderTop: '1px solid #e2e8f0', paddingTop: '2rem', flexWrap: 'wrap' }}>
-          <button
-            type="button"
-            onClick={handleClearForm}
-            disabled={loading || isExporting}
-            style={{
-              padding: '0.75rem 1.5rem',
-              backgroundColor: '#f8fafc',
-              color: '#334155',
-              border: '1px solid #cbd5e1',
-              borderRadius: '4px',
-              fontSize: '0.95rem',
-              cursor: (loading || isExporting) ? 'wait' : 'pointer',
-              fontWeight: '600',
-              transition: 'all 0.2s'
-            }}
-          >
-            Clear Form
-          </button>
-
-          <button
-            type="button"
-            onClick={() => handleDownload('pdf')}
-            disabled={isExporting === 'pdf' || loading}
-            style={{
-              padding: '0.75rem 1.5rem',
-              backgroundColor: '#fef2f2',
-              color: '#991b1b',
-              border: '1px solid #fecaca',
-              borderRadius: '4px',
-              fontSize: '0.95rem',
-              cursor: isExporting === 'pdf' ? 'wait' : 'pointer',
-              fontWeight: '600',
-              transition: 'all 0.2s'
-            }}
-          >
-            {isExporting === 'pdf' ? 'Generating...' : 'Download PDF'}
-          </button>
-
-          {offeringId && (
-            <button
-              type="button"
-              onClick={handleSyncToDrive}
-              disabled={isSyncingDrive || loading || Boolean(isExporting)}
-              style={{
-                padding: '0.75rem 1.4rem',
-                backgroundColor: '#eff6ff',
-                color: '#1d4ed8',
-                border: '1px solid #bfdbfe',
-                borderRadius: '4px',
-                fontSize: '0.95rem',
-                cursor: isSyncingDrive ? 'wait' : 'pointer',
-                fontWeight: '600',
-                transition: 'all 0.2s',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.4rem',
-              }}
-              onMouseOver={(e) => {
-                if (!isSyncingDrive) e.currentTarget.style.backgroundColor = '#dbeafe';
-              }}
-              onMouseOut={(e) => {
-                if (!isSyncingDrive) e.currentTarget.style.backgroundColor = '#eff6ff';
-              }}
-              title="Save and synchronize Course Review Report to Google Drive"
-            >
-              {isSyncingDrive ? 'Syncing to Drive...' : '⚡ Sync to Google Drive'}
-            </button>
-          )}
-
-          {driveFile?.googleDriveWebViewLink && (
-            <a
-              href={driveFile.googleDriveWebViewLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                padding: '0.75rem 1.25rem',
-                backgroundColor: '#f0fdf4',
-                color: '#166534',
-                border: '1px solid #bbf7d0',
-                borderRadius: '4px',
-                fontSize: '0.95rem',
-                fontWeight: '600',
-                textDecoration: 'none',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.35rem',
-              }}
-              title="Open synchronized document in Google Drive"
-            >
-              <span>View in Drive{driveFile.version > 1 ? ` (v${driveFile.version})` : ''}</span>
-              <span style={{ fontSize: '0.8rem' }}>↗</span>
-            </a>
-          )}
-
-          <button
-            type="submit"
-            disabled={loading || isExporting}
-            style={{
-              padding: '0.75rem 2rem',
-              backgroundColor: (loading || isExporting) ? '#94a3b8' : '#3949ab',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              fontSize: '1rem',
-              cursor: (loading || isExporting) ? 'wait' : 'pointer',
-              fontWeight: 'bold',
-              transition: 'all 0.2s'
-            }}
-          >
-            {loading ? 'Saving...' : 'Save Draft'}
-          </button>
-        </div>
+        <FormActionBar
+          onClear={handleClearForm}
+          clearDisabled={loading || Boolean(isExporting)}
+          onExportPdf={() => handleDownload('pdf')}
+          isExportingPdf={isExporting === 'pdf'}
+          pdfDisabled={isExporting === 'pdf' || loading}
+          showSyncDrive={Boolean(offeringId)}
+          onSyncDrive={handleSyncToDrive}
+          isSyncingDrive={isSyncingDrive}
+          syncDriveDisabled={isSyncingDrive || loading || Boolean(isExporting)}
+          syncDriveTitle="Save and synchronize Course Review Report to Google Drive"
+          driveWebViewLink={driveFile?.googleDriveWebViewLink}
+          driveFileVersion={driveFile?.version}
+          saveButtonType="submit"
+          saveLabel="Save Draft"
+          isSaving={loading}
+          saveDisabled={loading || Boolean(isExporting)}
+        />
       </form>
     </div>
   );

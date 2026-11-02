@@ -45,7 +45,7 @@ const syncCCRDocument = async (offeringId, format = 'pdf') => {
   return data;
 };
 
-const getOfferingFiles = async (offeringId) => {
+const _getOfferingFiles = async (offeringId) => {
   if (!offeringId) return [];
   const { data } = await mockApi.get(`/course-files/offering/${offeringId}`);
   return data.data || [];

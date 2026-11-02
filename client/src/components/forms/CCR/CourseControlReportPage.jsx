@@ -3,6 +3,7 @@ import api from '../../../api/axios';
 import useToast from '../../../hooks/useToast';
 import CourseInfoSection from './CourseInfoSection';
 import ReportTable from './ReportTable';
+import FormActionBar from '../FormActionBar';
 import { syncCCRDocument, getOfferingFiles } from '../../../services/courseFile.service';
 
 const INITIAL_COURSE_INFO = {
@@ -509,137 +510,27 @@ const CourseControlReportPage = ({ courseId, offeringId }) => {
           showSpecialRows={false}
         />
 
-        <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'flex-end', gap: '1rem', flexWrap: 'wrap' }}>
-          <button
-            type="button"
-            onClick={handleClearForm}
-            disabled={loading || isExporting || isImporting}
-            style={{
-              padding: '0.75rem 1.5rem',
-              backgroundColor: '#f8fafc',
-              color: '#334155',
-              border: '1px solid #cbd5e1',
-              borderRadius: '4px',
-              fontSize: '0.95rem',
-              cursor: (loading || isExporting || isImporting) ? 'wait' : 'pointer',
-              fontWeight: '600',
-              transition: 'all 0.2s'
-            }}
-          >
-            Clear Form
-          </button>
-
-          <button
-            type="button"
-            onClick={() => handleDownload('docx')}
-            disabled={isExporting === 'docx' || loading}
-            style={{
-              padding: '0.75rem 1.5rem',
-              backgroundColor: '#f8fafc',
-              color: '#334155',
-              border: '1px solid #cbd5e1',
-              borderRadius: '4px',
-              fontSize: '0.95rem',
-              cursor: isExporting === 'docx' ? 'wait' : 'pointer',
-              fontWeight: '600',
-              transition: 'all 0.2s'
-            }}
-          >
-            {isExporting === 'docx' ? 'Generating...' : 'Download Word (.docx)'}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => handleDownload('pdf')}
-            disabled={isExporting === 'pdf' || loading}
-            style={{
-              padding: '0.75rem 1.5rem',
-              backgroundColor: '#fef2f2',
-              color: '#991b1b',
-              border: '1px solid #fecaca',
-              borderRadius: '4px',
-              fontSize: '0.95rem',
-              cursor: isExporting === 'pdf' ? 'wait' : 'pointer',
-              fontWeight: '600',
-              transition: 'all 0.2s'
-            }}
-          >
-            {isExporting === 'pdf' ? 'Generating...' : 'Download PDF'}
-          </button>
-
-          {offeringId && (
-            <button
-              type="button"
-              onClick={handleSyncToDrive}
-              disabled={isSyncingDrive || loading || isExporting}
-              style={{
-                padding: '0.75rem 1.4rem',
-                backgroundColor: '#eff6ff',
-                color: '#1d4ed8',
-                border: '1px solid #bfdbfe',
-                borderRadius: '4px',
-                fontSize: '0.95rem',
-                cursor: isSyncingDrive ? 'wait' : 'pointer',
-                fontWeight: '600',
-                transition: 'all 0.2s',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.4rem',
-              }}
-              onMouseOver={(e) => {
-                if (!isSyncingDrive) e.currentTarget.style.backgroundColor = '#dbeafe';
-              }}
-              onMouseOut={(e) => {
-                if (!isSyncingDrive) e.currentTarget.style.backgroundColor = '#eff6ff';
-              }}
-              title="Save and synchronize CCR to Google Drive"
-            >
-              {isSyncingDrive ? 'Syncing to Drive...' : '⚡ Sync to Google Drive'}
-            </button>
-          )}
-
-          {driveFileLink && (
-            <a
-              href={driveFileLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                padding: '0.75rem 1.25rem',
-                backgroundColor: '#f0fdf4',
-                color: '#166534',
-                border: '1px solid #bbf7d0',
-                borderRadius: '4px',
-                fontSize: '0.95rem',
-                fontWeight: '600',
-                textDecoration: 'none',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.35rem',
-              }}
-              title="Open synchronized document in Google Drive"
-            >
-              <span>View in Drive{driveFileVersion > 1 ? ` (v${driveFileVersion})` : ''}</span>
-              <span style={{ fontSize: '0.8rem' }}>↗</span>
-            </a>
-          )}
-
-          <button
-            type="submit"
-            disabled={loading || isExporting}
-            style={{
-              padding: '0.75rem 2rem',
-              backgroundColor: loading ? '#94a3b8' : '#3949ab',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              fontSize: '1rem',
-              cursor: loading ? 'wait' : 'pointer',
-              fontWeight: 'bold'
-            }}
-          >
-            {loading ? 'Saving...' : 'Save Report'}
-          </button>
-        </div>
+        <FormActionBar
+          onClear={handleClearForm}
+          clearDisabled={loading || Boolean(isExporting) || isImporting}
+          onExportDocx={() => handleDownload('docx')}
+          isExportingDocx={isExporting === 'docx'}
+          docxDisabled={isExporting === 'docx' || loading}
+          onExportPdf={() => handleDownload('pdf')}
+          isExportingPdf={isExporting === 'pdf'}
+          pdfDisabled={isExporting === 'pdf' || loading}
+          showSyncDrive={Boolean(offeringId)}
+          onSyncDrive={handleSyncToDrive}
+          isSyncingDrive={isSyncingDrive}
+          syncDriveDisabled={isSyncingDrive || loading || Boolean(isExporting)}
+          syncDriveTitle="Save and synchronize CCR to Google Drive"
+          driveWebViewLink={driveFileLink}
+          driveFileVersion={driveFileVersion}
+          saveButtonType="submit"
+          saveLabel="Save Report"
+          isSaving={loading}
+          saveDisabled={loading || Boolean(isExporting)}
+        />
       </form>
     </div>
   );

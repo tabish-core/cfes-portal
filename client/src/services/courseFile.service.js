@@ -229,3 +229,62 @@ export const verifyGoogleDriveAccess = async () => {
   const { data } = await api.get('/course-files/google/verify');
   return data.data;
 };
+
+/**
+ * Midterm and Final Exam slots definition
+ */
+export const EXAM_SLOTS = {
+  MIDTERM: [
+    {
+      documentType: 'MIDTERM_EXAM_PAPER',
+      category: 'Exam Paper',
+      description: 'Official Midterm examination question paper.',
+      icon: 'document',
+    },
+    {
+      documentType: 'MIDTERM_BEST_COPY',
+      category: 'Best Student Copy',
+      description: 'Highest-scoring evaluated student answer script.',
+      icon: 'star',
+    },
+    {
+      documentType: 'MIDTERM_AVERAGE_COPY',
+      category: 'Average Student Copy',
+      description: 'Average / median evaluated student answer script.',
+      icon: 'book',
+    },
+    {
+      documentType: 'MIDTERM_WORST_COPY',
+      category: 'Worst Student Copy',
+      description: 'Minimum-passing evaluated student answer script.',
+      icon: 'file',
+    },
+  ],
+  FINAL: [
+    {
+      documentType: 'FINAL_EXAM_PAPER',
+      category: 'Exam Paper',
+      description: 'Official Final examination question paper.',
+      icon: 'document',
+    },
+    {
+      documentType: 'FINAL_BEST_COPY',
+      category: 'Best Student Copy',
+      description: 'Highest-scoring evaluated student answer script.',
+      icon: 'star',
+    },
+    {
+      documentType: 'FINAL_AVERAGE_COPY',
+      category: 'Average Student Copy',
+      description: 'Average / median evaluated student answer script.',
+      icon: 'book',
+    },
+    {
+      documentType: 'FINAL_WORST_COPY',
+      category: 'Worst Student Copy',
+      description: 'Minimum-passing evaluated student answer script.',
+      icon: 'file',
+    },
+  ],
+};
+

@@ -1,29 +1,7 @@
 import React from 'react';
+import Icon from '../../common/Icon';
 
 const GradeSummarySection = ({ data, onChange }) => {
-  const sectionHeaderStyle = {
-    marginBottom: '1.5rem',
-    color: '#1e293b',
-    fontSize: '1.2rem',
-    fontWeight: '600',
-    borderBottom: '2px solid #e2e8f0',
-    paddingBottom: '0.75rem'
-  };
-
-  const inputStyle = {
-    padding: '0.6rem 0.8rem',
-    border: '1px solid #cbd5e1',
-    backgroundColor: '#ffffff',
-    color: '#1e293b',
-    borderRadius: '6px',
-    fontSize: '0.95rem',
-    outline: 'none',
-    transition: 'border-color 0.2s',
-    width: '100%',
-    boxSizing: 'border-box',
-    textAlign: 'center'
-  };
-
   const grades = ['A+', 'A', 'B+', 'B', 'C+', 'C', 'F'];
 
   const handleGradeChange = (grade, value) => {
@@ -31,16 +9,34 @@ const GradeSummarySection = ({ data, onChange }) => {
   };
 
   return (
-    <div style={{ marginBottom: '2.5rem' }}>
-      <h3 style={sectionHeaderStyle}>Grade Summary</h3>
-      
-      <div style={{ overflowX: 'auto', marginBottom: '1.5rem' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'center' }}>
+    <section className="cfes-crr-card" aria-labelledby="crr-grade-summary-heading">
+      <div className="cfes-crr-card-header">
+        <h2 id="crr-grade-summary-heading" className="cfes-crr-card-title">
+          <Icon name="document" size={18} />
+          <span>Grade Summary</span>
+        </h2>
+        <span className="cfes-crr-card-tag">Student Grade Distribution</span>
+      </div>
+
+      <div
+        className="cfes-table-scroll-container"
+        tabIndex={0}
+        aria-label="Student letter grade distribution table"
+        style={{
+          overflowX: 'auto',
+          width: '100%',
+          maxWidth: '100%',
+          WebkitOverflowScrolling: 'touch',
+          border: '1px solid var(--cfes-slate-300)',
+          borderRadius: 'var(--cfes-radius-lg)',
+        }}
+      >
+        <table className="cfes-crr-table" style={{ minWidth: '600px', textAlign: 'center' }}>
           <thead>
             <tr>
-              <th style={{ padding: '0.75rem', borderBottom: '2px solid #cbd5e1', color: '#475569', fontWeight: '600', fontSize: '0.9rem', width: '150px', textAlign: 'left' }}>Grade</th>
-              {grades.map(grade => (
-                <th key={grade} style={{ padding: '0.75rem', borderBottom: '2px solid #cbd5e1', color: '#475569', fontWeight: '600', fontSize: '0.9rem' }}>
+              <th style={{ width: '160px', textAlign: 'left', whiteSpace: 'nowrap' }}>Grade</th>
+              {grades.map((grade) => (
+                <th key={grade} style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>
                   {grade}
                 </th>
               ))}
@@ -48,12 +44,20 @@ const GradeSummarySection = ({ data, onChange }) => {
           </thead>
           <tbody>
             <tr>
-              <td style={{ padding: '0.75rem', borderBottom: '1px solid #e2e8f0', fontWeight: '600', color: '#1e293b', textAlign: 'left', verticalAlign: 'middle' }}>
+              <td style={{ fontWeight: 700, color: 'var(--cfes-slate-800)', textAlign: 'left', whiteSpace: 'nowrap' }}>
                 No. of Students
               </td>
-              {grades.map(grade => (
-                <td key={grade} style={{ padding: '0.75rem', borderBottom: '1px solid #e2e8f0', verticalAlign: 'middle' }}>
-                  <input type="number" style={inputStyle} value={data[grade] || ''} onChange={(e) => handleGradeChange(grade, e.target.value)} />
+              {grades.map((grade) => (
+                <td key={grade}>
+                  <input
+                    type="number"
+                    min="0"
+                    className="cfes-crr-table-input cfes-crr-table-input--center"
+                    value={data[grade] || ''}
+                    onChange={(e) => handleGradeChange(grade, e.target.value)}
+                    placeholder="0"
+                    aria-label={`Number of students with grade ${grade}`}
+                  />
                 </td>
               ))}
             </tr>
@@ -61,17 +65,21 @@ const GradeSummarySection = ({ data, onChange }) => {
         </table>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '1rem' }}>
-        <label style={{ fontSize: '0.9rem', fontWeight: '600', color: '#475569' }}>Class Average</label>
-        <input 
-          type="text" 
-          style={{ ...inputStyle, width: '200px', textAlign: 'left' }} 
+      <div className="cfes-crr-class-average-bar">
+        <label htmlFor="crr-class-average" className="cfes-crr-class-average-label">
+          Class Average (GPA / %):
+        </label>
+        <input
+          id="crr-class-average"
+          type="text"
+          className="cfes-crr-class-average-input"
           value={data.classAverage || ''}
           onChange={(e) => handleGradeChange('classAverage', e.target.value)}
           placeholder="e.g. 75.5 (C+)"
+          aria-label="Class Average"
         />
       </div>
-    </div>
+    </section>
   );
 };
 

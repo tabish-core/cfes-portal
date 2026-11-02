@@ -56,21 +56,22 @@ const EMPTY_ROW = {
  */
 const TextbooksTable = ({ data, onChange, onAddRow, onRemoveRow }) => (
   <div style={{ marginBottom: '2rem' }}>
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem', borderBottom: '2px solid #e2e8f0', paddingBottom: '0.5rem' }}>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '1rem', borderBottom: '2px solid #e2e8f0', paddingBottom: '0.5rem' }}>
       <h3 style={{ fontSize: '1rem', fontWeight: '700', color: '#1e293b', margin: 0 }}>
         Textbooks &amp; References
       </h3>
       <button
         type="button"
         onClick={onAddRow}
+        aria-label="Add row to Textbooks & References"
         style={{ ...btnStyle, backgroundColor: '#3949ab', color: '#fff' }}
       >
         + Add Row
       </button>
     </div>
 
-    <div style={{ overflowX: 'auto' }}>
-      <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '700px' }}>
+    <div className="cfes-table-scroll-container" style={{ overflowX: 'auto', width: '100%', maxWidth: '100%', WebkitOverflowScrolling: 'touch', border: '1px solid #cbd5e1', borderRadius: '8px' }}>
+      <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '720px' }}>
         <thead>
           <tr>
             <th style={{ ...thStyle, width: '70px' }}>S.No</th>
@@ -125,6 +126,7 @@ const TextbooksTable = ({ data, onChange, onAddRow, onRemoveRow }) => (
                     type="button"
                     onClick={() => onRemoveRow(index)}
                     title="Remove row"
+                    aria-label={`Remove textbook row ${index + 1}`}
                     style={{
                       ...btnStyle,
                       backgroundColor: '#fef2f2',

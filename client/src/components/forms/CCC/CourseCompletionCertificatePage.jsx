@@ -2,7 +2,10 @@ import React, { useState, useEffect, useContext } from 'react';
 import api from '../../../api/axios';
 import useToast from '../../../hooks/useToast';
 import { AuthContext } from '../../../context/AuthContext';
+import FormActionBar from '../FormActionBar';
+import Icon from '../../common/Icon';
 import { syncCCCDocument, getOfferingFiles } from '../../../services/courseFile.service';
+import './CourseCompletionCertificatePage.css';
 
 const INITIAL_CCC_DATA = {
   sessionsHeld: '',
@@ -117,7 +120,6 @@ const CourseCompletionCertificatePage = ({ courseId, offeringId }) => {
     }
   }, [courseId, offeringId]);
 
-
   const handleChange = (field, value) => {
     setCertificateData(prev => ({
       ...prev,
@@ -149,7 +151,7 @@ const CourseCompletionCertificatePage = ({ courseId, offeringId }) => {
     return errors;
   };
 
-  /* ── Save Draft (same pattern as CCR) ───────────────────── */
+  /* ── Save Draft ─────────────────────────────────────────── */
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -186,7 +188,7 @@ const CourseCompletionCertificatePage = ({ courseId, offeringId }) => {
     }
   };
 
-  /* ── Download PDF (same pattern as CCR) ─────────────────── */
+  /* ── Download PDF ───────────────────────────────────────── */
   const handleDownload = async (format) => {
     try {
       setIsExporting(format);
@@ -197,7 +199,6 @@ const CourseCompletionCertificatePage = ({ courseId, offeringId }) => {
       const { data } = await api.get(exportUrl, {
         responseType: 'blob',
       });
-
 
       const url = window.URL.createObjectURL(new Blob([data]));
       const link = document.createElement('a');
@@ -220,344 +221,238 @@ const CourseCompletionCertificatePage = ({ courseId, offeringId }) => {
   const hasError = (key) => validationErrors.some(e => e.field === key);
 
   return (
-    <div className="course-completion-certificate" style={{ width: '100%', boxSizing: 'border-box' }}>
-      <h2 style={{
-        textAlign: 'center',
-        marginBottom: '2rem',
-        marginTop: 0,
-        color: '#0f172a',
-        fontSize: '1.8rem',
-        fontWeight: '700',
-        letterSpacing: '-0.025em'
-      }}>
-        Course Completion Certificate (CCC)
-      </h2>
+    <div className="cfes-ccc-container">
+      {/* ── Document Header ── */}
+      <div className="cfes-ccc-header">
+        <div className="cfes-ccc-header-badge">
+          <Icon name="document" size={14} />
+          <span>Faculty Certification</span>
+        </div>
+        <h1 className="cfes-ccc-title">Course Completion Certificate (CCC)</h1>
+        <p className="cfes-ccc-subtitle">
+          End-of-semester certification of syllabus coverage, lecture sessions, and end-term review.
+        </p>
+      </div>
 
+      {/* ── Validation Error Banner ── */}
       {validationErrors.length > 0 && (
-        <div style={{ backgroundColor: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', padding: '1rem', marginBottom: '1.5rem' }}>
-          <p style={{ margin: '0 0 0.5rem', fontWeight: '700', color: '#991b1b', fontSize: '0.95rem' }}>Please fix the following errors:</p>
-          <ul style={{ margin: 0, paddingLeft: '1.25rem', color: '#b91c1c', fontSize: '0.88rem', lineHeight: '1.7' }}>
-            {validationErrors.map((e) => <li key={e.field}>{e.message}</li>)}
+        <div className="cfes-ccc-error-banner" role="alert">
+          <div className="cfes-ccc-error-title">
+            <Icon name="alert" size={16} />
+            <span>Please address the following validation errors:</span>
+          </div>
+          <ul className="cfes-ccc-error-list">
+            {validationErrors.map((e, idx) => (
+              <li key={`${e.field}-${idx}`}>{e.message}</li>
+            ))}
           </ul>
         </div>
       )}
 
-      {loading && <div style={{ textAlign: 'center', marginBottom: '1rem', fontStyle: 'italic', color: '#64748b' }}>Processing...</div>}
+      {/* ── Loading Indicator ── */}
+      {loading && (
+        <div className="cfes-ccc-loading-banner">
+          <Icon name="spinner" size={16} />
+          <span>Processing certificate data...</span>
+        </div>
+      )}
 
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} noValidate>
+        {/* ── Card 1: Course Information ── */}
+        <section className="cfes-ccc-card" aria-labelledby="ccc-course-info-heading">
+          <div className="cfes-ccc-card-header">
+            <h2 id="ccc-course-info-heading" className="cfes-ccc-card-title">
+              <Icon name="book" size={18} />
+              <span>Course Information</span>
+            </h2>
+            <span className="cfes-ccc-card-tag">Offering Details</span>
+          </div>
 
-        {/* Read-Only Auto-Filled Section */}
-        <div style={{ marginBottom: '2.5rem' }}>
-          <h3 style={{
-            marginBottom: '1.5rem',
-            color: '#1e293b',
-            fontSize: '1.2rem',
-            fontWeight: '600',
-            borderBottom: '2px solid #e2e8f0',
-            paddingBottom: '0.75rem'
-          }}>
-            Course Information
-          </h3>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem' }}>
-
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <label style={{ marginBottom: '0.35rem', fontSize: '0.85rem', fontWeight: '600', color: '#475569' }}>
-                Semester
+          <div className="cfes-ccc-grid-3">
+            <div className="cfes-ccc-form-group">
+              <label htmlFor="ccc-semester" className="cfes-ccc-label">
+                Semester / Section
               </label>
               <input
+                id="ccc-semester"
                 type="text"
+                className="cfes-ccc-input"
                 value={courseInfo.semesterName}
                 onChange={(e) => handleCourseInfoChange('semesterName', e.target.value)}
-                style={{
-                  padding: '0.6rem 0.8rem',
-                  border: '1px solid #cbd5e1',
-                  backgroundColor: '#ffffff',
-                  color: '#1e293b',
-                  borderRadius: '6px',
-                  fontSize: '0.95rem',
-                  outline: 'none',
-                  transition: 'border-color 0.2s'
-                }}
+                placeholder="e.g. Fall 2024 • Sec A"
               />
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <label style={{ marginBottom: '0.35rem', fontSize: '0.85rem', fontWeight: '600', color: '#475569' }}>
+            <div className="cfes-ccc-form-group">
+              <label htmlFor="ccc-course-title" className="cfes-ccc-label">
                 Course Title
               </label>
               <input
+                id="ccc-course-title"
                 type="text"
+                className="cfes-ccc-input"
                 value={courseInfo.courseTitle}
                 onChange={(e) => handleCourseInfoChange('courseTitle', e.target.value)}
-                style={{
-                  padding: '0.6rem 0.8rem',
-                  border: '1px solid #cbd5e1',
-                  backgroundColor: '#ffffff',
-                  color: '#1e293b',
-                  borderRadius: '6px',
-                  fontSize: '0.95rem',
-                  outline: 'none',
-                  transition: 'border-color 0.2s'
-                }}
+                placeholder="e.g. Object Oriented Programming"
               />
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <label style={{ marginBottom: '0.35rem', fontSize: '0.85rem', fontWeight: '600', color: '#475569' }}>
+            <div className="cfes-ccc-form-group">
+              <label htmlFor="ccc-course-code" className="cfes-ccc-label">
                 Course Code
               </label>
               <input
+                id="ccc-course-code"
                 type="text"
+                className="cfes-ccc-input"
                 value={courseInfo.courseCode}
                 onChange={(e) => handleCourseInfoChange('courseCode', e.target.value)}
-                style={{
-                  padding: '0.6rem 0.8rem',
-                  border: '1px solid #cbd5e1',
-                  backgroundColor: '#ffffff',
-                  color: '#1e293b',
-                  borderRadius: '6px',
-                  fontSize: '0.95rem',
-                  outline: 'none',
-                  transition: 'border-color 0.2s'
-                }}
+                placeholder="e.g. CS210"
               />
             </div>
-
-
-
           </div>
-        </div>
+        </section>
 
-        {/* Editable Completion Details */}
-        <div style={{ marginBottom: '2.5rem' }}>
-          <h3 style={{
-            marginBottom: '1.5rem',
-            color: '#1e293b',
-            fontSize: '1.2rem',
-            fontWeight: '600',
-            borderBottom: '2px solid #e2e8f0',
-            paddingBottom: '0.75rem'
-          }}>
-            Completion Details
-          </h3>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem' }}>
+        {/* ── Card 2: Completion Details ── */}
+        <section className="cfes-ccc-card" aria-labelledby="ccc-completion-details-heading">
+          <div className="cfes-ccc-card-header">
+            <h2 id="ccc-completion-details-heading" className="cfes-ccc-card-title">
+              <Icon name="check" size={18} />
+              <span>Completion Details</span>
+            </h2>
+            <span className="cfes-ccc-card-tag">Academic Verification</span>
+          </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <label style={{ marginBottom: '0.35rem', fontSize: '0.85rem', fontWeight: '600', color: hasError('sessionsHeld') ? '#b91c1c' : '#475569' }}>
-                Sessions Held <span style={{ color: '#ef4444' }}>*</span>
+          <div className="cfes-ccc-grid-4">
+            <div className="cfes-ccc-form-group">
+              <label
+                htmlFor="ccc-sessions-held"
+                className={`cfes-ccc-label ${hasError('sessionsHeld') ? 'cfes-ccc-label--error' : ''}`}
+              >
+                Sessions Held
+                <span className="cfes-ccc-required">*</span>
               </label>
               <input
+                id="ccc-sessions-held"
                 type="number"
                 min="0"
+                className={`cfes-ccc-input ${hasError('sessionsHeld') ? 'cfes-ccc-input--error' : ''}`}
                 value={certificateData.sessionsHeld}
                 onChange={(e) => handleChange('sessionsHeld', e.target.value)}
                 placeholder="e.g. 32"
-                style={{
-                  padding: '0.6rem 0.8rem',
-                  border: `1px solid ${hasError('sessionsHeld') ? '#ef4444' : '#cbd5e1'}`,
-                  backgroundColor: hasError('sessionsHeld') ? '#fef2f2' : '#ffffff',
-                  color: '#1e293b',
-                  borderRadius: '6px',
-                  fontSize: '0.95rem',
-                  outline: 'none',
-                  transition: 'border-color 0.2s'
-                }}
+                aria-required="true"
+                aria-invalid={hasError('sessionsHeld')}
               />
+              <span className="cfes-ccc-helper-text">Total lectures delivered</span>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <label style={{ marginBottom: '0.35rem', fontSize: '0.85rem', fontWeight: '600', color: hasError('totalRequiredSessions') ? '#b91c1c' : '#475569' }}>
-                Total Required Sessions <span style={{ color: '#ef4444' }}>*</span>
+            <div className="cfes-ccc-form-group">
+              <label
+                htmlFor="ccc-required-sessions"
+                className={`cfes-ccc-label ${hasError('totalRequiredSessions') ? 'cfes-ccc-label--error' : ''}`}
+              >
+                Total Required Sessions
+                <span className="cfes-ccc-required">*</span>
               </label>
               <input
+                id="ccc-required-sessions"
                 type="number"
                 min="1"
+                className={`cfes-ccc-input ${hasError('totalRequiredSessions') ? 'cfes-ccc-input--error' : ''}`}
                 value={certificateData.totalRequiredSessions}
                 onChange={(e) => handleChange('totalRequiredSessions', e.target.value)}
                 placeholder="e.g. 32"
-                style={{
-                  padding: '0.6rem 0.8rem',
-                  border: `1px solid ${hasError('totalRequiredSessions') ? '#ef4444' : '#cbd5e1'}`,
-                  backgroundColor: hasError('totalRequiredSessions') ? '#fef2f2' : '#ffffff',
-                  color: '#1e293b',
-                  borderRadius: '6px',
-                  fontSize: '0.95rem',
-                  outline: 'none',
-                  transition: 'border-color 0.2s'
-                }}
+                aria-required="true"
+                aria-invalid={hasError('totalRequiredSessions')}
               />
+              <span className="cfes-ccc-helper-text">Accredited syllabus requirement</span>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <label style={{ marginBottom: '0.35rem', fontSize: '0.85rem', fontWeight: '600', color: '#475569' }}>
+            <div className="cfes-ccc-form-group">
+              <label htmlFor="ccc-endterm-review" className="cfes-ccc-label">
                 End Term Review Filled?
               </label>
               <select
+                id="ccc-endterm-review"
+                className="cfes-ccc-select"
                 value={certificateData.endTermReviewFilled}
                 onChange={(e) => handleChange('endTermReviewFilled', e.target.value)}
-                style={{
-                  padding: '0.6rem 0.8rem',
-                  border: '1px solid #cbd5e1',
-                  backgroundColor: '#ffffff',
-                  color: '#1e293b',
-                  borderRadius: '6px',
-                  fontSize: '0.95rem',
-                  outline: 'none',
-                  transition: 'border-color 0.2s'
-                }}
               >
                 <option value="Yes">Yes</option>
                 <option value="No">No</option>
               </select>
+              <span className="cfes-ccc-helper-text">Course evaluation review</span>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <label style={{ marginBottom: '0.35rem', fontSize: '0.85rem', fontWeight: '600', color: hasError('date') ? '#b91c1c' : '#475569' }}>
-                Date <span style={{ color: '#ef4444' }}>*</span>
+            <div className="cfes-ccc-form-group">
+              <label
+                htmlFor="ccc-cert-date"
+                className={`cfes-ccc-label ${hasError('date') ? 'cfes-ccc-label--error' : ''}`}
+              >
+                Certification Date
+                <span className="cfes-ccc-required">*</span>
               </label>
               <input
+                id="ccc-cert-date"
                 type="date"
+                className={`cfes-ccc-input ${hasError('date') ? 'cfes-ccc-input--error' : ''}`}
                 value={certificateData.date}
                 onChange={(e) => handleChange('date', e.target.value)}
-                style={{
-                  padding: '0.6rem 0.8rem',
-                  border: `1px solid ${hasError('date') ? '#ef4444' : '#cbd5e1'}`,
-                  backgroundColor: hasError('date') ? '#fef2f2' : '#ffffff',
-                  color: '#1e293b',
-                  borderRadius: '6px',
-                  fontSize: '0.95rem',
-                  outline: 'none',
-                  transition: 'border-color 0.2s'
-                }}
+                aria-required="true"
+                aria-invalid={hasError('date')}
               />
-            </div>
-
-          </div>
-        </div>
-
-        {/* Signature Placeholder */}
-        <div style={{
-          marginTop: '3rem',
-          display: 'flex',
-          justifyContent: 'flex-start'
-        }}>
-          <div style={{ textAlign: 'center', width: '250px' }}>
-            <div style={{
-              height: '80px',
-              borderBottom: '2px solid #cbd5e1',
-              marginBottom: '0.5rem',
-              display: 'flex',
-              alignItems: 'flex-end',
-              justifyContent: 'center',
-              color: '#94a3b8',
-              fontStyle: 'italic',
-              fontSize: '0.9rem'
-            }}>
-              Signature
-            </div>
-            <div style={{ fontSize: '1rem', fontWeight: '700', color: '#1e293b', marginTop: '0.5rem', textTransform: 'uppercase' }}>
-              {courseInfo.facultyName}
+              <span className="cfes-ccc-helper-text">Submission timestamp</span>
             </div>
           </div>
-        </div>
 
-        {/* Action Buttons */}
-        <div style={{ marginTop: '3rem', display: 'flex', justifyContent: 'flex-end', gap: '1rem', borderTop: '1px solid #e2e8f0', paddingTop: '2rem', flexWrap: 'wrap' }}>
+          <div className="cfes-ccc-declaration">
+            &ldquo;I hereby certify that all prescribed course topics have been covered in accordance
+            with the approved course outline and the university curriculum standards.&rdquo;
+          </div>
+        </section>
 
-          <button
-            type="button"
-            onClick={() => handleDownload('pdf')}
-            disabled={isExporting === 'pdf' || loading}
-            style={{
-              padding: '0.75rem 1.5rem',
-              backgroundColor: '#fef2f2',
-              color: '#991b1b',
-              border: '1px solid #fecaca',
-              borderRadius: '4px',
-              fontSize: '0.95rem',
-              cursor: isExporting === 'pdf' ? 'wait' : 'pointer',
-              fontWeight: '600',
-              transition: 'all 0.2s'
-            }}
-          >
-            {isExporting === 'pdf' ? 'Generating...' : 'Download PDF'}
-          </button>
+        {/* ── Card 3: Signature & Authorization Block ── */}
+        <section className="cfes-ccc-signature-card" aria-labelledby="ccc-signature-heading">
+          <div className="cfes-ccc-card-header">
+            <h2 id="ccc-signature-heading" className="cfes-ccc-card-title">
+              <Icon name="users" size={18} />
+              <span>Instructor Authorization</span>
+            </h2>
+            <span className="cfes-ccc-card-tag">Endorsement</span>
+          </div>
 
-          {offeringId && (
-            <button
-              type="button"
-              onClick={handleSyncToDrive}
-              disabled={isSyncingDrive || loading || Boolean(isExporting)}
-              style={{
-                padding: '0.75rem 1.4rem',
-                backgroundColor: '#eff6ff',
-                color: '#1d4ed8',
-                border: '1px solid #bfdbfe',
-                borderRadius: '4px',
-                fontSize: '0.95rem',
-                cursor: isSyncingDrive ? 'wait' : 'pointer',
-                fontWeight: '600',
-                transition: 'all 0.2s',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.4rem',
-              }}
-              onMouseOver={(e) => {
-                if (!isSyncingDrive) e.currentTarget.style.backgroundColor = '#dbeafe';
-              }}
-              onMouseOut={(e) => {
-                if (!isSyncingDrive) e.currentTarget.style.backgroundColor = '#eff6ff';
-              }}
-              title="Save and synchronize Course Completion Certificate to Google Drive"
-            >
-              {isSyncingDrive ? 'Syncing to Drive...' : '⚡ Sync to Google Drive'}
-            </button>
-          )}
+          <div className="cfes-ccc-signature-wrapper">
+            <div className="cfes-ccc-signature-box">
+              <div className="cfes-ccc-signature-line">
+                Digital Endorsement / Signature
+              </div>
+              <div className="cfes-ccc-signature-name">
+                {courseInfo.facultyName || user?.name || 'Course Instructor'}
+              </div>
+              <div className="cfes-ccc-signature-role">
+                Course Instructor • Iqra University
+              </div>
+            </div>
+          </div>
+        </section>
 
-          {driveFile?.googleDriveWebViewLink && (
-            <a
-              href={driveFile.googleDriveWebViewLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                padding: '0.75rem 1.25rem',
-                backgroundColor: '#f0fdf4',
-                color: '#166534',
-                border: '1px solid #bbf7d0',
-                borderRadius: '4px',
-                fontSize: '0.95rem',
-                fontWeight: '600',
-                textDecoration: 'none',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.35rem',
-              }}
-              title="Open synchronized document in Google Drive"
-            >
-              <span>View in Drive{driveFile.version > 1 ? ` (v${driveFile.version})` : ''}</span>
-              <span style={{ fontSize: '0.8rem' }}>↗</span>
-            </a>
-          )}
-
-          <button
-            type="submit"
-            disabled={loading || isExporting}
-            style={{
-              padding: '0.75rem 2rem',
-              backgroundColor: loading ? '#94a3b8' : '#3949ab',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              fontSize: '1rem',
-              cursor: loading ? 'wait' : 'pointer',
-              fontWeight: 'bold',
-              transition: 'all 0.2s'
-            }}
-          >
-            {loading ? 'Saving...' : 'Save Draft'}
-          </button>
-        </div>
-
+        {/* ── Shared FormActionBar ── */}
+        <FormActionBar
+          onExportPdf={() => handleDownload('pdf')}
+          isExportingPdf={isExporting === 'pdf'}
+          pdfDisabled={isExporting === 'pdf' || loading}
+          showSyncDrive={Boolean(offeringId)}
+          onSyncDrive={handleSyncToDrive}
+          isSyncingDrive={isSyncingDrive}
+          syncDriveDisabled={isSyncingDrive || loading || Boolean(isExporting)}
+          syncDriveTitle="Save and synchronize Course Completion Certificate to Google Drive"
+          driveWebViewLink={driveFile?.googleDriveWebViewLink}
+          driveFileVersion={driveFile?.version}
+          saveButtonType="submit"
+          saveLabel="Save Draft"
+          isSaving={loading}
+          saveDisabled={loading || Boolean(isExporting)}
+        />
       </form>
     </div>
   );

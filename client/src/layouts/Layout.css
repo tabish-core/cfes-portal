@@ -51,12 +51,13 @@
     flex-direction: column;
     min-height: 100svh;
     height: auto;
-    overflow: visible;
+    overflow-x: hidden;
   }
 
   .main-area {
     height: auto;
-    overflow: visible;
+    min-width: 0;
+    overflow-x: hidden;
   }
 
   .app-shell--menu-open .main-area {
@@ -65,7 +66,9 @@
 
   .page-content {
     padding: var(--cfes-space-4);
-    overflow-y: visible;
+    min-width: 0;
+    max-width: 100%;
+    overflow-x: hidden;
   }
 }
 

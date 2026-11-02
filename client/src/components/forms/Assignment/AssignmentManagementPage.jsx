@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import api from '../../../api/axios';
 import useToast from '../../../hooks/useToast';
 import CreateAssignmentForm from './CreateAssignmentForm';
@@ -15,7 +15,7 @@ const AssignmentManagementPage = ({ courseId, offeringId }) => {
   const [syncingAssignmentId, setSyncingAssignmentId] = useState(null);
 
   /* ── Fetch assignments for this course / offering ───────── */
-  const fetchAssignments = async () => {
+  const fetchAssignments = useCallback(async () => {
     try {
       setLoading(true);
       let res;
@@ -35,10 +35,10 @@ const AssignmentManagementPage = ({ courseId, offeringId }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [courseId, offeringId, toast]);
 
   /* ── Fetch synchronized course files for offering ──────── */
-  const fetchCourseFiles = async () => {
+  const fetchCourseFiles = useCallback(async () => {
     if (!offeringId) return;
     try {
       const files = await getOfferingFiles(offeringId, 'ASSESS_ASSIGN');
@@ -46,7 +46,7 @@ const AssignmentManagementPage = ({ courseId, offeringId }) => {
     } catch (err) {
       console.warn('Could not load course files for assignments:', err);
     }
-  };
+  }, [offeringId]);
 
   useEffect(() => {
     if (offeringId || (courseId && courseId !== 'undefined')) {
@@ -55,7 +55,7 @@ const AssignmentManagementPage = ({ courseId, offeringId }) => {
     if (offeringId) {
       fetchCourseFiles();
     }
-  }, [courseId, offeringId]);
+  }, [courseId, offeringId, fetchAssignments, fetchCourseFiles]);
 
 
   /* ── Delete assignment ─────────────────────────────────── */

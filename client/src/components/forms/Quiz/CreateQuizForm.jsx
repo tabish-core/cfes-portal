@@ -267,15 +267,15 @@ const CreateQuizForm = ({ courseId, offeringId, quizId, onBack }) => {
 
         {/* CLO Mapping Section */}
         <h3 style={sectionHeaderStyle}>CLO Mapping Section</h3>
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+        <div className="cfes-table-scroll-container" style={{ overflowX: 'auto', width: '100%', maxWidth: '100%', WebkitOverflowScrolling: 'touch', border: '1px solid #cbd5e1', borderRadius: '8px' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '600px' }}>
             <thead>
               <tr>
-                <th style={{ padding: '0.75rem', borderBottom: '2px solid #cbd5e1', color: '#475569', fontWeight: '600', fontSize: '0.9rem' }}>Mapped CLO</th>
-                <th style={{ padding: '0.75rem', borderBottom: '2px solid #cbd5e1', color: '#475569', fontWeight: '600', fontSize: '0.9rem' }}>Mapped GA</th>
-                <th style={{ padding: '0.75rem', borderBottom: '2px solid #cbd5e1', color: '#475569', fontWeight: '600', fontSize: '0.9rem' }}>Mapped Learning Level</th>
-                <th style={{ padding: '0.75rem', borderBottom: '2px solid #cbd5e1', color: '#475569', fontWeight: '600', fontSize: '0.9rem' }}>SDG</th>
-                <th style={{ padding: '0.75rem', borderBottom: '2px solid #cbd5e1', color: '#475569', fontWeight: '600', fontSize: '0.9rem', width: '80px' }}>Action</th>
+                <th style={{ padding: '0.75rem', borderBottom: '2px solid #cbd5e1', color: '#475569', fontWeight: '600', fontSize: '0.9rem', whiteSpace: 'nowrap' }}>Mapped CLO</th>
+                <th style={{ padding: '0.75rem', borderBottom: '2px solid #cbd5e1', color: '#475569', fontWeight: '600', fontSize: '0.9rem', whiteSpace: 'nowrap' }}>Mapped GA</th>
+                <th style={{ padding: '0.75rem', borderBottom: '2px solid #cbd5e1', color: '#475569', fontWeight: '600', fontSize: '0.9rem', whiteSpace: 'nowrap' }}>Mapped Learning Level</th>
+                <th style={{ padding: '0.75rem', borderBottom: '2px solid #cbd5e1', color: '#475569', fontWeight: '600', fontSize: '0.9rem', whiteSpace: 'nowrap' }}>SDG</th>
+                <th style={{ padding: '0.75rem', borderBottom: '2px solid #cbd5e1', color: '#475569', fontWeight: '600', fontSize: '0.9rem', width: '80px', whiteSpace: 'nowrap' }}>Action</th>
               </tr>
             </thead>
             <tbody>

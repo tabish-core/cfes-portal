@@ -1,0 +1,470 @@
+/**
+ * CourseReviewReportTheoryPage.css
+ * CFES Faculty Portal — Course Review Report (Theory) (CRR)
+ */
+
+.cfes-crr-container {
+  width: 100%;
+  max-width: 960px;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+/* ── Document Header ── */
+.cfes-crr-header {
+  text-align: center;
+  margin-bottom: var(--cfes-space-6);
+  padding-bottom: var(--cfes-space-5);
+  border-bottom: 2px solid var(--cfes-slate-200);
+}
+
+.cfes-crr-header-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--cfes-space-2);
+  padding: 0.35rem 0.85rem;
+  background-color: var(--cfes-navy-50);
+  color: var(--cfes-navy-800);
+  border: 1px solid var(--cfes-navy-100);
+  border-radius: var(--cfes-radius-full);
+  font-size: var(--cfes-font-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: var(--cfes-space-3);
+}
+
+.cfes-crr-title {
+  color: var(--cfes-slate-900);
+  font-size: var(--cfes-font-2xl);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  margin: 0 0 var(--cfes-space-2) 0;
+}
+
+.cfes-crr-subtitle {
+  color: var(--cfes-slate-600);
+  font-size: var(--cfes-font-base);
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* ── Error Banner ── */
+.cfes-crr-error-banner {
+  background-color: var(--cfes-status-danger-bg);
+  border: 1px solid var(--cfes-status-danger-border);
+  border-left: 4px solid var(--cfes-status-danger-solid);
+  border-radius: var(--cfes-radius-md);
+  padding: var(--cfes-space-4) var(--cfes-space-5);
+  margin-bottom: var(--cfes-space-6);
+}
+
+.cfes-crr-error-title {
+  display: flex;
+  align-items: center;
+  gap: var(--cfes-space-2);
+  margin: 0 0 var(--cfes-space-2) 0;
+  font-weight: 700;
+  color: var(--cfes-status-danger-text);
+  font-size: var(--cfes-font-sm);
+}
+
+.cfes-crr-error-list {
+  margin: 0;
+  padding-left: 1.25rem;
+  color: var(--cfes-status-danger-text);
+  font-size: var(--cfes-font-sm);
+  line-height: 1.6;
+}
+
+/* ── Loading Banner ── */
+.cfes-crr-loading-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--cfes-space-2);
+  padding: var(--cfes-space-3);
+  margin-bottom: var(--cfes-space-5);
+  background-color: var(--cfes-navy-50);
+  border: 1px solid var(--cfes-navy-100);
+  border-radius: var(--cfes-radius-md);
+  color: var(--cfes-navy-700);
+  font-size: var(--cfes-font-sm);
+  font-weight: 500;
+}
+
+/* ── Section Card ── */
+.cfes-crr-card {
+  background-color: var(--cfes-white);
+  border: 1px solid var(--cfes-slate-200);
+  border-radius: var(--cfes-radius-lg);
+  box-shadow: var(--cfes-shadow-xs);
+  padding: var(--cfes-space-6);
+  margin-bottom: var(--cfes-space-6);
+  transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.cfes-crr-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--cfes-space-2);
+  border-bottom: 2px solid var(--cfes-slate-100);
+  padding-bottom: var(--cfes-space-3);
+  margin-bottom: var(--cfes-space-5);
+}
+
+.cfes-crr-card-title {
+  display: flex;
+  align-items: center;
+  gap: var(--cfes-space-2);
+  color: var(--cfes-slate-900);
+  font-size: var(--cfes-font-lg);
+  font-weight: 700;
+  margin: 0;
+}
+
+.cfes-crr-card-tag {
+  font-size: var(--cfes-font-xs);
+  font-weight: 600;
+  color: var(--cfes-slate-500);
+  background-color: var(--cfes-slate-100);
+  padding: 0.2rem 0.5rem;
+  border-radius: var(--cfes-radius-sm);
+}
+
+/* ── Course Details Grid ── */
+.cfes-crr-details-grid {
+  display: grid;
+  grid-templateColumns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--cfes-space-4);
+}
+
+.cfes-crr-form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.cfes-crr-label {
+  display: block;
+  font-size: var(--cfes-font-sm);
+  font-weight: 600;
+  color: var(--cfes-slate-700);
+  margin-bottom: var(--cfes-space-1);
+}
+
+.cfes-crr-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.6rem 0.85rem;
+  border: 1px solid var(--cfes-slate-300);
+  background-color: var(--cfes-white);
+  color: var(--cfes-slate-800);
+  border-radius: var(--cfes-radius-md);
+  font-size: var(--cfes-font-base);
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.cfes-crr-input:focus {
+  border-color: var(--cfes-blue-500);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+/* ── Tables in CRR ── */
+.cfes-crr-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.cfes-crr-table th {
+  padding: 0.75rem 0.85rem;
+  background-color: var(--cfes-slate-100);
+  border-bottom: 2px solid var(--cfes-slate-300);
+  color: var(--cfes-slate-700);
+  font-weight: 700;
+  font-size: var(--cfes-font-sm);
+  white-space: nowrap;
+}
+
+.cfes-crr-table td {
+  padding: 0.65rem 0.85rem;
+  border-bottom: 1px solid var(--cfes-slate-200);
+  vertical-align: middle;
+}
+
+.cfes-crr-table tbody tr:hover {
+  background-color: var(--cfes-slate-50);
+}
+
+.cfes-crr-table-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--cfes-slate-300);
+  background-color: var(--cfes-white);
+  color: var(--cfes-slate-800);
+  border-radius: var(--cfes-radius-sm);
+  font-size: var(--cfes-font-sm);
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.cfes-crr-table-input:focus {
+  border-color: var(--cfes-blue-500);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.12);
+}
+
+.cfes-crr-table-input--center {
+  text-align: center;
+}
+
+/* ── Grade Summary Section ── */
+.cfes-crr-class-average-bar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: var(--cfes-space-3);
+  margin-top: var(--cfes-space-4);
+  padding: var(--cfes-space-3) var(--cfes-space-4);
+  background-color: var(--cfes-slate-50);
+  border: 1px solid var(--cfes-slate-200);
+  border-radius: var(--cfes-radius-md);
+}
+
+.cfes-crr-class-average-label {
+  font-size: var(--cfes-font-sm);
+  font-weight: 700;
+  color: var(--cfes-slate-800);
+}
+
+.cfes-crr-class-average-input {
+  width: 220px;
+  max-width: 100%;
+  padding: 0.55rem 0.85rem;
+  border: 1px solid var(--cfes-slate-300);
+  background-color: var(--cfes-white);
+  color: var(--cfes-slate-800);
+  border-radius: var(--cfes-radius-md);
+  font-size: var(--cfes-font-base);
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.cfes-crr-class-average-input:focus {
+  border-color: var(--cfes-blue-500);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+/* ── Course Learning Outcomes Section ── */
+.cfes-crr-question-block {
+  display: flex;
+  flex-direction: column;
+  padding: var(--cfes-space-4);
+  background-color: var(--cfes-slate-50);
+  border: 1px solid var(--cfes-slate-200);
+  border-radius: var(--cfes-radius-md);
+  margin-bottom: var(--cfes-space-4);
+}
+
+.cfes-crr-question-block:last-child {
+  margin-bottom: 0;
+}
+
+.cfes-crr-question-title {
+  color: var(--cfes-slate-900);
+  font-size: var(--cfes-font-base);
+  font-weight: 700;
+  margin-bottom: var(--cfes-space-3);
+}
+
+.cfes-crr-radio-group {
+  display: flex;
+  align-items: center;
+  gap: var(--cfes-space-6);
+  flex-wrap: wrap;
+}
+
+.cfes-crr-radio-label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--cfes-space-2);
+  cursor: pointer;
+  color: var(--cfes-slate-800);
+  font-size: var(--cfes-font-base);
+  font-weight: 500;
+  user-select: none;
+}
+
+.cfes-crr-radio-input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--cfes-navy-800);
+  cursor: pointer;
+}
+
+.cfes-crr-conditional-box {
+  margin-top: var(--cfes-space-4);
+  padding-top: var(--cfes-space-3);
+  border-top: 1px dashed var(--cfes-slate-300);
+}
+
+.cfes-crr-conditional-label {
+  display: block;
+  font-size: var(--cfes-font-sm);
+  font-weight: 600;
+  color: var(--cfes-slate-700);
+  margin-bottom: var(--cfes-space-1);
+}
+
+.cfes-crr-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.65rem 0.85rem;
+  border: 1px solid var(--cfes-slate-300);
+  border-radius: var(--cfes-radius-md);
+  background-color: var(--cfes-white);
+  color: var(--cfes-slate-800);
+  font-size: var(--cfes-font-base);
+  font-family: inherit;
+  outline: none;
+  resize: vertical;
+  min-height: 85px;
+  line-height: 1.5;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.cfes-crr-textarea:focus {
+  border-color: var(--cfes-blue-500);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+/* ── Course Enhancement Section ── */
+.cfes-crr-enhancement-block {
+  margin-bottom: var(--cfes-space-5);
+}
+
+.cfes-crr-enhancement-block:last-child {
+  margin-bottom: 0;
+}
+
+.cfes-crr-enhancement-title {
+  color: var(--cfes-slate-900);
+  font-size: var(--cfes-font-base);
+  font-weight: 700;
+  margin-bottom: var(--cfes-space-2);
+}
+
+/* ── Signatures Section ── */
+.cfes-crr-signatures-grid {
+  display: grid;
+  grid-templateColumns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--cfes-space-6);
+  padding-top: var(--cfes-space-2);
+}
+
+.cfes-crr-signature-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  background-color: var(--cfes-slate-50);
+  border: 1px solid var(--cfes-slate-200);
+  border-radius: var(--cfes-radius-lg);
+  padding: var(--cfes-space-5);
+}
+
+.cfes-crr-signature-line {
+  height: 64px;
+  width: 100%;
+  max-width: 240px;
+  border-bottom: 2px dashed var(--cfes-slate-300);
+  margin-bottom: var(--cfes-space-3);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  color: var(--cfes-slate-400);
+  font-style: italic;
+  font-size: var(--cfes-font-sm);
+  padding-bottom: var(--cfes-space-1);
+}
+
+.cfes-crr-signature-name {
+  font-size: var(--cfes-font-md);
+  font-weight: 700;
+  color: var(--cfes-slate-900);
+  text-transform: uppercase;
+  min-height: 24px;
+}
+
+.cfes-crr-signature-role {
+  font-size: var(--cfes-font-xs);
+  font-weight: 600;
+  color: var(--cfes-slate-500);
+  margin-top: 2px;
+}
+
+.cfes-crr-signature-date {
+  width: 100%;
+  max-width: 220px;
+  margin-top: var(--cfes-space-4);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--cfes-space-1);
+}
+
+.cfes-crr-signature-date-label {
+  font-size: var(--cfes-font-xs);
+  font-weight: 600;
+  color: var(--cfes-slate-600);
+  align-self: flex-start;
+}
+
+.cfes-crr-signature-date-input {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--cfes-slate-300);
+  background-color: var(--cfes-white);
+  color: var(--cfes-slate-800);
+  border-radius: var(--cfes-radius-md);
+  font-size: var(--cfes-font-sm);
+  text-align: center;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.cfes-crr-signature-date-input:focus {
+  border-color: var(--cfes-blue-500);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+@media (max-width: 640px) {
+  .cfes-crr-card {
+    padding: var(--cfes-space-4);
+  }
+
+  .cfes-crr-details-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .cfes-crr-signatures-grid {
+    grid-template-columns: 1fr;
+    gap: var(--cfes-space-4);
+  }
+
+  .cfes-crr-class-average-bar {
+    justify-content: stretch;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .cfes-crr-class-average-input {
+    width: 100%;
+  }
+}
