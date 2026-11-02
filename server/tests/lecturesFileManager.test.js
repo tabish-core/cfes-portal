@@ -125,8 +125,9 @@ describe('Lectures File Manager with Google Drive Integration Suite', () => {
 
       expect(courseOfferingService.getOfferingById).toHaveBeenCalledWith(mockOfferingId, mockUser);
       expect(driveService.getOrCreateFolder).toHaveBeenCalledWith(
-        'CS301_SecA_Lectures',
-        expect.any(String)
+        'Lectures',
+        expect.any(String),
+        expect.any(Object)
       );
       expect(driveService.uploadDocumentBuffer).toHaveBeenCalledWith(
         expect.objectContaining({

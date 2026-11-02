@@ -153,14 +153,14 @@ describe('Stage 1: Google Drive OAuth & Client Verification Suite', () => {
       expect(tokenInfo).toBeNull();
     });
 
-    test('getAuthenticatedClient throws 401 GOOGLE_AUTH_REQUIRED when no credentials exist', async () => {
+    test('getAuthenticatedClient throws 503 GOOGLE_AUTH_REQUIRED when no credentials exist', async () => {
       delete process.env.GOOGLE_OAUTH_REFRESH_TOKEN;
       jest.spyOn(GoogleOAuthToken, 'findOne').mockReturnValue({
         sort: jest.fn().mockResolvedValue(null),
       });
 
       await expect(googleDriveConfig.getAuthenticatedClient()).rejects.toMatchObject({
-        statusCode: 401,
+        statusCode: 503,
         code: 'GOOGLE_AUTH_REQUIRED',
       });
     });
@@ -305,7 +305,7 @@ describe('Stage 1: Google Drive OAuth & Client Verification Suite', () => {
       await expect(
         driveService.verifyFolderAccess('1kIzXquZB7ayOhTXtunMPwoCdVmx40Kez')
       ).rejects.toMatchObject({
-        statusCode: 401,
+        statusCode: 503,
         code: 'INVALID_GRANT',
       });
     });
@@ -471,6 +471,50 @@ describe('Stage 1: Google Drive OAuth & Client Verification Suite', () => {
       expect(payload.success).toBe(true);
       expect(payload.data.folderName).toBe('CFES Dossiers');
       expect(payload.data.hasWriteAccess).toBe(true);
+    });
+
+    test('verifyGoogleDriveAccess returns HTTP 503 and GOOGLE_AUTH_REQUIRED when drive is disconnected', async () => {
+      const gAuthError = new Error('Google Drive is not connected.');
+      gAuthError.statusCode = 503;
+      gAuthError.code = 'GOOGLE_AUTH_REQUIRED';
+
+      jest.spyOn(driveService, 'verifyFolderAccess').mockRejectedValue(gAuthError);
+
+      const mockReq = { user: { _id: '123' } };
+      const mockRes = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn().mockReturnThis(),
+      };
+
+      await courseFileController.verifyGoogleDriveAccess(mockReq, mockRes, jest.fn());
+
+      expect(mockRes.status).toHaveBeenCalledWith(503);
+      const payload = mockRes.json.mock.calls[0][0];
+      expect(payload.success).toBe(false);
+      expect(payload.code).toBe('GOOGLE_AUTH_REQUIRED');
+      expect(payload.message).toContain('Google Drive is not connected');
+    });
+
+    test('verifyGoogleDriveAccess safeguards against any 401 and converts to HTTP 503', async () => {
+      const gAuthError = new Error('Google Drive token expired');
+      gAuthError.statusCode = 401; // Simulating unexpected upstream 401
+      gAuthError.code = 'INVALID_GRANT';
+
+      jest.spyOn(driveService, 'verifyFolderAccess').mockRejectedValue(gAuthError);
+
+      const mockReq = { user: { _id: '123' } };
+      const mockRes = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn().mockReturnThis(),
+      };
+
+      await courseFileController.verifyGoogleDriveAccess(mockReq, mockRes, jest.fn());
+
+      expect(mockRes.status).toHaveBeenCalledWith(503);
+      expect(mockRes.status).not.toHaveBeenCalledWith(401);
+      const payload = mockRes.json.mock.calls[0][0];
+      expect(payload.success).toBe(false);
+      expect(payload.code).toBe('INVALID_GRANT');
     });
   });
 

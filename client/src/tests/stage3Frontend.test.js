@@ -81,6 +81,52 @@ const verifyGoogleDriveAccess = async () => {
   return data.data;
 };
 
+const getGoogleDriveStatus = async () => {
+  const { data } = await mockApi.get('/course-files/google/status');
+  return data.data;
+};
+
+// Interceptor logout decision logic matching client/src/api/axios.js
+function handleAxiosResponseError(error, storage, navigation) {
+  const status = error.response?.status;
+  const url = error.config?.url || '';
+  const data = error.response?.data;
+
+  const isIntegrationRoute =
+    url.includes('/google/') ||
+    url.includes('/course-files/google/');
+
+  const isIntegrationErrorCode =
+    data?.code === 'GOOGLE_AUTH_REQUIRED' ||
+    data?.code === 'INVALID_GRANT';
+
+  const isExplicitlyExempt = Boolean(error.config?.skipAuthRedirect);
+
+  const isPortalAuthFailure =
+    status === 401 &&
+    !isIntegrationRoute &&
+    !isIntegrationErrorCode &&
+    !isExplicitlyExempt;
+
+  if (isPortalAuthFailure) {
+    storage.removeItem('token');
+    storage.removeItem('user');
+    navigation.redirect('/login');
+    return 'LOGGED_OUT';
+  }
+  return 'IGNORED_OR_PROPAGATED';
+}
+
+function computeDriveBadgeState(driveFolder) {
+  if (driveFolder?.isConfigured) {
+    return { label: '● Connected', bg: '#ecfdf5', color: '#047857' };
+  }
+  if (driveFolder) {
+    return { label: '○ Disconnected', bg: '#fef2f2', color: '#b91c1c' };
+  }
+  return { label: 'Checking status...', bg: '#f1f5f9', color: '#64748b' };
+}
+
 // UI Status helper function matching CourseFileChecklist.jsx logic
 function computeDriveStatus(file, rowError) {
   if (file && file.status === 'synced') {
@@ -294,6 +340,171 @@ describe('Stage 3 Frontend Integration Tests', () => {
 
       assert.equal(validFile.size <= MAX_SIZE, true);
       assert.equal(invalidFile.size <= MAX_SIZE, false);
+    });
+  });
+
+  describe('Google Drive Status Endpoint & Initial Mount Resilience', () => {
+    test('getGoogleDriveStatus: returns configured status and folderId when connected', async () => {
+      mockResponses['GET:/course-files/google/status'] = {
+        data: {
+          success: true,
+          data: {
+            isConfigured: true,
+            destinationFolderId: '1kIzXquZB7ayOhTXtunMPwoCdVmx40Kez',
+            authorizedEmail: 'faculty@iu.edu.pk',
+          },
+        },
+      };
+
+      const status = await getGoogleDriveStatus();
+      assert.equal(status.isConfigured, true);
+      assert.equal(status.destinationFolderId, '1kIzXquZB7ayOhTXtunMPwoCdVmx40Kez');
+      assert.equal(status.authorizedEmail, 'faculty@iu.edu.pk');
+    });
+
+    test('getGoogleDriveStatus: returns isConfigured false without throwing when disconnected', async () => {
+      mockResponses['GET:/course-files/google/status'] = {
+        data: {
+          success: true,
+          data: {
+            isConfigured: false,
+            destinationFolderId: '1kIzXquZB7ayOhTXtunMPwoCdVmx40Kez',
+            authorizedEmail: null,
+          },
+        },
+      };
+
+      const status = await getGoogleDriveStatus();
+      assert.equal(status.isConfigured, false);
+      assert.equal(status.authorizedEmail, null);
+    });
+  });
+
+  describe('Global Axios Interceptor Session Protection Tests', () => {
+    let mockStorage;
+    let mockNav;
+
+    beforeEach(() => {
+      mockStorage = {
+        items: { token: 'valid_cfes_jwt_token', user: JSON.stringify({ name: 'Faculty User' }) },
+        removeItem(k) { delete this.items[k]; },
+      };
+      mockNav = {
+        currentPath: '/faculty/offering/offering123',
+        redirect(path) { this.currentPath = path; },
+      };
+    });
+
+    test('Google Drive 401 on /course-files/google/* does NOT log out the user', () => {
+      const error = {
+        config: { url: '/course-files/google/verify' },
+        response: {
+          status: 401,
+          data: { success: false, message: 'Google Drive is not connected.', code: 'GOOGLE_AUTH_REQUIRED' },
+        },
+      };
+
+      const result = handleAxiosResponseError(error, mockStorage, mockNav);
+      assert.equal(result, 'IGNORED_OR_PROPAGATED');
+      assert.equal(mockStorage.items.token, 'valid_cfes_jwt_token');
+      assert.notEqual(mockStorage.items.user, undefined);
+      assert.equal(mockNav.currentPath, '/faculty/offering/offering123');
+    });
+
+    test('Google Drive 503 does NOT log out the user', () => {
+      const error = {
+        config: { url: '/course-files/google/verify' },
+        response: {
+          status: 503,
+          data: { success: false, message: 'Google Drive is not connected.', code: 'GOOGLE_AUTH_REQUIRED' },
+        },
+      };
+
+      const result = handleAxiosResponseError(error, mockStorage, mockNav);
+      assert.equal(result, 'IGNORED_OR_PROPAGATED');
+      assert.equal(mockStorage.items.token, 'valid_cfes_jwt_token');
+      assert.equal(mockNav.currentPath, '/faculty/offering/offering123');
+    });
+
+    test('Response containing GOOGLE_AUTH_REQUIRED error code never triggers logout regardless of URL', () => {
+      const error = {
+        config: { url: '/sync/cis/offering123' },
+        response: {
+          status: 401,
+          data: { success: false, message: 'Google Drive is not connected.', code: 'GOOGLE_AUTH_REQUIRED' },
+        },
+      };
+
+      const result = handleAxiosResponseError(error, mockStorage, mockNav);
+      assert.equal(result, 'IGNORED_OR_PROPAGATED');
+      assert.equal(mockStorage.items.token, 'valid_cfes_jwt_token');
+      assert.equal(mockNav.currentPath, '/faculty/offering/offering123');
+    });
+
+    test('Response containing INVALID_GRANT error code never triggers logout', () => {
+      const error = {
+        config: { url: '/course-files/upload/offering123' },
+        response: {
+          status: 401,
+          data: { success: false, message: 'Google Drive authorization has expired.', code: 'INVALID_GRANT' },
+        },
+      };
+
+      const result = handleAxiosResponseError(error, mockStorage, mockNav);
+      assert.equal(result, 'IGNORED_OR_PROPAGATED');
+      assert.equal(mockStorage.items.token, 'valid_cfes_jwt_token');
+      assert.equal(mockNav.currentPath, '/faculty/offering/offering123');
+    });
+
+    test('Requests with skipAuthRedirect flag do not trigger logout on 401', () => {
+      const error = {
+        config: { url: '/custom-endpoint', skipAuthRedirect: true },
+        response: { status: 401, data: { success: false } },
+      };
+
+      const result = handleAxiosResponseError(error, mockStorage, mockNav);
+      assert.equal(result, 'IGNORED_OR_PROPAGATED');
+      assert.equal(mockStorage.items.token, 'valid_cfes_jwt_token');
+      assert.equal(mockNav.currentPath, '/faculty/offering/offering123');
+    });
+
+    test('Genuine expired CFES JWT 401 on core portal route DOES delete token and redirect to /login', () => {
+      const error = {
+        config: { url: '/auth/me' },
+        response: {
+          status: 401,
+          data: { success: false, message: 'Token has expired. Please log in again.' },
+        },
+      };
+
+      const result = handleAxiosResponseError(error, mockStorage, mockNav);
+      assert.equal(result, 'LOGGED_OUT');
+      assert.equal(mockStorage.items.token, undefined);
+      assert.equal(mockStorage.items.user, undefined);
+      assert.equal(mockNav.currentPath, '/login');
+    });
+  });
+
+  describe('Google Drive UI Status Badges & Continuity', () => {
+    test('displays "● Connected" with green badge when drive is configured', () => {
+      const state = computeDriveBadgeState({ isConfigured: true, folderId: '123' });
+      assert.equal(state.label, '● Connected');
+      assert.equal(state.color, '#047857');
+      assert.equal(state.bg, '#ecfdf5');
+    });
+
+    test('displays "○ Disconnected" with soft red badge when drive is disconnected without blocking UI', () => {
+      const state = computeDriveBadgeState({ isConfigured: false });
+      assert.equal(state.label, '○ Disconnected');
+      assert.equal(state.color, '#b91c1c');
+      assert.equal(state.bg, '#fef2f2');
+    });
+
+    test('displays "Checking status..." with neutral gray badge while loading', () => {
+      const state = computeDriveBadgeState(null);
+      assert.equal(state.label, 'Checking status...');
+      assert.equal(state.color, '#64748b');
+      assert.equal(state.bg, '#f1f5f9');
     });
   });
 });

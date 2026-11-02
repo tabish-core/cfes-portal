@@ -99,6 +99,7 @@ describe('Stage 4A: CCR Google Drive Synchronization Suite', () => {
     process.env.GOOGLE_DRIVE_FOLDER_ID = '1kIzXquZB7ayOhTXtunMPwoCdVmx40Kez';
     jest.clearAllMocks();
     jest.spyOn(CourseChecklist, 'findOne').mockResolvedValue(null);
+    jest.spyOn(driveService, 'getOrCreateFolder').mockResolvedValue('mock_category_folder_id');
   });
 
   afterEach(() => {
@@ -313,7 +314,7 @@ describe('Stage 4A: CCR Google Drive Synchronization Suite', () => {
 
       expect(driveService.uploadDocumentBuffer).toHaveBeenCalledWith(
         expect.objectContaining({
-          filename: 'CCR_CSC305_SecA.pdf',
+          filename: 'Course Control Report.pdf',
           mimeType: 'application/pdf',
           existingFileId: null,
         })

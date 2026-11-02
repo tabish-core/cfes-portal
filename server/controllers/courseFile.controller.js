@@ -194,8 +194,18 @@ const verifyGoogleDriveAccess = async (req, res, next) => {
     const result = await driveService.verifyFolderAccess();
     return sendSuccess(res, result, 'Destination folder access verified successfully.');
   } catch (err) {
-    const status = err.statusCode || 500;
-    return sendError(res, err.message, status, err.details || null);
+    let status = err.statusCode || 500;
+    // Downstream Google Drive integration failures must never return 401
+    if (status === 401) {
+      status = 503;
+    }
+    return res.status(status).json({
+      success: false,
+      message: err.message,
+      code: err.code || (status === 503 ? 'GOOGLE_AUTH_REQUIRED' : undefined),
+      data: null,
+      details: err.details || null,
+    });
   }
 };
 

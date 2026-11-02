@@ -97,6 +97,7 @@ describe('CIS and CCR PDF Text Regression & Drive Sync Suite', () => {
     jest.spyOn(CourseChecklist, 'findOneAndUpdate').mockResolvedValue({ _id: 'chk_1' });
     jest.spyOn(CourseOffering, 'countDocuments').mockResolvedValue(1);
     jest.spyOn(CourseOffering, 'findOne').mockResolvedValue(mockOffering);
+    jest.spyOn(driveService, 'getOrCreateFolder').mockResolvedValue('mock_category_folder_id');
   });
 
   afterEach(() => {

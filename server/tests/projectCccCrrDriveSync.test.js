@@ -185,6 +185,7 @@ describe('Google Drive PDF Synchronization: CCP, CCC, and CRR', () => {
     process.env.GOOGLE_DRIVE_FOLDER_ID = 'test_root_drive_folder_id';
     jest.clearAllMocks();
     jest.spyOn(CourseChecklist, 'findOne').mockResolvedValue(null);
+    jest.spyOn(driveService, 'getOrCreateFolder').mockResolvedValue('mock_category_folder_id');
   });
 
   afterEach(() => {
@@ -332,7 +333,7 @@ describe('Google Drive PDF Synchronization: CCP, CCC, and CRR', () => {
       expect(driveService.uploadDocumentBuffer).toHaveBeenCalledWith(
         expect.objectContaining({
           existingFileId: 'original_drive_file_id',
-          filename: 'ASSESS_PROJECT_CS301_SecA.pdf',
+          filename: 'Class Project.pdf',
         })
       );
     });

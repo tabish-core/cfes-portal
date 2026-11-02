@@ -164,7 +164,7 @@ const getAuthenticatedClient = async () => {
     const error = new Error(
       'Google Drive is not connected. Please authorize the portal via /api/course-files/google/auth or configure GOOGLE_OAUTH_REFRESH_TOKEN.'
     );
-    error.statusCode = 401;
+    error.statusCode = 503;
     error.code = 'GOOGLE_AUTH_REQUIRED';
     throw error;
   }

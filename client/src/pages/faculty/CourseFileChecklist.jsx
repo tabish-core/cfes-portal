@@ -13,7 +13,7 @@ import {
   syncQuizDocument,
   syncAssignmentDocument,
   uploadOfferingDocument,
-  verifyGoogleDriveAccess,
+  getGoogleDriveStatus,
 } from '../../services/courseFile.service';
 import ExamUploadSection from '../../components/forms/Exam/ExamUploadSection';
 import '../dean/Dashboard.css';
@@ -252,11 +252,11 @@ const CourseFileChecklist = () => {
             batch: defaultBatch,
           });
 
-          // Fetch offering-scoped checklist and files concurrently
-          const [checklistRes, files, folderInfo, quizRes, assignRes] = await Promise.all([
+          // Fetch offering-scoped checklist, files, and Google Drive connection status concurrently
+          const [checklistRes, files, statusInfo, quizRes, assignRes] = await Promise.all([
             api.get(`/checklist/offering/${offeringId}`),
             getOfferingFiles(offeringId).catch(() => []),
-            verifyGoogleDriveAccess().catch(() => null),
+            getGoogleDriveStatus().catch(() => null),
             api.get(`/quizzes/offering/${offeringId}`).catch(() => ({ data: { data: { quizzes: [] } } })),
             api.get(`/assignments/offering/${offeringId}`).catch(() => ({ data: { data: { assignments: [] } } })),
           ]);
@@ -264,7 +264,16 @@ const CourseFileChecklist = () => {
           loadedFiles = files || [];
           checklistData = checklistRes.data?.data?.checklist;
           setCourseFiles(loadedFiles);
-          if (folderInfo) setDriveFolder(folderInfo);
+          if (statusInfo && statusInfo.isConfigured) {
+            setDriveFolder({
+              folderId: statusInfo.destinationFolderId,
+              folderName: 'Institutional Google Drive',
+              isConfigured: true,
+              authorizedEmail: statusInfo.authorizedEmail,
+            });
+          } else {
+            setDriveFolder({ isConfigured: false });
+          }
           if (quizRes.data?.data?.quizzes) {
             setOfferingQuizzes(quizRes.data.data.quizzes);
           }
@@ -683,7 +692,7 @@ const CourseFileChecklist = () => {
           )}
         </div>
         <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.5rem', flexWrap: 'wrap' }}>
-          {driveFolder?.folderId && (
+          {driveFolder?.isConfigured && driveFolder?.folderId && (
             <a
               href={`https://drive.google.com/drive/folders/${driveFolder.folderId}`}
               target="_blank"
@@ -798,22 +807,22 @@ const CourseFileChecklist = () => {
                     borderRadius: '9999px',
                     fontSize: '0.75rem',
                     fontWeight: '600',
-                    backgroundColor: driveFolder ? '#ecfdf5' : '#f1f5f9',
-                    color: driveFolder ? '#047857' : '#64748b',
-                    border: `1px solid ${driveFolder ? '#a7f3d0' : '#e2e8f0'}`,
+                    backgroundColor: driveFolder?.isConfigured ? '#ecfdf5' : driveFolder ? '#fef2f2' : '#f1f5f9',
+                    color: driveFolder?.isConfigured ? '#047857' : driveFolder ? '#b91c1c' : '#64748b',
+                    border: `1px solid ${driveFolder?.isConfigured ? '#a7f3d0' : driveFolder ? '#fecaca' : '#e2e8f0'}`,
                   }}
                 >
-                  {driveFolder ? '● Connected' : 'Checking status...'}
+                  {driveFolder?.isConfigured ? '● Connected' : driveFolder ? '○ Disconnected' : 'Checking status...'}
                 </span>
               </div>
               <p style={{ margin: '0.25rem 0 0', fontSize: '0.85rem', color: '#64748b' }}>
-                {driveFolder ? (
+                {driveFolder?.isConfigured ? (
                   <>
-                    Destination folder: <strong>{driveFolder.folderName || 'CourseFileFall2026'}</strong>{' '}
+                    Destination folder: <strong>{driveFolder.folderName || 'Institutional Google Drive'}</strong>{' '}
                     • {totalSyncedCount} of {totalChecklistItemsCount} documents synchronized
                   </>
                 ) : (
-                  'Synchronizing course documents with configured institutional Google Drive repository'
+                  'Google Drive is currently disconnected. Course files and checklists can still be edited and managed in the portal.'
                 )}
               </p>
             </div>

@@ -84,6 +84,7 @@ describe('Stage 2: Google Drive Document Upload, Persistence & CIS Sync Suite', 
     process.env.GOOGLE_DRIVE_FOLDER_ID = '1kIzXquZB7ayOhTXtunMPwoCdVmx40Kez';
     jest.clearAllMocks();
     jest.spyOn(CourseChecklist, 'findOne').mockResolvedValue(null);
+    jest.spyOn(driveService, 'getOrCreateFolder').mockResolvedValue('mock_category_folder_id');
   });
 
   afterEach(() => {
@@ -312,7 +313,7 @@ describe('Stage 2: Google Drive Document Upload, Persistence & CIS Sync Suite', 
       expect(courseOfferingService.getOfferingById).toHaveBeenCalledWith(mockOfferingId, mockUser);
       expect(driveService.uploadDocumentBuffer).toHaveBeenCalledWith(
         expect.objectContaining({
-          filename: 'CIS_CSC201_SecA.pdf',
+          filename: 'Course Information Sheet.pdf',
           mimeType: 'application/pdf',
         })
       );

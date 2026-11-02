@@ -186,9 +186,10 @@ describe('Midterm & Final Exam Document Upload Feature Test Suite', () => {
         expect(result.documentType).toBe(type);
         expect(result.version).toBe(1);
         expect(result.isCanonical).toBe(true);
+        const expectedCleanName = `${courseFileService.EXAM_DOCUMENT_NAMES[type]}.pdf`;
         expect(driveService.uploadDocumentBuffer).toHaveBeenCalledWith(
           expect.objectContaining({
-            filename: `${type}_Sample.pdf`,
+            filename: expectedCleanName,
             mimeType: 'application/pdf',
             folderId: isMidterm ? 'midterm_fld' : 'final_fld',
             existingFileId: null,
@@ -241,7 +242,7 @@ describe('Midterm & Final Exam Document Upload Feature Test Suite', () => {
       expect(result.fileFormat).toBe('docx');
       expect(driveService.uploadDocumentBuffer).toHaveBeenCalledWith(
         expect.objectContaining({
-          filename: 'Midterm_Question_Paper.docx',
+          filename: 'Exam Paper.docx',
           mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
         })
       );
@@ -291,7 +292,7 @@ describe('Midterm & Final Exam Document Upload Feature Test Suite', () => {
       expect(result.fileFormat).toBe('doc');
       expect(driveService.uploadDocumentBuffer).toHaveBeenCalledWith(
         expect.objectContaining({
-          filename: 'Final_Best_Student_Copy.doc',
+          filename: 'Best Student Copy.doc',
           mimeType: 'application/msword',
         })
       );
@@ -681,7 +682,7 @@ describe('Midterm & Final Exam Document Upload Feature Test Suite', () => {
         user: mockUser,
       });
 
-      expect(capturedFolderName).toBe('CS402_SecB_Midterm');
+      expect(capturedFolderName).toBe('Midterm Exam');
     });
 
     test('routes Final uploads to ${courseCode}_Sec${section}_Final subfolder', async () => {
@@ -722,7 +723,7 @@ describe('Midterm & Final Exam Document Upload Feature Test Suite', () => {
         user: mockUser,
       });
 
-      expect(capturedFolderName).toBe('CS402_SecB_Final');
+      expect(capturedFolderName).toBe('Final Exam');
     });
   });
 
@@ -753,7 +754,7 @@ describe('Midterm & Final Exam Document Upload Feature Test Suite', () => {
 
       const updatedUploadResult = {
         fileId: 'drive_existing_copy_id', // same file ID returned by driveService.uploadDocumentBuffer
-        name: 'New_Revised_Best_Copy.docx',
+        name: 'Best Student Copy.docx',
         mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
         sizeBytes: 4096,
         webViewLink: 'https://drive.google.com/file/d/drive_existing_copy_id/view',
@@ -779,14 +780,14 @@ describe('Midterm & Final Exam Document Upload Feature Test Suite', () => {
       expect(driveService.uploadDocumentBuffer).toHaveBeenCalledWith(
         expect.objectContaining({
           existingFileId: 'drive_existing_copy_id',
-          filename: 'New_Revised_Best_Copy.docx',
+          filename: 'Best Student Copy.docx',
         })
       );
 
       // Verify version incremented to 2
       expect(result.version).toBe(2);
       expect(result.fileFormat).toBe('docx');
-      expect(result.filename).toBe('New_Revised_Best_Copy.docx');
+      expect(result.filename).toBe('Best Student Copy.docx');
       expect(existingRecord.save).toHaveBeenCalled();
     });
 
@@ -885,7 +886,7 @@ describe('Midterm & Final Exam Document Upload Feature Test Suite', () => {
       expect(driveService.uploadDocumentBuffer).toHaveBeenCalledWith(
         expect.objectContaining({
           existingFileId: 'drive_midterm_paper_id',
-          filename: 'Midterm_v2.pdf',
+          filename: 'Exam Paper.pdf',
         })
       );
       expect(result.version).toBe(2);

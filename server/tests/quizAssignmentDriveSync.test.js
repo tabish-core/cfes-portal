@@ -148,7 +148,7 @@ describe('Phase 1: Quiz & Assignment Google Drive Backend Integration Suite', ()
 
       const mockUploadResult = {
         fileId: 'drive_quiz_file_123',
-        name: 'ASSESS_QUIZ_CS301_SecA_Quiz_1.pdf',
+        name: 'Quiz 01.pdf',
         mimeType: 'application/pdf',
         sizeBytes: 1024,
         webViewLink: 'https://drive.google.com/file/d/drive_quiz_file_123/view',
@@ -197,7 +197,7 @@ describe('Phase 1: Quiz & Assignment Google Drive Backend Integration Suite', ()
       expect(driveService.uploadDocumentBuffer).toHaveBeenCalledWith(
         expect.objectContaining({
           buffer: expect.any(Buffer),
-          filename: 'ASSESS_QUIZ_CS301_SecA_Quiz_1.pdf',
+          filename: 'Quiz 01.pdf',
           mimeType: 'application/pdf',
           folderId: 'mock_quizzes_folder_id',
           existingFileId: null,
@@ -242,7 +242,7 @@ describe('Phase 1: Quiz & Assignment Google Drive Backend Integration Suite', ()
 
       const mockUploadResult = {
         fileId: 'drive_assign_file_456',
-        name: 'ASSESS_ASSIGN_CS301_SecA_Assignment_2.pdf',
+        name: 'Assignment 02.pdf',
         mimeType: 'application/pdf',
         sizeBytes: 2048,
         webViewLink: 'https://drive.google.com/file/d/drive_assign_file_456/view',
@@ -291,7 +291,7 @@ describe('Phase 1: Quiz & Assignment Google Drive Backend Integration Suite', ()
       expect(driveService.uploadDocumentBuffer).toHaveBeenCalledWith(
         expect.objectContaining({
           buffer: expect.any(Buffer),
-          filename: 'ASSESS_ASSIGN_CS301_SecA_Assignment_2.pdf',
+          filename: 'Assignment 02.pdf',
           mimeType: 'application/pdf',
           folderId: 'mock_assignments_folder_id',
           existingFileId: null,

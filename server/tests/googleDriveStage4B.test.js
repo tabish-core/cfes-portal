@@ -117,6 +117,7 @@ describe('Stage 4B: Timetable Google Drive Synchronization Suite', () => {
     process.env.GOOGLE_DRIVE_FOLDER_ID = '1kIzXquZB7ayOhTXtunMPwoCdVmx40Kez';
     jest.clearAllMocks();
     jest.spyOn(CourseChecklist, 'findOne').mockResolvedValue(null);
+    jest.spyOn(driveService, 'getOrCreateFolder').mockResolvedValue('mock_category_folder_id');
   });
 
   afterEach(() => {

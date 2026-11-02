@@ -61,6 +61,347 @@ const MAX_EXAM_FILE_SIZE = 25 * 1024 * 1024; // 25 MB
 
 
 /**
+ * Sanitizes visible names for Google Drive folders and files.
+ * Replaces '/' and '\' with ' - ', strips problematic characters, and normalizes spacing.
+ *
+ * @param {string} name
+ * @returns {string}
+ */
+const sanitizeDriveName = (name) => {
+  if (!name || typeof name !== 'string') return '';
+  return name
+    .replace(/[/\\]+/g, ' - ')
+    .replace(/['"*?<>|:]+/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+};
+
+/**
+ * Mapping of document types to their target category folder names.
+ */
+const DOCUMENT_CATEGORY_MAP = {
+  CIS: 'Course Documents',
+  CCR: 'Course Documents',
+  ASSESS_PROJECT: 'Course Documents',
+  CCP: 'Course Documents',
+  CCC: 'Course Documents',
+  CRR: 'Course Documents',
+  TIMETABLE: 'Course Documents',
+  LECTURES: 'Lectures',
+  ASSESS_QUIZ: 'Quizzes',
+  ASSESS_ASSIGN: 'Assignments',
+  MIDTERM_EXAM_PAPER: 'Midterm Exam',
+  MIDTERM_BEST_COPY: 'Midterm Exam',
+  MIDTERM_AVERAGE_COPY: 'Midterm Exam',
+  MIDTERM_WORST_COPY: 'Midterm Exam',
+  FINAL_EXAM_PAPER: 'Final Exam',
+  FINAL_BEST_COPY: 'Final Exam',
+  FINAL_AVERAGE_COPY: 'Final Exam',
+  FINAL_WORST_COPY: 'Final Exam',
+};
+
+/**
+ * Mapping of canonical document types to their clean visible filenames.
+ */
+const CANONICAL_DOCUMENT_NAMES = {
+  CIS: 'Course Information Sheet',
+  CCR: 'Course Control Report',
+  ASSESS_PROJECT: 'Class Project',
+  CCP: 'Class Project',
+  CCC: 'Course Completion Certificate',
+  CRR: 'Course Review Report',
+  TIMETABLE: 'Timetable with Consulting Hours',
+};
+
+/**
+ * Mapping of exam document slots to their clean visible filenames.
+ */
+const EXAM_DOCUMENT_NAMES = {
+  MIDTERM_EXAM_PAPER: 'Exam Paper',
+  MIDTERM_BEST_COPY: 'Best Student Copy',
+  MIDTERM_AVERAGE_COPY: 'Average Student Copy',
+  MIDTERM_WORST_COPY: 'Worst Student Copy',
+  FINAL_EXAM_PAPER: 'Exam Paper',
+  FINAL_BEST_COPY: 'Best Student Copy',
+  FINAL_AVERAGE_COPY: 'Average Student Copy',
+  FINAL_WORST_COPY: 'Worst Student Copy',
+};
+
+/**
+ * Resolves the destination folder category name for a given document type.
+ *
+ * @param {string} documentType
+ * @returns {string} Category folder name
+ */
+const getCategoryForDocumentType = (documentType) => {
+  if (DOCUMENT_CATEGORY_MAP[documentType]) {
+    return DOCUMENT_CATEGORY_MAP[documentType];
+  }
+  if (CourseFile.MIDTERM_DOCUMENT_TYPES?.includes(documentType)) {
+    return 'Midterm Exam';
+  }
+  if (CourseFile.FINAL_DOCUMENT_TYPES?.includes(documentType)) {
+    return 'Final Exam';
+  }
+  return 'Course Documents';
+};
+
+/**
+ * Generates a clean visible filename for a document without technical prefixes or underscores.
+ *
+ * @param {Object} params
+ * @param {string} params.documentType
+ * @param {string} [params.fileFormat='pdf']
+ * @param {string} [params.instanceName='']
+ * @param {string} [params.rawFilename='']
+ * @param {string|number} [params.quizNumber]
+ * @param {string|number} [params.assignmentNumber]
+ * @returns {string} Clean visible filename
+ */
+const getCleanDocumentFilename = ({
+  documentType,
+  fileFormat = 'pdf',
+  instanceName = '',
+  rawFilename = '',
+  quizNumber = null,
+  assignmentNumber = null,
+}) => {
+  const ext = (fileFormat || '').toLowerCase().replace(/^\./, '') || 'pdf';
+
+  if (CANONICAL_DOCUMENT_NAMES[documentType]) {
+    return `${CANONICAL_DOCUMENT_NAMES[documentType]}.${ext}`;
+  }
+
+  if (EXAM_DOCUMENT_NAMES[documentType]) {
+    return `${EXAM_DOCUMENT_NAMES[documentType]}.${ext}`;
+  }
+
+  if (documentType === 'ASSESS_QUIZ') {
+    const rawNum = (quizNumber || instanceName || '1').toString().trim();
+    const numMatch = rawNum.match(/\d+/);
+    const padNum = numMatch ? String(numMatch[0]).padStart(2, '0') : '01';
+    return `Quiz ${padNum}.${ext}`;
+  }
+
+  if (documentType === 'ASSESS_ASSIGN') {
+    const rawNum = (assignmentNumber || instanceName || '1').toString().trim();
+    const numMatch = rawNum.match(/\d+/);
+    const padNum = numMatch ? String(numMatch[0]).padStart(2, '0') : '01';
+    return `Assignment ${padNum}.${ext}`;
+  }
+
+  if (documentType === 'LECTURES') {
+    const base = rawFilename ? sanitizeDriveName(rawFilename) : 'Lecture Material';
+    return base.endsWith(`.${ext}`) ? base : `${base}.${ext}`;
+  }
+
+  if (rawFilename) {
+    return sanitizeDriveName(rawFilename);
+  }
+
+  const cleanInst = (instanceName || '').trim();
+  return cleanInst ? `${documentType} - ${cleanInst}.${ext}` : `${documentType}.${ext}`;
+};
+
+/**
+ * Resolves or creates the 4-tier Google Drive folder hierarchy:
+ * Semester → Faculty → Course Offering → Category
+ *
+ * Verifies parent folder at every level, sets database IDs in appProperties,
+ * sanitizes visible folder names, and prevents duplicate folders.
+ *
+ * @param {Object} params
+ * @param {string} [params.offeringId] - CourseOffering ObjectId
+ * @param {Object} [params.offering] - Preloaded CourseOffering
+ * @param {string} [params.category] - Category folder name ('Course Documents', etc.)
+ * @param {string} [params.documentType] - Document type code to resolve category if category omitted
+ * @param {Object} [params.user] - Authenticated user
+ * @returns {Promise<string>} Destination category folder ID
+ */
+const resolveOfferingHierarchyFolder = async ({
+  offeringId,
+  offering: preloadedOffering = null,
+  category = null,
+  documentType = null,
+  user = null,
+}) => {
+  let offering = preloadedOffering;
+  if (!offering && offeringId) {
+    offering = await courseOfferingService.getOfferingById(offeringId, user);
+  }
+
+  if (!offering) {
+    const error = new Error('Course offering not found or could not be loaded.');
+    error.statusCode = 404;
+    throw error;
+  }
+
+  // Ensure relations are populated if only IDs were passed
+  if (
+    offering.semester &&
+    (!offering.semester.name ||
+      typeof offering.semester === 'string' ||
+      offering.semester instanceof mongoose.Types.ObjectId)
+  ) {
+    const semId = offering.semester._id || offering.semester;
+    const Semester = mongoose.model('Semester');
+    const semDoc = await Semester.findById(semId).select('name status');
+    if (semDoc) offering.semester = semDoc;
+  }
+
+  if (
+    offering.faculty &&
+    (!offering.faculty.name ||
+      typeof offering.faculty === 'string' ||
+      offering.faculty instanceof mongoose.Types.ObjectId)
+  ) {
+    const facId = offering.faculty._id || offering.faculty;
+    const User = mongoose.model('User');
+    const facDoc = await User.findById(facId).select('name email department');
+    if (facDoc) offering.faculty = facDoc;
+  }
+
+  if (
+    offering.course &&
+    (!offering.course.courseCode ||
+      typeof offering.course === 'string' ||
+      offering.course instanceof mongoose.Types.ObjectId)
+  ) {
+    const crsId = offering.course._id || offering.course;
+    const Course = mongoose.model('Course');
+    const crsDoc = await Course.findById(crsId).select('courseCode courseName');
+    if (crsDoc) offering.course = crsDoc;
+  }
+
+  // Validate presence with clear error messages
+  if (!offering.semester || !offering.semester.name) {
+    const error = new Error(
+      `Cannot resolve Google Drive folder hierarchy: Semester information is missing for course offering ${offering._id || offeringId}.`
+    );
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (!offering.faculty || !offering.faculty.name) {
+    const error = new Error(
+      `Cannot resolve Google Drive folder hierarchy: Faculty information is missing for course offering ${offering._id || offeringId}.`
+    );
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (!offering.course || (!offering.course.courseName && !offering.course.courseCode)) {
+    const error = new Error(
+      `Cannot resolve Google Drive folder hierarchy: Course information is missing for course offering ${offering._id || offeringId}.`
+    );
+    error.statusCode = 400;
+    throw error;
+  }
+
+  // Generate clean visible names
+  const semesterName = sanitizeDriveName(offering.semester.name);
+  const facultyName = sanitizeDriveName(offering.faculty.name);
+
+  const courseName = (offering.course.courseName || offering.course.name || '').trim();
+  const courseCode = (offering.course.courseCode || offering.course.code || '').trim();
+  const rawSection = (offering.section || 'A').trim();
+  const sectionLabel = rawSection.toLowerCase().startsWith('section')
+    ? rawSection
+    : `Section ${rawSection}`;
+
+  const offeringFolderName = sanitizeDriveName(
+    courseName && courseCode
+      ? `${courseName} (${courseCode}) - ${sectionLabel}`
+      : `${courseCode || courseName} - ${sectionLabel}`
+  );
+
+  const finalCategory =
+    category || (documentType ? getCategoryForDocumentType(documentType) : 'Course Documents');
+  const categoryFolderName = sanitizeDriveName(finalCategory);
+
+  const rootFolderId = googleDriveConfig.DESTINATION_FOLDER_ID;
+
+  // 1. Semester folder under root Course Files
+  let semesterFolderId;
+  try {
+    semesterFolderId = await driveService.getOrCreateFolder(semesterName, rootFolderId, {
+      appProperties: {
+        semesterId: (offering.semester._id || offering.semester).toString(),
+      },
+      throwOnError: true,
+    });
+  } catch (err) {
+    const error = new Error(
+      `Failed to resolve Google Drive folder hierarchy at Semester tier: ${err.message}`
+    );
+    error.statusCode = err.statusCode || 500;
+    error.code = err.code || 'FOLDER_RESOLUTION_FAILED';
+    throw error;
+  }
+
+  // 2. Faculty folder under Semester
+  let facultyFolderId;
+  try {
+    facultyFolderId = await driveService.getOrCreateFolder(facultyName, semesterFolderId, {
+      appProperties: {
+        facultyId: (offering.faculty._id || offering.faculty).toString(),
+      },
+      throwOnError: true,
+    });
+  } catch (err) {
+    const error = new Error(
+      `Failed to resolve Google Drive folder hierarchy at Faculty tier: ${err.message}`
+    );
+    error.statusCode = err.statusCode || 500;
+    error.code = err.code || 'FOLDER_RESOLUTION_FAILED';
+    throw error;
+  }
+
+  // 3. Course offering folder under Faculty
+  let offeringFolderId;
+  try {
+    offeringFolderId = await driveService.getOrCreateFolder(offeringFolderName, facultyFolderId, {
+      appProperties: {
+        offeringId: (offering._id || offeringId).toString(),
+        courseId: (offering.course._id || offering.course).toString(),
+        section: rawSection,
+      },
+      throwOnError: true,
+    });
+  } catch (err) {
+    const error = new Error(
+      `Failed to resolve Google Drive folder hierarchy at Course Offering tier: ${err.message}`
+    );
+    error.statusCode = err.statusCode || 500;
+    error.code = err.code || 'FOLDER_RESOLUTION_FAILED';
+    throw error;
+  }
+
+  // 4. Category folder under Offering
+  let categoryFolderId;
+  try {
+    categoryFolderId = await driveService.getOrCreateFolder(categoryFolderName, offeringFolderId, {
+      appProperties: {
+        offeringId: (offering._id || offeringId).toString(),
+        category: categoryFolderName,
+      },
+      throwOnError: true,
+    });
+  } catch (err) {
+    const error = new Error(
+      `Failed to resolve Google Drive folder hierarchy at Category tier: ${err.message}`
+    );
+    error.statusCode = err.statusCode || 500;
+    error.code = err.code || 'FOLDER_RESOLUTION_FAILED';
+    throw error;
+  }
+
+  return categoryFolderId;
+};
+
+const getOfferingCategoryFolder = resolveOfferingHierarchyFolder;
+
+/**
  * Synchronizes an arbitrary document buffer to Google Drive and persists its CourseFile metadata.
  *
  * @param {Object} params
@@ -108,16 +449,25 @@ const syncOfferingDocument = async ({
   }
 
   const mimeType = MIME_TYPES[normalizedFormat] || 'application/octet-stream';
-  const courseCode = offering.course?.courseCode || 'COURSE';
-  const section = offering.section || 'A';
   const cleanInstance = (instanceName || '').trim();
 
-  // 2. Generate standard filename
-  const filename = cleanInstance
-    ? `${documentType}_${courseCode}_Sec${section}_${cleanInstance.replace(/\s+/g, '_')}.${normalizedFormat}`
-    : `${documentType}_${courseCode}_Sec${section}.${normalizedFormat}`;
+  // 2. Resolve destination category folder in 4-tier hierarchy
+  const category = getCategoryForDocumentType(documentType);
+  const folderId = await module.exports.resolveOfferingHierarchyFolder({
+    offering,
+    category,
+    documentType,
+    user,
+  });
 
-  // 3. Check for existing canonical / multi-instance record
+  // 3. Generate clean visible filename
+  const filename = getCleanDocumentFilename({
+    documentType,
+    fileFormat: normalizedFormat,
+    instanceName: cleanInstance,
+  });
+
+  // 4. Check for existing canonical / multi-instance record
   const query = {
     courseOffering: offering._id,
     documentType,
@@ -127,20 +477,20 @@ const syncOfferingDocument = async ({
 
   const existingRecord = await CourseFile.findOne(query);
 
-  // 4. Upload buffer to Google Drive (in-place update if existing, or fresh creation)
+  // 5. Upload buffer to Google Drive (in-place update if existing, or fresh creation)
   const uploadResult = await driveService.uploadDocumentBuffer({
     buffer,
     filename,
     mimeType,
-    folderId: googleDriveConfig.DESTINATION_FOLDER_ID,
+    folderId,
     existingFileId: existingRecord ? existingRecord.googleDriveFileId : null,
   });
 
-  // 5. Persist CourseFile metadata in MongoDB with concurrency reconciliation
+  // 6. Persist CourseFile metadata in MongoDB with concurrency reconciliation
   let courseFile;
   if (existingRecord) {
     existingRecord.googleDriveFileId = uploadResult.fileId;
-    existingRecord.googleDriveFolderId = googleDriveConfig.DESTINATION_FOLDER_ID;
+    existingRecord.googleDriveFolderId = folderId;
     existingRecord.googleDriveWebViewLink = uploadResult.webViewLink;
     existingRecord.googleDriveWebContentLink = uploadResult.webContentLink;
     existingRecord.filename = uploadResult.name;
@@ -171,7 +521,7 @@ const syncOfferingDocument = async ({
         fileFormat: normalizedFormat,
         filename: uploadResult.name,
         googleDriveFileId: uploadResult.fileId,
-        googleDriveFolderId: googleDriveConfig.DESTINATION_FOLDER_ID,
+        googleDriveFolderId: folderId,
         googleDriveWebViewLink: uploadResult.webViewLink,
         googleDriveWebContentLink: uploadResult.webContentLink,
         mimeType: uploadResult.mimeType,
@@ -191,7 +541,7 @@ const syncOfferingDocument = async ({
         const concurrentRecord = await CourseFile.findOne(query);
         if (concurrentRecord) {
           concurrentRecord.googleDriveFileId = uploadResult.fileId;
-          concurrentRecord.googleDriveFolderId = googleDriveConfig.DESTINATION_FOLDER_ID;
+          concurrentRecord.googleDriveFolderId = folderId;
           concurrentRecord.googleDriveWebViewLink = uploadResult.webViewLink;
           concurrentRecord.googleDriveWebContentLink = uploadResult.webContentLink;
           concurrentRecord.filename = uploadResult.name;
@@ -748,18 +1098,11 @@ const generateAndSyncCRR = async ({ offeringId, user }) => {
  * @returns {Promise<string>} Folder ID
  */
 const getLecturesFolderForOffering = async (offering) => {
-  const courseCode = offering.course?.courseCode || 'COURSE';
-  const section = offering.section || 'A';
-  const folderName = `${courseCode}_Sec${section}_Lectures`;
-  try {
-    return await driveService.getOrCreateFolder(
-      folderName,
-      googleDriveConfig.DESTINATION_FOLDER_ID
-    );
-  } catch (err) {
-    console.warn(`Could not resolve Lectures subfolder '${folderName}':`, err.message);
-    return googleDriveConfig.DESTINATION_FOLDER_ID;
-  }
+  return await module.exports.resolveOfferingHierarchyFolder({
+    offering,
+    category: 'Lectures',
+    documentType: 'LECTURES',
+  });
 };
 
 /**
@@ -769,18 +1112,11 @@ const getLecturesFolderForOffering = async (offering) => {
  * @returns {Promise<string>} Folder ID
  */
 const getQuizzesFolderForOffering = async (offering) => {
-  const courseCode = offering.course?.courseCode || 'COURSE';
-  const section = offering.section || 'A';
-  const folderName = `${courseCode}_Sec${section}_Quizzes`;
-  try {
-    return await driveService.getOrCreateFolder(
-      folderName,
-      googleDriveConfig.DESTINATION_FOLDER_ID
-    );
-  } catch (err) {
-    console.warn(`Could not resolve Quizzes subfolder '${folderName}':`, err.message);
-    return googleDriveConfig.DESTINATION_FOLDER_ID;
-  }
+  return await module.exports.resolveOfferingHierarchyFolder({
+    offering,
+    category: 'Quizzes',
+    documentType: 'ASSESS_QUIZ',
+  });
 };
 
 /**
@@ -790,62 +1126,39 @@ const getQuizzesFolderForOffering = async (offering) => {
  * @returns {Promise<string>} Folder ID
  */
 const getAssignmentsFolderForOffering = async (offering) => {
-  const courseCode = offering.course?.courseCode || 'COURSE';
-  const section = offering.section || 'A';
-  const folderName = `${courseCode}_Sec${section}_Assignments`;
-  try {
-    return await driveService.getOrCreateFolder(
-      folderName,
-      googleDriveConfig.DESTINATION_FOLDER_ID
-    );
-  } catch (err) {
-    console.warn(`Could not resolve Assignments subfolder '${folderName}':`, err.message);
-    return googleDriveConfig.DESTINATION_FOLDER_ID;
-  }
+  return await module.exports.resolveOfferingHierarchyFolder({
+    offering,
+    category: 'Assignments',
+    documentType: 'ASSESS_ASSIGN',
+  });
 };
 
 /**
  * Resolves or creates an offering-scoped Midterm folder in Google Drive.
- * Name: `${courseCode}_Sec${section}_Midterm`
  *
  * @param {Object} offering
  * @returns {Promise<string>} Folder ID
  */
 const getMidtermFolderForOffering = async (offering) => {
-  const courseCode = offering.course?.courseCode || 'COURSE';
-  const section = offering.section || 'A';
-  const folderName = `${courseCode}_Sec${section}_Midterm`;
-  try {
-    return await driveService.getOrCreateFolder(
-      folderName,
-      googleDriveConfig.DESTINATION_FOLDER_ID
-    );
-  } catch (err) {
-    console.warn(`Could not resolve Midterm subfolder '${folderName}':`, err.message);
-    return googleDriveConfig.DESTINATION_FOLDER_ID;
-  }
+  return await module.exports.resolveOfferingHierarchyFolder({
+    offering,
+    category: 'Midterm Exam',
+    documentType: 'MIDTERM_EXAM_PAPER',
+  });
 };
 
 /**
  * Resolves or creates an offering-scoped Final folder in Google Drive.
- * Name: `${courseCode}_Sec${section}_Final`
  *
  * @param {Object} offering
  * @returns {Promise<string>} Folder ID
  */
 const getFinalFolderForOffering = async (offering) => {
-  const courseCode = offering.course?.courseCode || 'COURSE';
-  const section = offering.section || 'A';
-  const folderName = `${courseCode}_Sec${section}_Final`;
-  try {
-    return await driveService.getOrCreateFolder(
-      folderName,
-      googleDriveConfig.DESTINATION_FOLDER_ID
-    );
-  } catch (err) {
-    console.warn(`Could not resolve Final subfolder '${folderName}':`, err.message);
-    return googleDriveConfig.DESTINATION_FOLDER_ID;
-  }
+  return await module.exports.resolveOfferingHierarchyFolder({
+    offering,
+    category: 'Final Exam',
+    documentType: 'FINAL_EXAM_PAPER',
+  });
 };
 
 /**
@@ -891,7 +1204,7 @@ const uploadLectureFile = async ({ offeringId, file, user, offering = null }) =>
   }
 
   // 4. Duplicate prevention for this offering
-  const safeFilename = rawFilename.trim();
+  const safeFilename = sanitizeDriveName(rawFilename);
   const existingFile = await CourseFile.findOne({
     courseOffering: authorizedOffering._id,
     documentType: 'LECTURES',
@@ -908,8 +1221,13 @@ const uploadLectureFile = async ({ offeringId, file, user, offering = null }) =>
 
   const mimeType = MIME_TYPES[ext] || file.mimetype || 'application/octet-stream';
 
-  // 5. Resolve Drive destination folder (offering-specific Lectures subfolder or destination folder)
-  const folderId = await module.exports.getLecturesFolderForOffering(authorizedOffering);
+  // 5. Resolve Drive destination folder (offering-specific Lectures category folder)
+  const folderId = await module.exports.resolveOfferingHierarchyFolder({
+    offering: authorizedOffering,
+    category: 'Lectures',
+    documentType: 'LECTURES',
+    user,
+  });
 
   // 6. Upload file buffer to Google Drive
   let uploadResult;
@@ -1159,11 +1477,20 @@ const uploadExamDocument = async ({ offeringId, documentType, file, user }) => {
     throw error;
   }
 
-  const safeFilename = rawFilename;
   const isMidterm = CourseFile.MIDTERM_DOCUMENT_TYPES.includes(documentType);
-  const folderId = isMidterm
-    ? await module.exports.getMidtermFolderForOffering(authorizedOffering)
-    : await module.exports.getFinalFolderForOffering(authorizedOffering);
+  const category = isMidterm ? 'Midterm Exam' : 'Final Exam';
+  const folderId = await module.exports.resolveOfferingHierarchyFolder({
+    offering: authorizedOffering,
+    category,
+    documentType,
+    user,
+  });
+
+  const cleanFilename = getCleanDocumentFilename({
+    documentType,
+    fileFormat: ext,
+  });
+  const safeFilename = cleanFilename;
 
   const mimeType = MIME_TYPES[ext] || file.mimetype || 'application/octet-stream';
 
@@ -1489,16 +1816,34 @@ const generateAndSyncQuiz = async ({ offeringId, quizId, user }) => {
   }
 
   // 5. Resolve Drive destination folder
-  const folderId = await module.exports.getQuizzesFolderForOffering(offering);
+  const folderId = await module.exports.resolveOfferingHierarchyFolder({
+    offering,
+    category: 'Quizzes',
+    documentType: 'ASSESS_QUIZ',
+    user,
+  });
 
-  // 6. Generate filename
+  // 6. Generate clean filename
   const rawQuizNum = (quiz.quizInfo?.quizNumber || '1').toString().trim();
-  const safeQuizNum = rawQuizNum.toLowerCase().startsWith('quiz')
-    ? rawQuizNum.replace(/[^a-zA-Z0-9_-]/g, '_')
-    : `Quiz_${rawQuizNum.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
-  const courseCode = offering.course?.courseCode || 'COURSE';
-  const section = offering.section || 'A';
-  const filename = `ASSESS_QUIZ_${courseCode}_Sec${section}_${safeQuizNum}.pdf`;
+  let filename = getCleanDocumentFilename({
+    documentType: 'ASSESS_QUIZ',
+    fileFormat: 'pdf',
+    quizNumber: rawQuizNum,
+    instanceName: quizId.toString(),
+  });
+
+  // Handle collision if a different quiz in this offering already used this filename
+  const quizCollision = await CourseFile.findOne({
+    courseOffering: offering._id,
+    documentType: 'ASSESS_QUIZ',
+    filename,
+    instanceName: { $ne: quizId.toString() },
+  });
+  if (quizCollision) {
+    const numMatch = rawQuizNum.match(/\d+/);
+    const padNum = numMatch ? String(numMatch[0]).padStart(2, '0') : '01';
+    filename = `Quiz ${padNum} (${quizId.toString().slice(-4)}).pdf`;
+  }
 
   // 7. Check for existing CourseFile record for this quiz (specifically PDF format)
   const query = {
@@ -1674,16 +2019,34 @@ const generateAndSyncAssignment = async ({ offeringId, assignmentId, user }) => 
   }
 
   // 5. Resolve Drive destination folder
-  const folderId = await module.exports.getAssignmentsFolderForOffering(offering);
+  const folderId = await module.exports.resolveOfferingHierarchyFolder({
+    offering,
+    category: 'Assignments',
+    documentType: 'ASSESS_ASSIGN',
+    user,
+  });
 
-  // 6. Generate filename
+  // 6. Generate clean filename
   const rawAssignNum = (assignment.assignmentInfo?.assignmentNumber || '1').toString().trim();
-  const safeAssignNum = rawAssignNum.toLowerCase().startsWith('assignment')
-    ? rawAssignNum.replace(/[^a-zA-Z0-9_-]/g, '_')
-    : `Assignment_${rawAssignNum.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
-  const courseCode = offering.course?.courseCode || 'COURSE';
-  const section = offering.section || 'A';
-  const filename = `ASSESS_ASSIGN_${courseCode}_Sec${section}_${safeAssignNum}.pdf`;
+  let filename = getCleanDocumentFilename({
+    documentType: 'ASSESS_ASSIGN',
+    fileFormat: 'pdf',
+    assignmentNumber: rawAssignNum,
+    instanceName: assignmentId.toString(),
+  });
+
+  // Handle collision if a different assignment in this offering already used this filename
+  const assignCollision = await CourseFile.findOne({
+    courseOffering: offering._id,
+    documentType: 'ASSESS_ASSIGN',
+    filename,
+    instanceName: { $ne: assignmentId.toString() },
+  });
+  if (assignCollision) {
+    const numMatch = rawAssignNum.match(/\d+/);
+    const padNum = numMatch ? String(numMatch[0]).padStart(2, '0') : '01';
+    filename = `Assignment ${padNum} (${assignmentId.toString().slice(-4)}).pdf`;
+  }
 
   // 7. Check for existing CourseFile record for this assignment (specifically PDF format)
   const query = {
@@ -1890,6 +2253,14 @@ module.exports = {
   listOfferingFiles,
   getCourseFileById,
   downloadCourseFile,
+  resolveOfferingHierarchyFolder,
+  getOfferingCategoryFolder,
+  DOCUMENT_CATEGORY_MAP,
+  CANONICAL_DOCUMENT_NAMES,
+  EXAM_DOCUMENT_NAMES,
+  getCategoryForDocumentType,
+  getCleanDocumentFilename,
+  sanitizeDriveName,
   MIME_TYPES,
   ALLOWED_LECTURE_FORMATS,
   MAX_LECTURE_FILE_SIZE,
