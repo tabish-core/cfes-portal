@@ -44,13 +44,15 @@ const requireDepartmentScope = (req, res, next) => {
     if (!req.user.department) {
       return sendError(res, 'HoD has no assigned department.', 403);
     }
-    req.departmentFilter = { department: req.user.department };
+    const deptId = req.user.department?._id || req.user.department;
+    req.departmentFilter = { department: deptId };
   } else {
     // Faculty usually access their own courses, but if they hit a scoped route:
     if (!req.user.department) {
       req.departmentFilter = { _id: null }; // block
     } else {
-      req.departmentFilter = { department: req.user.department };
+      const deptId = req.user.department?._id || req.user.department;
+      req.departmentFilter = { department: deptId };
     }
   }
 

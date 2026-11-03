@@ -17,7 +17,8 @@ const Courses = () => {
   const toast = useToast();
 
   const isHod = user?.designation === 'hod';
-  const userDeptId = user?.department?._id || user?.department;
+  const userDept = user?.department;
+  const userDeptId = userDept?._id || userDept;
 
   // ── Master Data State ──
   const [faculties, setFaculties] = useState([]);
@@ -60,18 +61,32 @@ const Courses = () => {
   const fetchMasterData = useCallback(async () => {
     setLoadingInitial(true);
     try {
-      const [facultyRes, courseRes, semesterRes, deptRes] = await Promise.all([
+      const promises = [
         getFaculties(),
         getCourses(),
         getSemesters(),
-        api.get('/departments').catch(() => ({ data: { data: { departments: [] } } })),
-      ]);
+      ];
+
+      // HoDs are scoped to their own department and must never call /api/departments (which returns 403)
+      if (!isHod) {
+        promises.push(
+          api.get('/departments').catch(() => ({ data: { data: { departments: [] } } }))
+        );
+      }
+
+      const results = await Promise.all(promises);
+      const facultyRes = results[0];
+      const courseRes = results[1];
+      const semesterRes = results[2];
+      const deptRes = !isHod ? results[3] : null;
 
       setFaculties(facultyRes.faculties || []);
       setCourses(courseRes.courses || []);
       const loadedSemesters = semesterRes.semesters || [];
       setSemesters(loadedSemesters);
-      setDepartments(deptRes.data?.data?.departments || []);
+      if (deptRes) {
+        setDepartments(deptRes.data?.data?.departments || []);
+      }
 
       // Auto-select the active semester for both assignment form and view selector
       const active = loadedSemesters.find((s) => s.status === 'active');
@@ -83,7 +98,7 @@ const Courses = () => {
     } finally {
       setLoadingInitial(false);
     }
-  }, [toast]);
+  }, [isHod, toast]);
 
   useEffect(() => {
     fetchMasterData();
@@ -177,14 +192,22 @@ const Courses = () => {
   }, [courses, courseSearchTerm]);
 
   const filteredFacultyOptions = useMemo(() => {
-    if (!facultySearchTerm.trim()) return faculties;
+    let list = faculties;
+    // HoD can only assign faculty belonging to their own department
+    if (isHod && userDeptId) {
+      list = list.filter((f) => {
+        const facDeptId = f.department?._id || f.department;
+        return facDeptId && facDeptId.toString() === userDeptId.toString();
+      });
+    }
+    if (!facultySearchTerm.trim()) return list;
     const q = facultySearchTerm.toLowerCase().trim();
-    return faculties.filter((f) => {
+    return list.filter((f) => {
       const name = (f.name || '').toLowerCase();
       const email = (f.email || '').toLowerCase();
       return name.includes(q) || email.includes(q);
     });
-  }, [faculties, facultySearchTerm]);
+  }, [faculties, facultySearchTerm, isHod, userDeptId]);
 
   const handleAssignSubmit = async (e) => {
     e.preventDefault();
@@ -192,7 +215,7 @@ const Courses = () => {
 
     if (!selectedSemesterId) errors.semester = 'Please select a semester.';
     if (!selectedCourseId) errors.course = 'Please select a course.';
-    if (!selectedFacultyId) errors.faculty = 'Please select a faculty member.';
+    if (!selectedFacultyId) errors.faculty = 'Please select a faculty member or Unassigned.';
     if (!section || !section.trim()) errors.section = 'Section is required.';
 
     if (Object.keys(errors).length > 0) {
@@ -206,15 +229,20 @@ const Courses = () => {
 
     try {
       const cleanSection = (section || 'A').toUpperCase().trim();
+      const facultyPayload = selectedFacultyId === 'UNASSIGNED' ? null : selectedFacultyId;
       const { offering } = await createOffering(
-        selectedFacultyId,
+        facultyPayload,
         selectedCourseId,
         selectedSemesterId,
-        cleanSection
+        cleanSection,
+        isHod && userDeptId ? userDeptId : undefined
       );
 
+      const facultyName = offering.faculty?.name;
       toast.success(
-        `Assigned ${offering.course?.courseCode} (Section ${offering.section}) to ${offering.faculty?.name} in ${offering.semester?.name}.`
+        facultyName
+          ? `Assigned ${offering.course?.courseCode} (Section ${offering.section}) to ${facultyName} in ${offering.semester?.name}.`
+          : `Created offering for ${offering.course?.courseCode} (Section ${offering.section}) as Unassigned in ${offering.semester?.name}.`
       );
 
       // Refresh table if the offering belongs to currently viewed semester
@@ -272,6 +300,8 @@ const Courses = () => {
       // 1. Department filter
       if (selectedDepartmentId) {
         const courseDept =
+          offering.department?._id ||
+          offering.department ||
           offering.course?.department?._id ||
           offering.course?.department ||
           offering.faculty?.department?._id ||
@@ -286,7 +316,7 @@ const Courses = () => {
         const q = searchQuery.toLowerCase().trim();
         const code = (offering.course?.courseCode || '').toLowerCase();
         const name = (offering.course?.courseName || '').toLowerCase();
-        const facultyName = (offering.faculty?.name || '').toLowerCase();
+        const facultyName = (offering.faculty?.name || 'unassigned').toLowerCase();
         const sec = (offering.section || '').toLowerCase();
         const secFull = `section ${sec}`;
 
@@ -334,13 +364,15 @@ const Courses = () => {
               <span>Active Semester: <strong>{activeSemester.name}</strong></span>
             </div>
           )}
-          <Button
-            variant="secondary"
-            onClick={() => setSemesterModalOpen(true)}
-            id="btn-manage-semesters"
-          >
-            Manage Semesters
-          </Button>
+          {!isHod && (
+            <Button
+              variant="secondary"
+              onClick={() => setSemesterModalOpen(true)}
+              id="btn-manage-semesters"
+            >
+              Manage Semesters
+            </Button>
+          )}
         </div>
       </div>
 
@@ -446,6 +478,9 @@ const Courses = () => {
                   disabled={loadingInitial || assigning}
                 >
                   <option value="">-- Choose Faculty ({filteredFacultyOptions.length} available) --</option>
+                  {(!facultySearchTerm.trim() || 'unassigned'.includes(facultySearchTerm.toLowerCase().trim())) && (
+                    <option value="UNASSIGNED">Unassigned</option>
+                  )}
                   {filteredFacultyOptions.map((fac) => (
                     <option key={fac._id} value={fac._id}>
                       {fac.name} ({fac.email})
@@ -533,12 +568,22 @@ const Courses = () => {
                 onChange={(e) => setSelectedDepartmentId(e.target.value)}
                 disabled={isHod}
               >
-                {!isHod && <option value="">All Departments</option>}
-                {departments.map((d) => (
-                  <option key={d._id} value={d._id}>
-                    {d.name} ({d.code})
+                {!isHod ? (
+                  <>
+                    <option value="">All Departments</option>
+                    {departments.map((d) => (
+                      <option key={d._id} value={d._id}>
+                        {d.name} ({d.code})
+                      </option>
+                    ))}
+                  </>
+                ) : (
+                  <option value={userDeptId || ''}>
+                    {user?.department?.name
+                      ? `${user.department.name} ${user.department.code ? `(${user.department.code})` : ''}`
+                      : 'My Department'}
                   </option>
-                ))}
+                )}
               </select>
             </div>
 
@@ -628,7 +673,7 @@ const Courses = () => {
               </thead>
               <tbody>
                 {filteredOfferings.map((offering) => {
-                  const dept = offering.course?.department;
+                  const dept = offering.department || offering.course?.department;
                   const deptName = dept?.name || '—';
                   const deptCode = dept?.code ? ` (${dept.code})` : '';
 
@@ -651,7 +696,7 @@ const Courses = () => {
                       </td>
                       <td>
                         <div className="courses-faculty-cell">
-                          <span className="courses-faculty-name">
+                          <span className={`courses-faculty-name ${!offering.faculty ? 'courses-faculty-name--unassigned' : ''}`}>
                             {offering.faculty?.name || 'Unassigned'}
                           </span>
                           {offering.faculty?.email && (
@@ -810,7 +855,8 @@ const Courses = () => {
               <div className="courses-remove-detail-row">
                 <span className="courses-remove-detail-label">Assigned Faculty</span>
                 <span className="courses-remove-detail-val">
-                  {offeringToRemove.faculty?.name} ({offeringToRemove.faculty?.email})
+                  {offeringToRemove.faculty?.name || 'Unassigned'}
+                  {offeringToRemove.faculty?.email ? ` (${offeringToRemove.faculty.email})` : ''}
                 </span>
               </div>
               <div className="courses-remove-detail-row">

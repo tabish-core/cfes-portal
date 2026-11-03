@@ -12,6 +12,21 @@ const Department       = require('../models/Department.model');
 const CourseChecklist  = require('../models/CourseChecklist.model');
 const CourseFile       = require('../models/CourseFile.model');
 
+// Mapping of checklist item types to acceptable synced CourseFile documentTypes
+const SYNCHABLE_ITEM_DOC_TYPES = {
+  CIS: ['CIS'],
+  CCR: ['CCR'],
+  TIMETABLE: ['TIMETABLE'],
+  LECTURES: ['LECTURES'],
+  ASSESS_QUIZ: ['ASSESS_QUIZ'],
+  ASSESS_ASSIGN: ['ASSESS_ASSIGN'],
+  ASSESS_MID: ['MIDTERM_EXAM_PAPER', 'MIDTERM_BEST_COPY', 'MIDTERM_AVERAGE_COPY', 'MIDTERM_WORST_COPY', 'ASSESS_MID'],
+  ASSESS_FINAL: ['FINAL_EXAM_PAPER', 'FINAL_BEST_COPY', 'FINAL_AVERAGE_COPY', 'FINAL_WORST_COPY', 'ASSESS_FINAL'],
+  ASSESS_PROJECT: ['ASSESS_PROJECT', 'CCP'],
+  CCC: ['CCC'],
+  CRR: ['CRR'],
+};
+
 /* ── helpers ───────────────────────────────────────────────────────────── */
 const fail = (message, statusCode = 400) => {
   const err = new Error(message);
@@ -35,29 +50,60 @@ const fail = (message, statusCode = 400) => {
  * @param {string} semesterId
  * @param {string} [section='A']
  */
-const createOffering = async (facultyId, courseId, semesterId, section = 'A', user) => {
+const createOffering = async (facultyId, courseId, semesterId, section = 'A', user, departmentId = null) => {
   // ── Validate IDs ────────────────────────────────────────────────────────
-  if (!mongoose.Types.ObjectId.isValid(facultyId))  fail('Invalid faculty ID',  400);
+  if (facultyId && !mongoose.Types.ObjectId.isValid(facultyId))  fail('Invalid faculty ID',  400);
   if (!mongoose.Types.ObjectId.isValid(courseId))    fail('Invalid course ID',   400);
   if (!mongoose.Types.ObjectId.isValid(semesterId))  fail('Invalid semester ID', 400);
+  if (departmentId && !mongoose.Types.ObjectId.isValid(departmentId)) fail('Invalid department ID', 400);
 
   // ── Confirm documents exist ─────────────────────────────────────────────
   const [faculty, course, semester] = await Promise.all([
-    User.findById(facultyId),
+    facultyId ? User.findById(facultyId) : Promise.resolve(null),
     Course.findById(courseId),
     Semester.findById(semesterId),
   ]);
 
-  if (!faculty)          fail('Faculty user not found', 404);
-  if (!faculty.isActive) fail('Cannot assign course to a deactivated faculty account', 403);
+  if (facultyId && !faculty) fail('Faculty user not found', 404);
+  if (faculty && !faculty.isActive) fail('Cannot assign course to a deactivated faculty account', 403);
   if (!course)           fail('Course not found', 404);
   if (!semester)         fail('Semester not found', 404);
 
-  // If HoD, restrict to their department
+  // Determine offering department owner
+  let targetDepartmentId = null;
+
   if (user && user.designation === 'hod') {
-    const courseDept = course.department?._id || course.department;
-    if (!user.department || !courseDept || courseDept.toString() !== user.department.toString()) {
-      fail('You are only allowed to assign courses belonging to your department.', 403);
+    if (!user.department) fail('HoD has no assigned department.', 403);
+    targetDepartmentId = user.department._id || user.department;
+
+    // HoD can only assign faculty belonging to their own department
+    if (faculty) {
+      const facDept = faculty.department?._id || faculty.department;
+      if (!facDept || facDept.toString() !== targetDepartmentId.toString()) {
+        fail('You are only allowed to assign faculty members belonging to your department.', 403);
+      }
+    }
+  } else if (user && user.designation === 'dean') {
+    // Dean can specify department explicitly, or fallback to faculty's department or course's department
+    if (departmentId) {
+      targetDepartmentId = departmentId;
+    } else if (faculty && faculty.department) {
+      targetDepartmentId = faculty.department._id || faculty.department;
+    } else if (course.department) {
+      targetDepartmentId = course.department._id || course.department;
+    } else {
+      fail('Department owner is required for course offering.', 400);
+    }
+  } else {
+    // Fallback if user is unsupplied (e.g. testing)
+    if (departmentId) {
+      targetDepartmentId = departmentId;
+    } else if (faculty && faculty.department) {
+      targetDepartmentId = faculty.department._id || faculty.department;
+    } else if (course.department) {
+      targetDepartmentId = course.department._id || course.department;
+    } else {
+      fail('Department owner is required for course offering.', 400);
     }
   }
 
@@ -76,16 +122,18 @@ const createOffering = async (facultyId, courseId, semesterId, section = 'A', us
 
   // ── Create ──────────────────────────────────────────────────────────────
   const offering = await CourseOffering.create({
-    faculty: facultyId,
+    faculty: facultyId || null,
     course: courseId,
     semester: semesterId,
     section: (section || 'A').toUpperCase().trim(),
+    department: targetDepartmentId,
   });
 
   return offering.populate([
     { path: 'faculty', select: 'name email department' },
     { path: 'course', select: 'courseCode courseName type creditHours' },
     { path: 'semester', select: 'name status' },
+    { path: 'department', select: 'name code' },
   ]);
 };
 
@@ -99,8 +147,13 @@ const removeOffering = async (offeringId, user) => {
   if (!offering) fail('Course offering not found', 404);
 
   if (user && user.designation === 'hod') {
-    const courseDept = offering.course?.department?._id || offering.course?.department;
-    if (!user.department || !courseDept || courseDept.toString() !== user.department.toString()) {
+    const offeringDept =
+      offering.department?._id ||
+      offering.department ||
+      offering.course?.department?._id ||
+      offering.course?.department;
+    const userDeptId = (user.department?._id || user.department)?.toString();
+    if (!userDeptId || !offeringDept || offeringDept.toString() !== userDeptId) {
       fail('You are only allowed to remove offerings belonging to your department.', 403);
     }
   }
@@ -110,39 +163,84 @@ const removeOffering = async (offeringId, user) => {
 };
 
 /**
- * List all offerings for a given semester, populated with faculty + course info.
- * If includeProgress is true, enriches each offering with CourseChecklist completion
- * and CourseFile Google Drive sync metadata.
+ * Resolves the Google Drive parent folder ID and URL for a CourseOffering.
+ *
+ * Requirements:
+ *  1. Only expose an Open Drive link when the correct CourseOffering parent folder
+ *     URL is reliably available from offering-level metadata.
+ *  2. NEVER construct a parent folder URL from CourseFile.googleDriveFolderId, which
+ *     refers to a Tier 4 document-category subfolder (e.g., 'Course Documents', 'Lectures', 'Quizzes').
+ *  3. If the correct parent folder cannot be established, returns null so the UI
+ *     safely hides the Open Drive action.
+ *
+ * @param {Object} offering - CourseOffering object
+ * @returns {{ folderId: string|null, folderUrl: string|null }}
  */
-const listOfferingsBySemester = async (semesterId, departmentFilter = {}, includeProgress = false) => {
-  if (!mongoose.Types.ObjectId.isValid(semesterId)) fail('Invalid semester ID', 400);
-
-  let courseFilter = {};
-  if (departmentFilter.department) {
-    const courses = await Course.find({ department: departmentFilter.department }, '_id');
-    const courseIds = courses.map(c => c._id);
-    courseFilter = { course: { $in: courseIds } };
-  } else if (departmentFilter._id === null) {
-    // If blocked
-    return [];
+const resolveOfferingParentFolder = (offering) => {
+  if (!offering) {
+    return { folderId: null, folderUrl: null };
   }
 
-  const query = CourseOffering.find({ semester: semesterId, ...courseFilter })
-    .populate('faculty', 'name email department')
-    .populate({
-      path: 'course',
-      select: 'courseCode courseName type creditHours department',
-      populate: { path: 'department', select: 'name code' },
-    })
-    .populate('semester', 'name status')
-    .sort({ 'course.courseCode': 1 });
+  // 1. Direct explicit folder URL on CourseOffering metadata
+  const directUrl =
+    (typeof offering.googleDriveFolderUrl === 'string' && offering.googleDriveFolderUrl.trim()) ||
+    (typeof offering.folderUrl === 'string' && offering.folderUrl.trim()) ||
+    (typeof offering.drive?.folderUrl === 'string' && offering.drive.folderUrl.trim()) ||
+    null;
 
-  if (!includeProgress) {
-    return query;
+  if (directUrl && directUrl.startsWith('http')) {
+    const match = directUrl.match(/folders\/([a-zA-Z0-9_-]+)/);
+    const extractedId = match ? match[1] : null;
+    const folderId =
+      extractedId ||
+      offering.googleDriveFolderId ||
+      offering.driveFolderId ||
+      (offering.drive?.folderId && !offering.drive?._isCategoryFolder ? offering.drive.folderId : null) ||
+      null;
+
+    return {
+      folderId,
+      folderUrl: directUrl,
+    };
   }
 
-  const offerings = await query.lean();
-  if (offerings.length === 0) {
+  // 2. Direct parent folder ID on CourseOffering metadata (NOT from CourseFile category folder)
+  const directFolderId =
+    (typeof offering.googleDriveFolderId === 'string' && offering.googleDriveFolderId.trim()) ||
+    (typeof offering.driveFolderId === 'string' && offering.driveFolderId.trim()) ||
+    (typeof offering.drive?.folderId === 'string' && !offering.drive?._isCategoryFolder
+      ? offering.drive.folderId.trim()
+      : null) ||
+    null;
+
+  if (directFolderId) {
+    return {
+      folderId: directFolderId,
+      folderUrl: `https://drive.google.com/drive/folders/${directFolderId}`,
+    };
+  }
+
+  // 3. Fallback: Parent CourseOffering folder is not reliably available.
+  // Never treat CourseFile category folder IDs as parent folder.
+  return {
+    folderId: null,
+    folderUrl: null,
+  };
+};
+
+/**
+ * Enrich an array of offering documents with CourseChecklist progress (canonical 19 items)
+ * and Google Drive synchronization metadata.
+ *
+ * Missing checklists default safely to 0/19 and 'Not Started'.
+ * Missing Drive files default safely to 'Not Synced' with null folderUrl.
+ *
+ * @param {Array<Object>} offerings - Raw offering plain objects
+ * @param {string} semesterId - Academic semester ObjectId string
+ * @returns {Promise<Array<Object>>} Enriched offerings with .progress and .drive
+ */
+const enrichOfferingsWithProgress = async (offerings, semesterId) => {
+  if (!offerings || offerings.length === 0) {
     return [];
   }
 
@@ -222,16 +320,31 @@ const listOfferingsBySemester = async (semesterId, departmentFilter = {}, includ
       checklistStatus = 'In Progress';
     }
 
-    // 2. Resolve Drive files and folder URL
+    // 2. Resolve parent Google Drive folder URL strictly from CourseOffering metadata.
+    // CourseFile.googleDriveFolderId refers to a Tier 4 document-category folder (e.g. 'Course Documents',
+    // 'Lectures', 'Quizzes'), which must NEVER be used to construct the parent CourseOffering folder URL.
     const files = filesByOfferingId.get(offIdStr) || [];
     const syncedFilesCount = files.length;
-    const sampleFolderId = files.find((f) => f.googleDriveFolderId)?.googleDriveFolderId || null;
-    const folderUrl = sampleFolderId ? `https://drive.google.com/drive/folders/${sampleFolderId}` : null;
+    const { folderId: parentFolderId, folderUrl } = resolveOfferingParentFolder(offering);
 
+    // 3. Determine Google Drive Synchronization Status
     let driveStatus = 'Not Synced';
     if (syncedFilesCount > 0) {
-      if (completedCount > 0 && syncedFilesCount >= completedCount) {
-        driveStatus = 'Synced';
+      if (checklistStatus === 'Complete') {
+        const syncedDocTypes = new Set(files.map((f) => f.documentType));
+        const synchableCompletedItems = (cl?.checklistItems || []).filter(
+          (item) => item.completed && SYNCHABLE_ITEM_DOC_TYPES[item.type]
+        );
+
+        let allSynchablePresent = true;
+        if (synchableCompletedItems.length > 0) {
+          allSynchablePresent = synchableCompletedItems.every((item) => {
+            const acceptableTypes = SYNCHABLE_ITEM_DOC_TYPES[item.type];
+            return acceptableTypes.some((t) => syncedDocTypes.has(t));
+          });
+        }
+
+        driveStatus = allSynchablePresent ? 'Synced' : 'Partially Synced';
       } else {
         driveStatus = 'Partially Synced';
       }
@@ -247,7 +360,7 @@ const listOfferingsBySemester = async (semesterId, departmentFilter = {}, includ
       },
       drive: {
         syncedFilesCount,
-        folderId: sampleFolderId,
+        folderId: parentFolderId,
         folderUrl,
         status: driveStatus,
       },
@@ -256,68 +369,147 @@ const listOfferingsBySemester = async (semesterId, departmentFilter = {}, includ
 };
 
 /**
+ * List all offerings for a given semester, populated with faculty + course info.
+ * If includeProgress is true, enriches each offering with CourseChecklist completion
+ * and CourseFile Google Drive sync metadata.
+ */
+const listOfferingsBySemester = async (semesterId, departmentFilter = {}, includeProgress = false) => {
+  if (!mongoose.Types.ObjectId.isValid(semesterId)) fail('Invalid semester ID', 400);
+
+  const query = { semester: semesterId };
+  if (departmentFilter.department) {
+    query.department = departmentFilter.department;
+  } else if (departmentFilter._id === null) {
+    // If blocked
+    return [];
+  }
+
+  const queryObj = CourseOffering.find(query)
+    .populate([
+      { path: 'faculty', select: 'name email department' },
+      { path: 'department', select: 'name code' },
+    ])
+    .populate({
+      path: 'course',
+      select: 'courseCode courseName type creditHours department',
+      populate: { path: 'department', select: 'name code' },
+    })
+    .populate('semester', 'name status')
+    .sort({ 'course.courseCode': 1 });
+
+  if (!includeProgress) {
+    return queryObj;
+  }
+
+  const offerings = await queryObj.lean();
+  return enrichOfferingsWithProgress(offerings, semesterId);
+};
+
+/**
  * Return offerings for a specific faculty in a specific semester.
- * Used by the faculty dashboard (faculty selects semester manually).
+ * Enriched with checklist progress and Google Drive synchronization metadata.
  *
  * @param {string} facultyId
  * @param {string} semesterId
+ * @param {boolean} [includeProgress=true]
  */
-const getMyOfferings = async (facultyId, semesterId) => {
+const getMyOfferings = async (facultyId, semesterId, includeProgress = true) => {
   if (!mongoose.Types.ObjectId.isValid(semesterId)) fail('Invalid semester ID', 400);
 
-  return CourseOffering.find({ faculty: facultyId, semester: semesterId })
+  const queryObj = CourseOffering.find({ faculty: facultyId, semester: semesterId })
     .populate('course', 'courseCode courseName type creditHours')
     .populate('semester', 'name status')
-    .sort({ 'course.courseCode': 1 })
-    .lean();
+    .sort({ 'course.courseCode': 1 });
+
+  const offerings = await queryObj.lean();
+
+  if (!includeProgress) {
+    return offerings;
+  }
+
+  return enrichOfferingsWithProgress(offerings, semesterId);
 };
 
 /**
  * Compute dashboard statistics for a faculty member in a given semester.
+ * Modernized to use the canonical 19-item CourseChecklist and Google Drive CourseFile sync.
+ * Preserves legacy fields (totalForms, draftForms, submittedForms, pendingForms) for backward compatibility.
  *
  * Returns:
- *  totalCourses     – Number of course offerings assigned to the faculty
- *  totalForms       – Total form slots available (courses × implemented form types)
- *  draftForms       – Forms saved but not yet submitted
- *  submittedForms   – Forms that have been submitted
- *  pendingForms     – Form slots with no document created yet
- *
- * Currently implemented form types: CIS, CCR  (2 per course).
- * Expand FORM_TYPES_COUNT when new form models are added.
+ *  assignedCourses          – Number of course offerings assigned to the faculty
+ *  completedChecklists      – Course offerings where all 19 checklist items are complete
+ *  averageChecklistProgress – Average checklist completion % across assigned courses
+ *  fullySyncedCourses       – Course offerings fully synchronized to Google Drive
+ *  driveSyncRate            – Percentage of assigned courses fully Drive synced
+ *  totalCourses             – Preserved legacy alias for assignedCourses
+ *  totalForms               – Preserved legacy forms count (courses * 2)
+ *  draftForms               – Preserved legacy CIS/CCR draft count
+ *  submittedForms           – Preserved legacy CIS/CCR submitted count
+ *  pendingForms             – Preserved legacy pending count
  */
 const getMyDashboardStats = async (facultyId, semesterId) => {
   if (!mongoose.Types.ObjectId.isValid(semesterId)) fail('Invalid semester ID', 400);
 
+  // 1. Fetch personal offerings enriched with checklist and Drive sync progress
+  const offerings = await getMyOfferings(facultyId, semesterId, true);
+  const totalCourses = offerings.length;
+  const assignedCourses = totalCourses;
+
+  let completedChecklists = 0;
+  let fullySyncedCourses = 0;
+  let totalPercentage = 0;
+
+  offerings.forEach((off) => {
+    if (off.progress?.status === 'Complete') {
+      completedChecklists++;
+    }
+    if (off.drive?.status === 'Synced') {
+      fullySyncedCourses++;
+    }
+    totalPercentage += (off.progress?.completionPercentage || 0);
+  });
+
+  const averageChecklistProgress = totalCourses > 0
+    ? Math.round((totalPercentage / totalCourses) * 10) / 10
+    : 0;
+
+  const driveSyncRate = totalCourses > 0
+    ? Math.round((fullySyncedCourses / totalCourses) * 1000) / 10
+    : 0;
+
+  // 2. Preserve legacy CIS & CCR metrics for backward compatibility with existing consumers
   const CIS = require('../models/CIS.model');
   const CCR = require('../models/CCR.model');
 
   const FORM_TYPES_COUNT = 2; // CIS + CCR
-
-  // Count course offerings
-  const totalCourses = await CourseOffering.countDocuments({
-    faculty: facultyId,
-    semester: semesterId,
-  });
-
   const totalForms = totalCourses * FORM_TYPES_COUNT;
 
-  // Count CIS forms by status
-  const [cisDraft, cisSubmitted] = await Promise.all([
-    CIS.countDocuments({ faculty: facultyId, semester: semesterId, status: 'draft' }),
-    CIS.countDocuments({ faculty: facultyId, semester: semesterId, status: 'submitted' }),
+  const [cisDraft, cisSubmitted, ccrDraft, ccrSubmitted] = await Promise.all([
+    CIS.countDocuments({ faculty: facultyId, semester: semesterId, status: 'draft' }).catch(() => 0),
+    CIS.countDocuments({ faculty: facultyId, semester: semesterId, status: 'submitted' }).catch(() => 0),
+    CCR.countDocuments({ faculty: facultyId, semester: semesterId, status: 'draft' }).catch(() => 0),
+    CCR.countDocuments({ faculty: facultyId, semester: semesterId, status: 'submitted' }).catch(() => 0),
   ]);
 
-  // Count CCR forms by status
-  const [ccrDraft, ccrSubmitted] = await Promise.all([
-    CCR.countDocuments({ faculty: facultyId, semester: semesterId, status: 'draft' }),
-    CCR.countDocuments({ faculty: facultyId, semester: semesterId, status: 'submitted' }),
-  ]);
-
-  const draftForms     = cisDraft + ccrDraft;
+  const draftForms = cisDraft + ccrDraft;
   const submittedForms = cisSubmitted + ccrSubmitted;
-  const pendingForms   = Math.max(0, totalForms - draftForms - submittedForms);
+  const pendingForms = Math.max(0, totalForms - draftForms - submittedForms);
 
-  return { totalCourses, totalForms, draftForms, submittedForms, pendingForms };
+  return {
+    // Modern 19-item Checklist & Drive metrics
+    assignedCourses,
+    completedChecklists,
+    averageChecklistProgress,
+    fullySyncedCourses,
+    driveSyncRate,
+
+    // Preserved legacy fields
+    totalCourses,
+    totalForms,
+    draftForms,
+    submittedForms,
+    pendingForms,
+  };
 };
 
 /**
@@ -362,8 +554,13 @@ const getOfferingById = async (offeringId, user) => {
 
     // If not the assigned instructor, check designation permissions (HoD departmental access)
     if (user.designation === 'hod') {
-      const courseDept = offering.course?.department?._id || offering.course?.department;
-      if (!user.department || !courseDept || courseDept.toString() !== user.department.toString()) {
+      const offeringDept =
+        offering.department?._id ||
+        offering.department ||
+        offering.course?.department?._id ||
+        offering.course?.department;
+      const userDeptId = (user.department?._id || user.department)?.toString();
+      if (!userDeptId || !offeringDept || offeringDept.toString() !== userDeptId) {
         fail('You are only authorized to access course offerings belonging to your department.', 403);
       }
     } else {
@@ -379,7 +576,7 @@ const getOfferingById = async (offeringId, user) => {
  *
  * Authorization rules:
  *   - Dean: universal access across all departments.
- *   - HoD: allowed if the course belongs to the HoD's assigned department.
+ *   - HoD: universal catalog access for departmental allocation and curriculum planning.
  *   - Faculty: allowed if assigned via CourseOffering or Course.assignedFaculty.
  *
  * @param {Object} user - Authenticated user from req.user
@@ -402,7 +599,8 @@ const checkCourseAccess = async (user, courseId) => {
 
   if (user.designation === 'hod') {
     const courseDept = course.department?._id || course.department;
-    if (!user.department || !courseDept || courseDept.toString() !== user.department.toString()) {
+    const userDeptId = (user.department?._id || user.department)?.toString();
+    if (!userDeptId || !courseDept || courseDept.toString() !== userDeptId) {
       return {
         authorized: false,
         status: 403,
@@ -480,6 +678,7 @@ module.exports = {
   getOfferingById,
   checkCourseAccess,
   resolveOfferingForLegacyContext,
+  resolveOfferingParentFolder,
 };
 
 

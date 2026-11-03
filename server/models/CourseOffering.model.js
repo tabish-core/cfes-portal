@@ -20,7 +20,7 @@ const courseOfferingSchema = new mongoose.Schema(
     faculty: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
-      required: [true, 'Faculty is required'],
+      default: null,
     },
 
     course: {
@@ -35,12 +35,30 @@ const courseOfferingSchema = new mongoose.Schema(
       required: [true, 'Semester is required'],
     },
 
+    department: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Department',
+      required: [true, 'Department is required'],
+    },
+
     section: {
       type: String,
       trim: true,
       uppercase: true,
       default: 'A',
       maxlength: [5, 'Section cannot exceed 5 characters'],
+    },
+
+    googleDriveFolderId: {
+      type: String,
+      trim: true,
+      default: null,
+    },
+
+    googleDriveFolderUrl: {
+      type: String,
+      trim: true,
+      default: null,
     },
   },
   { timestamps: true }
@@ -51,7 +69,8 @@ const courseOfferingSchema = new mongoose.Schema(
  * Different faculty can teach different sections of the same course.
  */
 courseOfferingSchema.index({ course: 1, semester: 1, section: 1 }, { unique: true });
-courseOfferingSchema.index({ faculty: 1, semester: 1 });
+courseOfferingSchema.index({ department: 1, semester: 1 });
+courseOfferingSchema.index({ faculty: 1, semester: 1 }, { sparse: true });
 courseOfferingSchema.index({ semester: 1 });
 
 // Ensure virtuals appear in JSON / Object serialisation

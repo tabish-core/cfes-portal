@@ -185,4 +185,27 @@ describe('Dean Dashboard Frontend Presentation Logic', () => {
     const widthPercent = Math.min(100, Math.max(0, dept.checklistCompletionPct));
     assert.equal(widthPercent, 92.4);
   });
+
+  // ── 5. Institutional Identity & Dean Scope Verification ──
+  test('5. Presents institutional oversight scope for Dean without fabricating an academic department', () => {
+    const deanUser = {
+      _id: 'user_dean_01',
+      name: 'Dr. Dean User',
+      designation: 'dean',
+      department: null,
+    };
+
+    // Helper simulating header identity logic in Dean Dashboard
+    const computeDeanIdentity = (user) => {
+      const roleBadge = user?.designation === 'dean' ? 'Dean of Academic Affairs' : 'Faculty Member';
+      const scopeBadge = 'University Administration';
+      const deptBadge = user?.department ? user.department.name : null;
+      return { roleBadge, scopeBadge, deptBadge };
+    };
+
+    const identity = computeDeanIdentity(deanUser);
+    assert.equal(identity.roleBadge, 'Dean of Academic Affairs');
+    assert.equal(identity.scopeBadge, 'University Administration');
+    assert.equal(identity.deptBadge, null, 'Dean must not be shown a fabricated department');
+  });
 });

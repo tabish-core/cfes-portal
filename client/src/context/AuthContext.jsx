@@ -8,11 +8,10 @@
  *  login() — persists user + token, updates state
  *  logout()— clears everything, redirects to /login
  */
-import { createContext, useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getMe } from '../services/auth.service';
-
-export const AuthContext = createContext(null);
+import { AuthContext } from './authContextDef';
 
 const getStoredUser = () => {
   try {

@@ -15,6 +15,10 @@ const Submissions = () => {
   const toast = useToast();
 
   const isHod = user?.designation === 'hod';
+  const userDept = user?.department;
+  const userDeptId = userDept?._id || userDept;
+  const userDeptIdStr = userDeptId ? userDeptId.toString() : '';
+  const deptName = userDept?.name;
 
   // Core data states
   const [semesters, setSemesters] = useState([]);
@@ -23,7 +27,9 @@ const Submissions = () => {
   const [offerings, setOfferings] = useState([]);
 
   // Filter states
-  const [selectedDepartmentId, setSelectedDepartmentId] = useState('');
+  const [selectedDepartmentId, setSelectedDepartmentId] = useState(
+    isHod && userDeptIdStr ? userDeptIdStr : ''
+  );
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -44,18 +50,26 @@ const Submissions = () => {
     const fetchInitialData = async () => {
       setLoadingInitial(true);
       try {
-        const [semRes, deptRes] = await Promise.all([
-          getSemesters(),
-          api.get('/departments').catch(() => ({ data: { data: { departments: [] } } })),
-        ]);
+        const promises = [getSemesters()];
+
+        // HoDs are scoped to their own department and must never call /api/departments (which returns 403)
+        if (!isHod) {
+          promises.push(
+            api.get('/departments').catch(() => ({ data: { data: { departments: [] } } }))
+          );
+        }
+
+        const [semRes, deptRes] = await Promise.all(promises);
 
         if (!isMounted) return;
 
-        const allSemesters = semRes.semesters || [];
+        const allSemesters = semRes?.semesters || [];
         setSemesters(allSemesters);
 
-        const allDepartments = deptRes.data?.data?.departments || [];
-        setDepartments(allDepartments);
+        if (deptRes) {
+          const allDepartments = deptRes.data?.data?.departments || [];
+          setDepartments(allDepartments);
+        }
 
         // Auto-select active semester by default, or first semester
         const activeSem = allSemesters.find((s) => s.status === 'active');
@@ -65,9 +79,9 @@ const Submissions = () => {
           setSelectedSemesterId(allSemesters[0]._id);
         }
 
-        // If user is HoD and has an assigned department, default department filter
-        if (isHod && user?.department) {
-          setSelectedDepartmentId(user.department);
+        // If user is HoD and has an assigned department, lock department filter
+        if (isHod && userDeptIdStr) {
+          setSelectedDepartmentId(userDeptIdStr);
         }
       } catch (err) {
         if (isMounted) {
@@ -83,7 +97,14 @@ const Submissions = () => {
     return () => {
       isMounted = false;
     };
-  }, [isHod, user?.department, toast]);
+  }, [isHod, userDeptIdStr, toast]);
+
+  // Sync HoD department constraint
+  useEffect(() => {
+    if (isHod && userDeptIdStr) {
+      setSelectedDepartmentId(userDeptIdStr);
+    }
+  }, [isHod, userDeptIdStr]);
 
   // 2. Fetch offerings with progress and drive sync whenever selectedSemesterId changes
   const fetchOfferings = useCallback(async (semId) => {
@@ -115,6 +136,8 @@ const Submissions = () => {
       // Department filter
       if (selectedDepartmentId) {
         const deptId =
+          offering.department?._id ||
+          offering.department ||
           offering.course?.department?._id ||
           offering.course?.department ||
           offering.faculty?.department?._id ||
@@ -181,7 +204,9 @@ const Submissions = () => {
   };
 
   const handleResetFilters = () => {
-    if (!isHod) setSelectedDepartmentId('');
+    if (!isHod) {
+      setSelectedDepartmentId('');
+    }
     setStatusFilter('ALL');
     setSearchQuery('');
   };
@@ -200,8 +225,12 @@ const Submissions = () => {
         </div>
 
         {selectedSemester && (
-          <div className="submissions-semester-indicator">
-            <span className={`submissions-sem-badge ${selectedSemester.status === 'active' ? 'submissions-sem-badge--active' : ''}`}>
+          <div className="submissions-header-badges">
+            <span
+              className={`submissions-sem-badge ${
+                selectedSemester.status === 'active' ? 'submissions-sem-badge--active' : ''
+              }`}
+            >
               {selectedSemester.name} {selectedSemester.status === 'active' ? '(Active)' : ''}
             </span>
           </div>
@@ -233,24 +262,26 @@ const Submissions = () => {
             </select>
           </div>
 
-          {/* Department Selector (Dean: all depts; HoD: locked to their department) */}
-          <div className="submissions-filter-group">
-            <label className="submissions-filter-label" htmlFor="filter-department">Department</label>
-            <select
-              id="filter-department"
-              className="submissions-filter-select"
-              value={selectedDepartmentId}
-              onChange={(e) => setSelectedDepartmentId(e.target.value)}
-              disabled={loadingInitial || isHod}
-            >
-              {!isHod && <option value="">All Departments</option>}
-              {departments.map((dept) => (
-                <option key={dept._id} value={dept._id}>
-                  {dept.name} ({dept.code})
-                </option>
-              ))}
-            </select>
-          </div>
+          {/* Department Selector (Dean only) */}
+          {!isHod && (
+            <div className="submissions-filter-group">
+              <label className="submissions-filter-label" htmlFor="filter-department">Department</label>
+              <select
+                id="filter-department"
+                className="submissions-filter-select"
+                value={selectedDepartmentId}
+                onChange={(e) => setSelectedDepartmentId(e.target.value)}
+                disabled={loadingInitial}
+              >
+                <option value="">All Departments</option>
+                {departments.map((dept) => (
+                  <option key={dept._id} value={dept._id}>
+                    {dept.name} ({dept.code})
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           {/* Checklist Status Filter */}
           <div className="submissions-filter-group">
@@ -302,7 +333,7 @@ const Submissions = () => {
           <span className="submissions-count-text">
             Showing <strong>{filteredOfferings.length}</strong> of {offerings.length} course offering{offerings.length !== 1 ? 's' : ''}
           </span>
-          {(selectedDepartmentId || statusFilter !== 'ALL' || searchQuery) && (
+          {((!isHod && selectedDepartmentId) || statusFilter !== 'ALL' || searchQuery.trim() !== '') && (
             <button
               type="button"
               className="submissions-reset-btn"
@@ -362,10 +393,12 @@ const Submissions = () => {
                   const driveUrl = offering.drive?.folderUrl;
 
                   const dept =
+                    offering.department?.code ||
+                    offering.department?.name ||
                     offering.course?.department?.code ||
                     offering.course?.department?.name ||
                     offering.faculty?.department?.code ||
-                    '—';
+                    (isHod && deptName ? deptName : '—');
 
                   return (
                     <tr key={offering._id}>

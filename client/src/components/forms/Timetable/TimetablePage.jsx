@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import api from '../../../api/axios';
 import useToast from '../../../hooks/useToast';
-import { AuthContext } from '../../../context/AuthContext';
+import { AuthContext } from '../../../context/authContextDef';
 import FacultyInfoSection from './FacultyInfoSection';
 import TimeSlotManager from './TimeSlotManager';
 import WeeklyScheduleGrid from './WeeklyScheduleGrid';

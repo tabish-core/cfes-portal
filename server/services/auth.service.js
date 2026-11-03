@@ -69,8 +69,10 @@ const login = async ({ email, password }) => {
     throw err;
   }
 
-  // Explicitly select password (it has select:false on schema)
-  const user = await User.findOne({ email: normalizedEmail }).select('+password');
+  // Explicitly select password (it has select:false on schema) and populate department
+  const user = await User.findOne({ email: normalizedEmail })
+    .select('+password')
+    .populate('department', 'name code');
 
   if (!user) {
     const err = new Error('Invalid email or password');

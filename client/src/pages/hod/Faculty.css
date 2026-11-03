@@ -1,0 +1,332 @@
+/* ── HoD Department Faculty Styles ────────────────────────────────── */
+
+.hod-faculty-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* ── Header ── */
+.hod-faculty-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.hod-faculty-heading {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--cfes-slate-900, #0f172a);
+  margin: 0 0 0.25rem;
+  letter-spacing: -0.01em;
+}
+
+.hod-faculty-sub {
+  font-size: 0.88rem;
+  color: var(--cfes-slate-600, #475569);
+  margin: 0;
+}
+
+.hod-faculty-header-badges {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.hod-faculty-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: var(--cfes-radius-md, 6px);
+  font-size: 0.8rem;
+  font-weight: 600;
+  background: var(--cfes-slate-100, #f1f5f9);
+  color: var(--cfes-slate-700, #334155);
+  border: 1px solid var(--cfes-slate-200, #e2e8f0);
+}
+
+.hod-faculty-badge--primary {
+  background: #eef2ff;
+  color: #3730a3;
+  border-color: #c7d2fe;
+}
+
+.hod-faculty-badge--role {
+  background: #f8fafc;
+  color: #1e293b;
+  border-color: #cbd5e1;
+  font-weight: 700;
+}
+
+.hod-faculty-badge--unassigned {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #64748b;
+  font-style: italic;
+  font-weight: 500;
+}
+
+/* ── Card Container ── */
+.hod-faculty-card {
+  background: #ffffff;
+  border: 1px solid var(--cfes-slate-200, #e2e8f0);
+  border-radius: var(--cfes-radius-lg, 8px);
+  padding: 1.25rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+/* ── Controls & Filter Bar ── */
+.hod-faculty-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  margin-bottom: 1rem;
+}
+
+.hod-faculty-filters-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1.2fr;
+  gap: 0.75rem;
+}
+
+.hod-faculty-filter-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.hod-faculty-filter-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--cfes-slate-600, #475569);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.hod-faculty-filter-input,
+.hod-faculty-filter-select {
+  height: 2.35rem;
+  padding: 0 0.75rem;
+  font-size: 0.86rem;
+  color: var(--cfes-slate-800, #1e293b);
+  background: #ffffff;
+  border: 1px solid var(--cfes-slate-300, #cbd5e1);
+  border-radius: var(--cfes-radius-md, 6px);
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.hod-faculty-filter-input:focus,
+.hod-faculty-filter-select:focus {
+  border-color: var(--cfes-primary, #4338ca);
+  box-shadow: 0 0 0 2px rgba(67, 56, 202, 0.12);
+}
+
+/* ── Summary & Reset Bar ── */
+.hod-faculty-summary-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--cfes-slate-50, #f8fafc);
+  border: 1px solid var(--cfes-slate-200, #e2e8f0);
+  border-radius: var(--cfes-radius-md, 6px);
+  font-size: 0.82rem;
+  color: var(--cfes-slate-600, #475569);
+  flex-wrap: wrap;
+}
+
+.hod-faculty-reset-btn {
+  background: none;
+  border: none;
+  color: var(--cfes-primary, #4338ca);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+}
+
+.hod-faculty-reset-btn:hover {
+  color: #312e81;
+}
+
+/* ── Table & Responsive Wrapper ── */
+.hod-faculty-table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border: 1px solid var(--cfes-slate-200, #e2e8f0);
+  border-radius: var(--cfes-radius-md, 6px);
+  background: #ffffff;
+}
+
+.hod-faculty-table {
+  width: 100%;
+  min-width: 680px;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.88rem;
+}
+
+.hod-faculty-table th {
+  background: var(--cfes-slate-50, #f8fafc);
+  color: var(--cfes-slate-700, #334155);
+  font-weight: 700;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--cfes-slate-200, #e2e8f0);
+  white-space: nowrap;
+}
+
+.hod-faculty-table td {
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--cfes-slate-100, #f1f5f9);
+  vertical-align: middle;
+  color: var(--cfes-slate-700, #334155);
+}
+
+.hod-faculty-table tr:last-child td {
+  border-bottom: none;
+}
+
+.hod-faculty-table tr:hover td {
+  background: var(--cfes-slate-50, #f8fafc);
+}
+
+/* ── Table Cells ── */
+.hod-faculty-cell-user {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.hod-faculty-user-name {
+  font-weight: 600;
+  color: var(--cfes-slate-900, #0f172a);
+}
+
+.hod-faculty-user-email {
+  font-size: 0.78rem;
+  color: var(--cfes-slate-500, #64748b);
+  font-family: 'Consolas', 'Courier New', monospace;
+}
+
+/* ── Badges ── */
+.hod-faculty-desig-badge {
+  display: inline-block;
+  padding: 0.2rem 0.55rem;
+  border-radius: 4px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.hod-faculty-desig-badge--hod {
+  background: #ede9fe;
+  color: #5b21b6;
+  border: 1px solid #ddd6fe;
+}
+
+.hod-faculty-desig-badge--faculty {
+  background: var(--cfes-slate-100, #f1f5f9);
+  color: var(--cfes-slate-700, #334155);
+  border: 1px solid var(--cfes-slate-200, #e2e8f0);
+}
+
+.hod-faculty-count-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.hod-faculty-count-badge--assigned {
+  background: #eef2ff;
+  color: #3730a3;
+  border: 1px solid #c7d2fe;
+}
+
+.hod-faculty-count-badge--zero {
+  background: var(--cfes-slate-100, #f1f5f9);
+  color: var(--cfes-slate-500, #64748b);
+  border: 1px solid var(--cfes-slate-200, #e2e8f0);
+}
+
+/* ── States (Loading, Error, Empty) ── */
+.hod-faculty-loading-state,
+.hod-faculty-error-state,
+.hod-faculty-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 2.5rem 1.5rem;
+  background: #ffffff;
+  border: 1px dashed var(--cfes-slate-300, #cbd5e1);
+  border-radius: var(--cfes-radius-md, 6px);
+  gap: 0.75rem;
+}
+
+.hod-faculty-spinner {
+  display: inline-block;
+  color: var(--cfes-primary, #4338ca);
+  animation: hod-spin 1s linear infinite;
+}
+
+@keyframes hod-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.hod-faculty-error-text {
+  color: #dc2626;
+  font-weight: 600;
+  font-size: 0.92rem;
+  margin: 0;
+}
+
+.hod-faculty-empty-title {
+  font-weight: 600;
+  color: var(--cfes-slate-700, #334155);
+  margin: 0;
+}
+
+.hod-faculty-empty-sub {
+  font-size: 0.82rem;
+  color: var(--cfes-slate-500, #64748b);
+  margin: 0;
+}
+
+/* ── Responsive Queries ── */
+@media (max-width: 900px) {
+  .hod-faculty-filters-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .hod-faculty-filters-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hod-faculty-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+

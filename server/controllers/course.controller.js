@@ -13,7 +13,8 @@ const { sendSuccess, sendError } = require('../utils/response');
  */
 const getAllCourses = async (req, res, next) => {
   try {
-    const courses = await courseService.listCourses(req.departmentFilter || {});
+    const filter = req.query.department ? { department: req.query.department } : (req.departmentFilter || {});
+    const courses = await courseService.listCourses(filter);
     return sendSuccess(res, { courses }, 'Courses fetched');
   } catch (err) {
     next(err);

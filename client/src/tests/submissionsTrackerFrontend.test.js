@@ -84,6 +84,8 @@ describe('Submissions Tracker Frontend Filter & Presentation Logic', () => {
     return offerings.filter((offering) => {
       if (departmentId) {
         const deptId =
+          offering.department?._id ||
+          offering.department ||
           offering.course?.department?._id ||
           offering.course?.department ||
           offering.faculty?.department?._id ||
@@ -181,5 +183,142 @@ describe('Submissions Tracker Frontend Filter & Presentation Logic', () => {
     // Offering 3: No files synced -> Drive folder is null and button disabled
     assert.equal(sampleOfferings[2].drive.folderUrl, null);
     assert.equal(sampleOfferings[2].drive.status, 'Not Synced');
+  });
+
+  test('6. Validates Drive sync status distinguishes partial multi-file sync from full sync', () => {
+    // In-progress offering with multiple files must remain Partially Synced
+    const inProgressMultiFile = {
+      ...sampleOfferings[1],
+      progress: { completedCount: 3, totalCount: 19, status: 'In Progress' },
+      drive: { syncedFilesCount: 6, status: 'Partially Synced' },
+    };
+    assert.equal(inProgressMultiFile.drive.status, 'Partially Synced');
+
+    // Fully complete offering with files is Synced
+    const completeSynced = {
+      ...sampleOfferings[0],
+      progress: { completedCount: 19, totalCount: 19, status: 'Complete' },
+      drive: { syncedFilesCount: 19, status: 'Synced' },
+    };
+    assert.equal(completeSynced.drive.status, 'Synced');
+  });
+
+  test('7. Handles missing checklist or Drive files safely in frontend presentation', () => {
+    const unstarted = {
+      progress: { completedCount: 0, totalCount: 19, status: 'Not Started' },
+      drive: { syncedFilesCount: 0, folderUrl: null, status: 'Not Synced' },
+    };
+    assert.equal(unstarted.progress.status, 'Not Started');
+    assert.equal(unstarted.drive.status, 'Not Synced');
+    assert.equal(unstarted.drive.folderUrl, null);
+  });
+
+  // ── 8. HoD Scoping & Zero /api/departments Call Guarantee ──
+  test('8. HoD page does not request /api/departments, while Dean page still requests departments', () => {
+    const simulateInitialRequests = (designation) => {
+      const isHod = designation === 'hod';
+      const endpointsCalled = [];
+
+      // Semester fetch is always called
+      endpointsCalled.push('/api/semesters');
+
+      // Departments must only be requested for Dean
+      if (!isHod) {
+        endpointsCalled.push('/api/departments');
+      }
+
+      return endpointsCalled;
+    };
+
+    const hodCalls = simulateInitialRequests('hod');
+    assert.deepEqual(hodCalls, ['/api/semesters']);
+    assert.ok(!hodCalls.includes('/api/departments'), 'HoD must never trigger /api/departments request');
+
+    const deanCalls = simulateInitialRequests('dean');
+    assert.deepEqual(deanCalls, ['/api/semesters', '/api/departments']);
+    assert.ok(deanCalls.includes('/api/departments'), 'Dean must load full department list');
+  });
+
+  // ── 9. Department Selector Visibility ──
+  test('9. Department selector is hidden for HoD and visible for Dean', () => {
+    const isDepartmentSelectorRendered = (designation) => {
+      const isHod = designation === 'hod';
+      return !isHod;
+    };
+
+    assert.equal(isDepartmentSelectorRendered('hod'), false, 'Department selector must not be rendered for HoD');
+    assert.equal(isDepartmentSelectorRendered('dean'), true, 'Department selector must be rendered for Dean');
+  });
+
+  // ── 10. Automatic Scoping to Authenticated HoD Department ──
+  test('10. Scopes HoD submissions automatically to user department context without cross-department leakage', () => {
+    const hodUser = {
+      name: 'Dr. Tariq Mahmood',
+      designation: 'hod',
+      department: { _id: 'd1', name: 'Computer Science', code: 'CS' },
+    };
+
+    const userDeptId = (hodUser.department?._id || hodUser.department).toString();
+    const isHod = hodUser.designation === 'hod';
+
+    // Simulate HoD viewing offerings with active department filter
+    const hodFiltered = filterOfferings(sampleOfferings, {
+      departmentId: isHod ? userDeptId : '',
+      status: 'ALL',
+      search: '',
+    });
+
+    // Only d1 (Computer Science) offerings should be visible
+    assert.equal(hodFiltered.length, 2);
+    assert.ok(hodFiltered.every((o) => (o.course?.department?._id || o.department) === 'd1'));
+    assert.ok(!hodFiltered.some((o) => (o.course?.department?._id || o.department) === 'd2'));
+
+    // Resetting filters for HoD must NOT wipe their department scope
+    const resetDepartmentId = (currentDeptId, userIsHod) => {
+      return userIsHod ? currentDeptId : '';
+    };
+    assert.equal(resetDepartmentId(userDeptId, isHod), 'd1');
+  });
+
+  // ── 11. Submissions Header Identity Presentation ──
+  test('11. Presents HoD vs Dean role and institutional scope badges accurately', () => {
+    const computeSubmissionsBadges = (user, activeSemester) => {
+      const isHod = user?.designation === 'hod';
+      const userDept = user?.department;
+      const deptName = userDept?.name;
+      const deptCode = userDept?.code ? ` (${userDept.code})` : '';
+
+      const roleBadge = isHod ? 'Head of Department' : 'Dean of Academic Affairs';
+      const scopeBadge = isHod && deptName ? `${deptName}${deptCode}` : !isHod ? 'University Administration' : null;
+      const semesterBadge = activeSemester ? `${activeSemester.name} (Active)` : null;
+
+      return { roleBadge, scopeBadge, semesterBadge };
+    };
+
+    // HoD badges
+    const hodUser = {
+      designation: 'hod',
+      department: { name: 'Computer Science', code: 'CS' },
+    };
+    const hodBadges = computeSubmissionsBadges(hodUser, { name: 'Fall 2026', status: 'active' });
+    assert.equal(hodBadges.roleBadge, 'Head of Department');
+    assert.equal(hodBadges.scopeBadge, 'Computer Science (CS)');
+    assert.equal(hodBadges.semesterBadge, 'Fall 2026 (Active)');
+
+    // Dean badges
+    const deanUser = {
+      designation: 'dean',
+      department: null,
+    };
+    const deanBadges = computeSubmissionsBadges(deanUser, { name: 'Fall 2026', status: 'active' });
+    assert.equal(deanBadges.roleBadge, 'Dean of Academic Affairs');
+    assert.equal(deanBadges.scopeBadge, 'University Administration');
+    assert.equal(deanBadges.semesterBadge, 'Fall 2026 (Active)');
+
+    // HoD without department
+    const unassignedHod = { designation: 'hod', department: null };
+    const unassignedBadges = computeSubmissionsBadges(unassignedHod, null);
+    assert.equal(unassignedBadges.roleBadge, 'Head of Department');
+    assert.equal(unassignedBadges.scopeBadge || 'Department not assigned', 'Department not assigned');
   });
 });

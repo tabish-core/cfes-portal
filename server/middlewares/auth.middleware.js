@@ -23,8 +23,8 @@ const verifyToken = async (req, res, next) => {
     const token   = authHeader.split(' ')[1];
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    // Fetch fresh user from DB (catches deactivated accounts mid-session)
-    const user = await User.findById(decoded.id);
+    // Fetch fresh user from DB (catches deactivated accounts mid-session) and populate department
+    const user = await User.findById(decoded.id).populate('department', 'name code');
 
     if (!user) {
       return sendError(res, 'User belonging to this token no longer exists.', 401);

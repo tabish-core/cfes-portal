@@ -47,13 +47,6 @@ describe('Dean Departments Management Frontend Logic', () => {
     },
   ];
 
-  const sampleFaculties = [
-    { _id: 'u_tariq', name: 'Dr. Tariq Mahmood', email: 'tariq@iqra.edu.pk', designation: 'hod' },
-    { _id: 'u_zainab', name: 'Dr. Zainab Khan', email: 'zainab@iqra.edu.pk', designation: 'hod' },
-    { _id: 'u_bilal', name: 'Bilal Ahmed', email: 'bilal@iqra.edu.pk', designation: 'faculty' },
-    { _id: 'u_aisha', name: 'Aisha Siddiqui', email: 'aisha@iqra.edu.pk', designation: 'faculty' },
-  ];
-
   // Simulates the exact filter logic inside Departments.jsx
   const filterDepartments = (depts, { hodFilter, search }) => {
     return depts.filter((dept) => {

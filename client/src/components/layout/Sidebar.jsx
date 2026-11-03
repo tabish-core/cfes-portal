@@ -18,7 +18,7 @@ const DEAN_LINKS = [
 ];
 
 const HOD_LINKS = [
-  { to: '/hod/dashboard', label: 'Dashboard (HoD)', icon: 'dashboard' },
+  { to: '/hod/dashboard', label: 'Dashboard', icon: 'dashboard' },
   { to: '/hod/submissions', label: 'Submissions', icon: 'document' },
   { to: '/hod/faculty', label: 'Department Faculty', icon: 'users' },
   { to: '/hod/courses', label: 'Course Allocation', icon: 'book' },

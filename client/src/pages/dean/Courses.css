@@ -33,7 +33,42 @@
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 0.75rem;
+  gap: 0.5rem;
+}
+
+.courses-header-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.75rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  color: #334155;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.courses-header-badge--role {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #0f172a;
+  font-weight: 600;
+}
+
+.courses-header-badge--dept {
+  background: #eef2ff;
+  border-color: #c7d2fe;
+  color: #3730a3;
+  font-weight: 600;
+}
+
+.courses-header-badge--unassigned {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #64748b;
+  font-style: italic;
+  font-weight: 500;
 }
 
 .courses-active-badge {
@@ -386,6 +421,12 @@
 .courses-faculty-name {
   font-weight: 600;
   color: var(--cfes-slate-900, #0f172a);
+}
+
+.courses-faculty-name--unassigned {
+  color: var(--cfes-slate-500, #64748b);
+  font-style: italic;
+  font-weight: 500;
 }
 
 .courses-faculty-email {

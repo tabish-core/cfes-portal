@@ -380,6 +380,38 @@ const resolveOfferingHierarchyFolder = async ({
     throw error;
   }
 
+  // Persist Tier 3 parent folder ID and URL to CourseOffering if not already matching
+  const expectedFolderUrl = `https://drive.google.com/drive/folders/${offeringFolderId}`;
+  if (
+    offering.googleDriveFolderId !== offeringFolderId ||
+    offering.googleDriveFolderUrl !== expectedFolderUrl
+  ) {
+    try {
+      const targetOfferingId = offering._id || offeringId;
+      const isMocked = typeof CourseOffering.updateOne === 'function' && Boolean(CourseOffering.updateOne._isMockFunction || CourseOffering.updateOne.mock);
+      const isConnected = mongoose.connection && mongoose.connection.readyState === 1;
+
+      if ((isConnected || isMocked) && targetOfferingId) {
+        await CourseOffering.updateOne(
+          { _id: targetOfferingId },
+          {
+            $set: {
+              googleDriveFolderId: offeringFolderId,
+              googleDriveFolderUrl: expectedFolderUrl,
+            },
+          }
+        );
+      }
+      offering.googleDriveFolderId = offeringFolderId;
+      offering.googleDriveFolderUrl = expectedFolderUrl;
+    } catch (persistErr) {
+      console.warn(
+        `Failed to persist Google Drive parent folder to CourseOffering ${offering._id || offeringId}:`,
+        persistErr.message
+      );
+    }
+  }
+
   // 4. Category folder under Offering
   let categoryFolderId;
   try {

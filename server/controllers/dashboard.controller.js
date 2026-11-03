@@ -7,6 +7,7 @@ const CCR = require('../models/CCR.model');
 const Semester = require('../models/Semester.model');
 const CourseChecklist = require('../models/CourseChecklist.model');
 const CourseFile = require('../models/CourseFile.model');
+const courseOfferingService = require('../services/courseOffering.service');
 
 // Standard count of items defined in the institutional CourseChecklist schema
 const DEFAULT_CHECKLIST_ITEMS_COUNT = 19;
@@ -165,12 +166,14 @@ exports.getDeanDashboardStats = async (req, res, next) => {
       overallCompletedItems += completedCount;
       overallTotalItems += totalCount;
 
-      // Identify department for this offering (primary: course.department; fallback: faculty.department)
-      const deptId = offering.course?.department
-        ? (offering.course.department._id || offering.course.department).toString()
-        : (offering.faculty?.department
-          ? (offering.faculty.department._id || offering.faculty.department).toString()
-          : null);
+      // Identify department for this offering: offering.department (canonical), fallback to course.department or faculty.department
+      const deptId = offering.department
+        ? (offering.department._id || offering.department).toString()
+        : (offering.course?.department
+          ? (offering.course.department._id || offering.course.department).toString()
+          : (offering.faculty?.department
+            ? (offering.faculty.department._id || offering.faculty.department).toString()
+            : null));
 
       if (deptId && deptStatsMap.has(deptId)) {
         const deptStat = deptStatsMap.get(deptId);
@@ -245,62 +248,173 @@ exports.getDeanDashboardStats = async (req, res, next) => {
  */
 exports.getHodDashboardStats = async (req, res, next) => {
   try {
-    if (!req.user.department) {
+    if (!req.user || !req.user.department) {
       return res.status(403).json({
         success: false,
         message: 'You are not assigned to a department.'
       });
     }
 
-    const deptId = req.user.department;
+    const deptId = req.user.department._id || req.user.department;
 
-    // Run initial independent queries
-    const [totalFaculty, totalCourses, deptCourseDocs] = await Promise.all([
-      User.countDocuments({ department: deptId, designation: 'faculty' }),
-      Course.countDocuments({ department: deptId }),
-      Course.find({ department: deptId }).select('_id')
+    // 1. Fetch department details, active semester, faculty count, and courses count in parallel
+    const [deptDoc, activeSemester, departmentFacultyCount, departmentCoursesCount] = await Promise.all([
+      Department.findById(deptId).select('_id name code').lean(),
+      Semester.findOne({ status: 'active' }).select('_id name status').lean(),
+      User.countDocuments({ department: deptId, designation: 'faculty', isActive: true }),
+      Course.countDocuments({ department: deptId, isActive: { $ne: false } }),
     ]);
 
-    const courseIds = deptCourseDocs.map(c => c._id);
-
-    let totalOfferings = 0;
-    let cisSubmittedCount = 0;
-    let cisDraftCount = 0;
-    let ccrSubmittedCount = 0;
-    let ccrDraftCount = 0;
-
-    if (courseIds.length > 0) {
-      // Run dependent queries
-      [
-        totalOfferings,
-        cisSubmittedCount,
-        cisDraftCount,
-        ccrSubmittedCount,
-        ccrDraftCount
-      ] = await Promise.all([
-        CourseOffering.countDocuments({ course: { $in: courseIds } }),
-        CIS.countDocuments({ course: { $in: courseIds }, status: 'submitted' }),
-        CIS.countDocuments({ course: { $in: courseIds }, status: 'draft' }),
-        CCR.countDocuments({ course: { $in: courseIds }, status: 'submitted' }),
-        CCR.countDocuments({ course: { $in: courseIds }, status: 'draft' })
-      ]);
+    if (!deptDoc) {
+      return res.status(404).json({
+        success: false,
+        message: 'Assigned department not found.'
+      });
     }
 
-    const FORM_TYPES_COUNT = 2; // CIS + CCR
-    const totalFormsExpected = totalOfferings * FORM_TYPES_COUNT;
-    const totalSubmittedForms = cisSubmittedCount + ccrSubmittedCount;
-    const totalDraftForms = cisDraftCount + ccrDraftCount;
-    const pendingForms = Math.max(0, totalFormsExpected - totalDraftForms - totalSubmittedForms);
+    // 2. If no active semester is configured, return baseline departmental metrics safely
+    if (!activeSemester) {
+      return res.status(200).json({
+        success: true,
+        data: {
+          activeSemester: null,
+          department: {
+            id: deptDoc._id,
+            name: deptDoc.name,
+            code: deptDoc.code,
+          },
+          departmentFacultyCount,
+          assignedInstructorsCount: 0,
+          departmentCoursesCount,
+          activeOfferingsCount: 0,
+          unassignedOfferingsCount: 0,
+          checklistCompletionPercentage: 0,
+          driveSyncRate: 0,
+          driveSync: {
+            totalSyncedFiles: 0,
+            offeringsWithFilesCount: 0,
+            syncRate: 0,
+          },
+          totalFaculty: departmentFacultyCount,
+          totalCourses: departmentCoursesCount,
+          totalOfferings: 0,
+          unassignedOfferings: 0,
+          offerings: [],
+        }
+      });
+    }
+
+    // 3. Active semester exists — fetch department offerings with progress and drive sync
+    // Reuses courseOfferingService.listOfferingsBySemester with strict department isolation
+    const offerings = await courseOfferingService.listOfferingsBySemester(
+      activeSemester._id.toString(),
+      { department: deptId },
+      true // includeProgress
+    );
+
+    const totalOfferings = offerings.length;
+    const unassignedOfferings = offerings.filter((o) => !o.faculty).length;
+
+    // Assigned unique instructors count
+    const assignedInstructorIds = new Set(
+      offerings
+        .map((o) => (o.faculty?._id ? o.faculty._id.toString() : (o.faculty ? o.faculty.toString() : null)))
+        .filter(Boolean)
+    );
+    const assignedInstructorsCount = assignedInstructorIds.size;
+
+    // Checklist metrics aggregation
+    let totalCompletedItems = 0;
+    let totalPossibleItems = 0;
+
+    offerings.forEach((o) => {
+      totalCompletedItems += o.progress?.completedCount ?? 0;
+      totalPossibleItems += o.progress?.totalCount ?? 19;
+    });
+
+    const checklistCompletionPercentage = totalPossibleItems > 0
+      ? Math.round((totalCompletedItems / totalPossibleItems) * 1000) / 10
+      : 0;
+
+    // Google Drive sync metrics
+    let totalSyncedFiles = 0;
+    let offeringsWithFilesCount = 0;
+
+    offerings.forEach((o) => {
+      const count = o.drive?.syncedFilesCount ?? 0;
+      totalSyncedFiles += count;
+      if (count > 0) offeringsWithFilesCount += 1;
+    });
+
+    const driveSyncRate = totalOfferings > 0
+      ? Math.round((offeringsWithFilesCount / totalOfferings) * 1000) / 10
+      : 0;
+
+    // Format active offering summaries
+    const offeringSummaries = offerings.map((o) => ({
+      _id: o._id,
+      section: o.section || 'A',
+      course: o.course ? {
+        _id: o.course._id,
+        courseCode: o.course.courseCode,
+        courseName: o.course.courseName,
+        creditHours: o.course.creditHours,
+        type: o.course.type,
+      } : null,
+      instructor: o.faculty ? {
+        _id: o.faculty._id,
+        name: o.faculty.name,
+        email: o.faculty.email,
+      } : null,
+      faculty: o.faculty ? {
+        _id: o.faculty._id,
+        name: o.faculty.name,
+        email: o.faculty.email,
+      } : null,
+      checklistProgress: {
+        completedCount: o.progress?.completedCount ?? 0,
+        totalCount: o.progress?.totalCount ?? 19,
+        completionPercentage: o.progress?.completionPercentage ?? 0,
+        status: o.progress?.status || 'Not Started',
+      },
+      driveStatus: {
+        syncedFilesCount: o.drive?.syncedFilesCount ?? 0,
+        folderId: o.drive?.folderId || null,
+        folderUrl: o.drive?.folderUrl || null,
+        status: o.drive?.status || 'Not Synced',
+      },
+    }));
 
     res.status(200).json({
       success: true,
       data: {
-        totalFaculty,
-        totalCourses,
+        activeSemester: {
+          id: activeSemester._id,
+          name: activeSemester.name,
+          status: activeSemester.status,
+        },
+        department: {
+          id: deptDoc._id,
+          name: deptDoc.name,
+          code: deptDoc.code,
+        },
+        departmentFacultyCount,
+        assignedInstructorsCount,
+        departmentCoursesCount,
+        activeOfferingsCount: totalOfferings,
+        unassignedOfferingsCount: unassignedOfferings,
+        checklistCompletionPercentage,
+        driveSyncRate,
+        driveSync: {
+          totalSyncedFiles,
+          offeringsWithFilesCount,
+          syncRate: driveSyncRate,
+        },
+        totalFaculty: departmentFacultyCount,
+        totalCourses: departmentCoursesCount,
         totalOfferings,
-        totalSubmittedForms,
-        totalDraftForms,
-        pendingForms,
+        unassignedOfferings,
+        offerings: offeringSummaries,
       }
     });
   } catch (err) {

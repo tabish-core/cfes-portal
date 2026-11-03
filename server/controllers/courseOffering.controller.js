@@ -12,18 +12,19 @@ const { sendSuccess, sendError } = require('../utils/response');
  */
 const createOffering = async (req, res, next) => {
   try {
-    const { facultyId, courseId, semesterId, section } = req.body;
+    const { facultyId, courseId, semesterId, section, departmentId } = req.body;
 
-    if (!facultyId || !courseId || !semesterId) {
-      return sendError(res, 'facultyId, courseId, and semesterId are all required', 400);
+    if (!courseId || !semesterId) {
+      return sendError(res, 'courseId and semesterId are required', 400);
     }
 
     const offering = await offeringService.createOffering(
-      facultyId,
+      facultyId || null,
       courseId,
       semesterId,
       section,
-      req.user
+      req.user,
+      departmentId
     );
 
     return sendSuccess(res, { offering }, 'Course offering created successfully', 201);
@@ -75,13 +76,17 @@ const listBySemester = async (req, res, next) => {
  */
 const getMyOfferings = async (req, res, next) => {
   try {
-    const { semester } = req.query;
+    const { semester, includeProgress } = req.query;
 
     if (!semester) {
       return sendError(res, 'semester query parameter is required', 400);
     }
 
-    const offerings = await offeringService.getMyOfferings(req.user._id, semester);
+    const offerings = await offeringService.getMyOfferings(
+      req.user._id,
+      semester,
+      includeProgress !== 'false'
+    );
     return sendSuccess(res, { offerings }, 'Your course offerings fetched');
   } catch (err) {
     next(err);

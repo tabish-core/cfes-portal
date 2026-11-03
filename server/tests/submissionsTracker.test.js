@@ -49,6 +49,7 @@ describe('Submissions & Audit Tracker Backend Test Suite', () => {
           _id: offering1Id,
           semester: semesterId,
           section: 'A',
+          googleDriveFolderId: 'folder_xyz_123',
           faculty: { _id: new mongoose.Types.ObjectId(), name: 'Dr. Alice', email: 'alice@iqra.edu.pk' },
           course: {
             _id: new mongoose.Types.ObjectId(),
@@ -154,6 +155,367 @@ describe('Submissions & Audit Tracker Backend Test Suite', () => {
         folderUrl: null,
         status: 'Not Synced'
       });
+    });
+
+    test('does NOT mark offering as Synced when multiple files belong to fewer checklist items', async () => {
+      const semesterId = new mongoose.Types.ObjectId();
+      const offeringId = new mongoose.Types.ObjectId();
+
+      const mockOffering = {
+        _id: offeringId,
+        semester: semesterId,
+        section: 'A',
+        faculty: { _id: new mongoose.Types.ObjectId(), name: 'Dr. John', email: 'john@iqra.edu.pk' },
+        course: {
+          _id: new mongoose.Types.ObjectId(),
+          courseCode: 'CS101',
+          courseName: 'Intro',
+          department: { _id: new mongoose.Types.ObjectId(), name: 'CS', code: 'CS' }
+        }
+      };
+
+      jest.spyOn(CourseOffering, 'find').mockReturnValue({
+        populate: jest.fn().mockReturnValue({
+          populate: jest.fn().mockReturnValue({
+            populate: jest.fn().mockReturnValue({
+              sort: jest.fn().mockReturnValue({
+                lean: jest.fn().mockResolvedValue([mockOffering])
+              })
+            })
+          })
+        })
+      });
+
+      // Offering has completed only 2 items out of 19 (In Progress)
+      const checklistItems = Array.from({ length: 19 }, (_, i) => ({
+        name: `Item ${i + 1}`,
+        type: i === 0 ? 'CIS' : (i === 1 ? 'CCR' : `TYPE_${i + 1}`),
+        completed: i < 2
+      }));
+
+      jest.spyOn(CourseChecklist, 'find').mockReturnValue({
+        lean: jest.fn().mockResolvedValue([
+          {
+            _id: new mongoose.Types.ObjectId(),
+            courseOffering: offeringId,
+            checklistItems
+          }
+        ])
+      });
+
+      // But offering has 4 synced files in Drive (e.g. 2 CIS drafts + 2 Quizzes)
+      // Here syncedFilesCount (4) > completedCount (2)
+      jest.spyOn(CourseFile, 'find').mockReturnValue({
+        select: jest.fn().mockReturnValue({
+          lean: jest.fn().mockResolvedValue([
+            { courseOffering: offeringId, documentType: 'CIS', googleDriveFolderId: 'fld_1' },
+            { courseOffering: offeringId, documentType: 'CIS', googleDriveFolderId: 'fld_1' },
+            { courseOffering: offeringId, documentType: 'ASSESS_QUIZ', googleDriveFolderId: 'fld_2' },
+            { courseOffering: offeringId, documentType: 'ASSESS_QUIZ', googleDriveFolderId: 'fld_2' },
+          ])
+        })
+      });
+
+      const result = await courseOfferingService.listOfferingsBySemester(
+        semesterId.toString(),
+        {},
+        true
+      );
+
+      expect(result).toHaveLength(1);
+      const off = result[0];
+      expect(off.progress.completedCount).toBe(2);
+      expect(off.progress.status).toBe('In Progress');
+      expect(off.drive.syncedFilesCount).toBe(4);
+      // Crucial: Must be 'Partially Synced', NEVER falsely 'Synced' despite files (4) > completed items (2)
+      expect(off.drive.status).toBe('Partially Synced');
+    });
+
+    test('marks offering as Synced only when checklist is Complete and all synchable items have files', async () => {
+      const semesterId = new mongoose.Types.ObjectId();
+      const offeringId = new mongoose.Types.ObjectId();
+
+      const mockOffering = {
+        _id: offeringId,
+        semester: semesterId,
+        section: 'A',
+        faculty: { _id: new mongoose.Types.ObjectId(), name: 'Dr. Jane', email: 'jane@iqra.edu.pk' },
+        course: {
+          _id: new mongoose.Types.ObjectId(),
+          courseCode: 'CS102',
+          courseName: 'OOP',
+          department: { _id: new mongoose.Types.ObjectId(), name: 'CS', code: 'CS' }
+        }
+      };
+
+      jest.spyOn(CourseOffering, 'find').mockReturnValue({
+        populate: jest.fn().mockReturnValue({
+          populate: jest.fn().mockReturnValue({
+            populate: jest.fn().mockReturnValue({
+              sort: jest.fn().mockReturnValue({
+                lean: jest.fn().mockResolvedValue([mockOffering])
+              })
+            })
+          })
+        })
+      });
+
+      // All 19 checklist items completed (Complete)
+      const checklistItems = [
+        { name: 'CIS', type: 'CIS', completed: true },
+        { name: 'CCR', type: 'CCR', completed: true },
+        { name: 'TIMETABLE', type: 'TIMETABLE', completed: true },
+        { name: 'CCC', type: 'CCC', completed: true },
+        { name: 'CRR', type: 'CRR', completed: true },
+        ...Array.from({ length: 14 }, (_, i) => ({
+          name: `Other ${i}`,
+          type: `OTHER_${i}`,
+          completed: true
+        }))
+      ];
+
+      jest.spyOn(CourseChecklist, 'find').mockReturnValue({
+        lean: jest.fn().mockResolvedValue([
+          {
+            _id: new mongoose.Types.ObjectId(),
+            courseOffering: offeringId,
+            checklistItems
+          }
+        ])
+      });
+
+      // Synced files cover all synchable items
+      jest.spyOn(CourseFile, 'find').mockReturnValue({
+        select: jest.fn().mockReturnValue({
+          lean: jest.fn().mockResolvedValue([
+            { courseOffering: offeringId, documentType: 'CIS', googleDriveFolderId: 'fld_1' },
+            { courseOffering: offeringId, documentType: 'CCR', googleDriveFolderId: 'fld_1' },
+            { courseOffering: offeringId, documentType: 'TIMETABLE', googleDriveFolderId: 'fld_1' },
+            { courseOffering: offeringId, documentType: 'CCC', googleDriveFolderId: 'fld_1' },
+            { courseOffering: offeringId, documentType: 'CRR', googleDriveFolderId: 'fld_1' },
+          ])
+        })
+      });
+
+      const result = await courseOfferingService.listOfferingsBySemester(
+        semesterId.toString(),
+        {},
+        true
+      );
+
+      expect(result).toHaveLength(1);
+      const off = result[0];
+      expect(off.progress.status).toBe('Complete');
+      expect(off.drive.status).toBe('Synced');
+    });
+
+    test('marks offering as Partially Synced if checklist is Complete but a synchable item is missing files', async () => {
+      const semesterId = new mongoose.Types.ObjectId();
+      const offeringId = new mongoose.Types.ObjectId();
+
+      const mockOffering = {
+        _id: offeringId,
+        semester: semesterId,
+        section: 'A',
+        faculty: { _id: new mongoose.Types.ObjectId(), name: 'Dr. Jane', email: 'jane@iqra.edu.pk' },
+        course: {
+          _id: new mongoose.Types.ObjectId(),
+          courseCode: 'CS102',
+          courseName: 'OOP',
+          department: { _id: new mongoose.Types.ObjectId(), name: 'CS', code: 'CS' }
+        }
+      };
+
+      jest.spyOn(CourseOffering, 'find').mockReturnValue({
+        populate: jest.fn().mockReturnValue({
+          populate: jest.fn().mockReturnValue({
+            populate: jest.fn().mockReturnValue({
+              sort: jest.fn().mockReturnValue({
+                lean: jest.fn().mockResolvedValue([mockOffering])
+              })
+            })
+          })
+        })
+      });
+
+      // All items completed
+      const checklistItems = [
+        { name: 'CIS', type: 'CIS', completed: true },
+        { name: 'CCR', type: 'CCR', completed: true },
+        { name: 'CCC', type: 'CCC', completed: true },
+        { name: 'CRR', type: 'CRR', completed: true },
+      ];
+
+      jest.spyOn(CourseChecklist, 'find').mockReturnValue({
+        lean: jest.fn().mockResolvedValue([
+          {
+            _id: new mongoose.Types.ObjectId(),
+            courseOffering: offeringId,
+            checklistItems
+          }
+        ])
+      });
+
+      // Missing CRR in Drive files
+      jest.spyOn(CourseFile, 'find').mockReturnValue({
+        select: jest.fn().mockReturnValue({
+          lean: jest.fn().mockResolvedValue([
+            { courseOffering: offeringId, documentType: 'CIS', googleDriveFolderId: 'fld_1' },
+            { courseOffering: offeringId, documentType: 'CCR', googleDriveFolderId: 'fld_1' },
+            { courseOffering: offeringId, documentType: 'CCC', googleDriveFolderId: 'fld_1' },
+          ])
+        })
+      });
+
+      const result = await courseOfferingService.listOfferingsBySemester(
+        semesterId.toString(),
+        {},
+        true
+      );
+
+      expect(result).toHaveLength(1);
+      const off = result[0];
+      expect(off.progress.status).toBe('Complete');
+      expect(off.drive.status).toBe('Partially Synced');
+    });
+
+    test('a completed LECTURES checklist item with no matching Drive file results in Partially Synced', async () => {
+      const semesterId = new mongoose.Types.ObjectId();
+      const offeringId = new mongoose.Types.ObjectId();
+
+      const mockOffering = {
+        _id: offeringId,
+        semester: semesterId,
+        section: 'A',
+        faculty: { _id: new mongoose.Types.ObjectId(), name: 'Dr. Jane', email: 'jane@iqra.edu.pk' },
+        course: {
+          _id: new mongoose.Types.ObjectId(),
+          courseCode: 'CS103',
+          courseName: 'Algorithms',
+          department: { _id: new mongoose.Types.ObjectId(), name: 'CS', code: 'CS' }
+        }
+      };
+
+      jest.spyOn(CourseOffering, 'find').mockReturnValue({
+        populate: jest.fn().mockReturnValue({
+          populate: jest.fn().mockReturnValue({
+            populate: jest.fn().mockReturnValue({
+              sort: jest.fn().mockReturnValue({
+                lean: jest.fn().mockResolvedValue([mockOffering])
+              })
+            })
+          })
+        })
+      });
+
+      // Complete checklist including LECTURES
+      const checklistItems = [
+        { name: 'Course Information Sheet', type: 'CIS', completed: true },
+        { name: 'Course Control Report', type: 'CCR', completed: true },
+        { name: 'Lectures', type: 'LECTURES', completed: true },
+      ];
+
+      jest.spyOn(CourseChecklist, 'find').mockReturnValue({
+        lean: jest.fn().mockResolvedValue([
+          {
+            _id: new mongoose.Types.ObjectId(),
+            courseOffering: offeringId,
+            checklistItems
+          }
+        ])
+      });
+
+      // Drive has CIS and CCR, but NO LECTURES file
+      jest.spyOn(CourseFile, 'find').mockReturnValue({
+        select: jest.fn().mockReturnValue({
+          lean: jest.fn().mockResolvedValue([
+            { courseOffering: offeringId, documentType: 'CIS', googleDriveFolderId: 'fld_1' },
+            { courseOffering: offeringId, documentType: 'CCR', googleDriveFolderId: 'fld_1' },
+          ])
+        })
+      });
+
+      const result = await courseOfferingService.listOfferingsBySemester(
+        semesterId.toString(),
+        {},
+        true
+      );
+
+      expect(result).toHaveLength(1);
+      const off = result[0];
+      expect(off.progress.status).toBe('Complete');
+      // Crucial: Missing LECTURES file prevents Synced status
+      expect(off.drive.status).toBe('Partially Synced');
+    });
+
+    test('a completed LECTURES checklist item with a matching LECTURES Drive file contributes to Synced', async () => {
+      const semesterId = new mongoose.Types.ObjectId();
+      const offeringId = new mongoose.Types.ObjectId();
+
+      const mockOffering = {
+        _id: offeringId,
+        semester: semesterId,
+        section: 'A',
+        faculty: { _id: new mongoose.Types.ObjectId(), name: 'Dr. Jane', email: 'jane@iqra.edu.pk' },
+        course: {
+          _id: new mongoose.Types.ObjectId(),
+          courseCode: 'CS103',
+          courseName: 'Algorithms',
+          department: { _id: new mongoose.Types.ObjectId(), name: 'CS', code: 'CS' }
+        }
+      };
+
+      jest.spyOn(CourseOffering, 'find').mockReturnValue({
+        populate: jest.fn().mockReturnValue({
+          populate: jest.fn().mockReturnValue({
+            populate: jest.fn().mockReturnValue({
+              sort: jest.fn().mockReturnValue({
+                lean: jest.fn().mockResolvedValue([mockOffering])
+              })
+            })
+          })
+        })
+      });
+
+      // Complete checklist including LECTURES
+      const checklistItems = [
+        { name: 'Course Information Sheet', type: 'CIS', completed: true },
+        { name: 'Course Control Report', type: 'CCR', completed: true },
+        { name: 'Lectures', type: 'LECTURES', completed: true },
+      ];
+
+      jest.spyOn(CourseChecklist, 'find').mockReturnValue({
+        lean: jest.fn().mockResolvedValue([
+          {
+            _id: new mongoose.Types.ObjectId(),
+            courseOffering: offeringId,
+            checklistItems
+          }
+        ])
+      });
+
+      // Drive files include CIS, CCR, and LECTURES
+      jest.spyOn(CourseFile, 'find').mockReturnValue({
+        select: jest.fn().mockReturnValue({
+          lean: jest.fn().mockResolvedValue([
+            { courseOffering: offeringId, documentType: 'CIS', googleDriveFolderId: 'fld_1' },
+            { courseOffering: offeringId, documentType: 'CCR', googleDriveFolderId: 'fld_1' },
+            { courseOffering: offeringId, documentType: 'LECTURES', googleDriveFolderId: 'fld_lectures' },
+          ])
+        })
+      });
+
+      const result = await courseOfferingService.listOfferingsBySemester(
+        semesterId.toString(),
+        {},
+        true
+      );
+
+      expect(result).toHaveLength(1);
+      const off = result[0];
+      expect(off.progress.status).toBe('Complete');
+      // Crucial: With LECTURES file present, status resolves to Synced
+      expect(off.drive.status).toBe('Synced');
     });
   });
 

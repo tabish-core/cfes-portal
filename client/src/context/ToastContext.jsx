@@ -9,9 +9,8 @@
  *
  * Toasts auto-dismiss after a configurable duration and can be manually closed.
  */
-import { createContext, useState, useCallback, useMemo, useRef } from 'react';
-
-export const ToastContext = createContext(null);
+import { useState, useCallback, useMemo, useRef } from 'react';
+import { ToastContext } from './toastContextDef';
 
 let nextId = 1;
 

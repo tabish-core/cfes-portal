@@ -66,7 +66,7 @@ const AdminDashboard = () => {
       id: 'stat-departments',
       label: 'Departments',
       value: stats?.totalDepartments ?? 0,
-      subtext: 'Institutional departments',
+      subtext: null,
       color: 'blue',
     },
     {
@@ -80,28 +80,28 @@ const AdminDashboard = () => {
       id: 'stat-courses',
       label: 'Course Catalog',
       value: stats?.totalCourses ?? 0,
-      subtext: 'Registered catalog courses',
+      subtext: null,
       color: 'green',
     },
     {
       id: 'stat-offerings',
       label: 'Active Offerings',
       value: stats?.totalOfferings ?? 0,
-      subtext: hasActiveSemester ? (stats?.activeSemester?.name || 'Active Semester') : 'No active semester',
+      subtext: hasActiveSemester ? null : 'No active semester',
       color: 'blue',
     },
     {
       id: 'stat-unassigned',
       label: 'Unassigned Offerings',
       value: stats?.unassignedOfferings ?? 0,
-      subtext: 'Requires faculty allocation',
+      subtext: (stats?.unassignedOfferings ?? 0) > 0 ? 'Requires faculty allocation' : 'All offerings allocated',
       color: stats?.unassignedOfferings > 0 ? 'red' : 'green',
     },
     {
       id: 'stat-checklist',
       label: 'Checklist Compliance',
       value: hasActiveSemester ? `${stats?.checklistCompletionPercentage ?? 0}%` : '—',
-      subtext: hasActiveSemester ? 'Active semester average' : 'Requires active semester',
+      subtext: hasActiveSemester ? null : 'Requires active semester',
       color: (stats?.checklistCompletionPercentage ?? 0) >= 70 ? 'green' : 'yellow',
     },
     {
@@ -150,16 +150,16 @@ const AdminDashboard = () => {
       <div className="dashboard-header">
         <div>
           <h1 className="dashboard-heading">Dean Dashboard</h1>
-          <p className="dashboard-sub">Institutional oversight and active semester course file monitoring.</p>
         </div>
 
-        <div className="dashboard-header-badge-wrap">
+        <div className="dashboard-header-badges">
           {hasActiveSemester ? (
-            <span className="dashboard-semester-badge">
-              Active Semester: <strong>{stats.activeSemester.name}</strong>
+            <span className="dashboard-badge dashboard-badge--semester">
+              <span className="dashboard-active-dot" />
+              <span>Active: <strong>{stats.activeSemester.name}</strong></span>
             </span>
           ) : (
-            <span className="dashboard-semester-badge dashboard-semester-badge--inactive">
+            <span className="dashboard-badge dashboard-badge--inactive">
               No active semester
             </span>
           )}
@@ -189,7 +189,7 @@ const AdminDashboard = () => {
           <div key={card.id} className={`stat-card stat-card--${card.color}`}>
             <span className="stat-value">{card.value}</span>
             <span className="stat-label">{card.label}</span>
-            <span className="stat-card-subtext">{card.subtext}</span>
+            {card.subtext && <span className="stat-card-subtext">{card.subtext}</span>}
           </div>
         ))}
       </div>
@@ -199,9 +199,6 @@ const AdminDashboard = () => {
         <div className="dashboard-section-header">
           <div>
             <h2 className="dashboard-section-title">Department Overview</h2>
-            <p className="dashboard-section-sub">
-              Breakdown of course offerings, assigned faculty, and checklist completion by department.
-            </p>
           </div>
         </div>
 

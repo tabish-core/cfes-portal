@@ -1,0 +1,84 @@
+/* ── HoD Department Dashboard Styles ────────────────────────────────── */
+
+.dashboard-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.section-badge {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 0.8rem;
+  color: #374151;
+}
+
+.unassigned-badge {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.instructor-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.instructor-name {
+  font-weight: 600;
+  color: #111827;
+}
+
+.dashboard-link-btn {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #3949ab;
+  text-decoration: none;
+  background: #eef2ff;
+  border: 1px solid #c7d2fe;
+  padding: 0.4rem 0.85rem;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+}
+
+.dashboard-link-btn:hover {
+  background: #e0e7ff;
+  color: #312e81;
+}
+
+.dashboard-alert--error {
+  background: #fef2f2;
+  border: 1px solid #fca5a5;
+  border-left: 4px solid #ef4444;
+  color: #991b1b;
+}
+
+.dashboard-alert--error .dashboard-alert-icon {
+  color: #ef4444;
+}
+
+.dashboard-alert--error .dashboard-alert-btn {
+  background: #fee2e2;
+  border-color: #fca5a5;
+  color: #991b1b;
+  cursor: pointer;
+}
+
+.dashboard-alert--error .dashboard-alert-btn:hover {
+  background: #fecaca;
+  color: #7f1d1d;
+}
+

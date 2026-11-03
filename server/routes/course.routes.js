@@ -16,7 +16,7 @@
 const express           = require('express');
 const courseController  = require('../controllers/course.controller');
 const { verifyToken }   = require('../middlewares/auth.middleware');
-const { requireDesignation, requireDepartmentScope }   = require('../middlewares/designation.middleware');
+const { requireDesignation } = require('../middlewares/designation.middleware');
 
 const router = express.Router();
 
@@ -25,7 +25,6 @@ router.get(
   '/',
   verifyToken,
   requireDesignation('dean', 'hod', 'faculty'),
-  requireDepartmentScope,
   courseController.getAllCourses
 );
 

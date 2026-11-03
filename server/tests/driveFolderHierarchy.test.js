@@ -26,6 +26,7 @@ const courseFileService = require('../services/courseFile.service');
 const courseOfferingService = require('../services/courseOffering.service');
 const CourseFile = require('../models/CourseFile.model');
 const CourseChecklist = require('../models/CourseChecklist.model');
+const CourseOffering = require('../models/CourseOffering.model');
 const googleDriveConfig = require('../config/googleDrive');
 
 describe('Google Drive 4-Tier Folder Hierarchy & Document Organization Suite', () => {
@@ -96,6 +97,7 @@ describe('Google Drive 4-Tier Folder Hierarchy & Document Organization Suite', (
 
   beforeEach(() => {
     jest.spyOn(CourseChecklist, 'findOne').mockResolvedValue(null);
+    jest.spyOn(CourseOffering, 'updateOne').mockResolvedValue({ acknowledged: true });
   });
 
   afterEach(() => {
@@ -1001,6 +1003,107 @@ describe('Google Drive 4-Tier Folder Hierarchy & Document Organization Suite', (
       await expect(courseFileService.getFinalFolderForOffering(mockOffering1A)).rejects.toThrow(
         'Failed to resolve Google Drive folder hierarchy at Semester tier'
       );
+    });
+  });
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // 11. Tier 3 CourseOffering Parent Folder Persistence
+  // ───────────────────────────────────────────────────────────────────────────
+  describe('11. Tier 3 CourseOffering Parent Folder Persistence', () => {
+    test('persists Tier 3 offering folder ID and URL to CourseOffering when newly resolved', async () => {
+      jest.spyOn(driveService, 'getOrCreateFolder').mockImplementation(async (name) => {
+        return `fld_${name.replace(/\s+/g, '_')}`;
+      });
+
+      const updateSpy = jest.spyOn(CourseOffering, 'updateOne').mockResolvedValue({ acknowledged: true, modifiedCount: 1 });
+
+      const testOffering = {
+        _id: mockOfferingIdA,
+        faculty: mockFaculty1,
+        course: mockCourse,
+        semester: mockSemester,
+        section: 'A',
+        googleDriveFolderId: null,
+        googleDriveFolderUrl: null,
+      };
+
+      const folderId = await courseFileService.resolveOfferingHierarchyFolder({
+        offering: testOffering,
+        category: 'Course Documents',
+        user: mockUser1,
+      });
+
+      // Resolved folder is Tier 4
+      expect(folderId).toBe('fld_Course_Documents');
+
+      // But CourseOffering is updated with Tier 3 folder ID and URL
+      expect(updateSpy).toHaveBeenCalledTimes(1);
+      expect(updateSpy).toHaveBeenCalledWith(
+        { _id: mockOfferingIdA },
+        {
+          $set: {
+            googleDriveFolderId: 'fld_Operating_Systems_(CSC301)_-_Section_A',
+            googleDriveFolderUrl: 'https://drive.google.com/drive/folders/fld_Operating_Systems_(CSC301)_-_Section_A',
+          },
+        }
+      );
+
+      // In-memory offering object is updated
+      expect(testOffering.googleDriveFolderId).toBe('fld_Operating_Systems_(CSC301)_-_Section_A');
+      expect(testOffering.googleDriveFolderUrl).toBe('https://drive.google.com/drive/folders/fld_Operating_Systems_(CSC301)_-_Section_A');
+    });
+
+    test('avoids unnecessary database write when CourseOffering already has matching Tier 3 folder values', async () => {
+      jest.spyOn(driveService, 'getOrCreateFolder').mockImplementation(async (name) => {
+        return `fld_${name.replace(/\s+/g, '_')}`;
+      });
+
+      const updateSpy = jest.spyOn(CourseOffering, 'updateOne').mockResolvedValue({ acknowledged: true, modifiedCount: 0 });
+
+      const testOffering = {
+        _id: mockOfferingIdA,
+        faculty: mockFaculty1,
+        course: mockCourse,
+        semester: mockSemester,
+        section: 'A',
+        googleDriveFolderId: 'fld_Operating_Systems_(CSC301)_-_Section_A',
+        googleDriveFolderUrl: 'https://drive.google.com/drive/folders/fld_Operating_Systems_(CSC301)_-_Section_A',
+      };
+
+      await courseFileService.resolveOfferingHierarchyFolder({
+        offering: testOffering,
+        category: 'Course Documents',
+        user: mockUser1,
+      });
+
+      // No redundant database update
+      expect(updateSpy).not.toHaveBeenCalled();
+    });
+
+    test('never stores a Tier 4 category folder ID into CourseOffering parent folder fields', async () => {
+      jest.spyOn(driveService, 'getOrCreateFolder').mockImplementation(async (name) => {
+        return `fld_${name.replace(/\s+/g, '_')}`;
+      });
+
+      const updateSpy = jest.spyOn(CourseOffering, 'updateOne').mockResolvedValue({ acknowledged: true });
+
+      const testOffering = {
+        _id: mockOfferingIdA,
+        faculty: mockFaculty1,
+        course: mockCourse,
+        semester: mockSemester,
+        section: 'A',
+      };
+
+      await courseFileService.resolveOfferingHierarchyFolder({
+        offering: testOffering,
+        category: 'Course Documents',
+        user: mockUser1,
+      });
+
+      const updateArgs = updateSpy.mock.calls[0][1].$set;
+      expect(updateArgs.googleDriveFolderId).not.toBe('fld_Course_Documents');
+      expect(updateArgs.googleDriveFolderId).toBe('fld_Operating_Systems_(CSC301)_-_Section_A');
     });
   });
 });

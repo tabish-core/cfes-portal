@@ -58,6 +58,39 @@
   flex-shrink: 0;
 }
 
+/* Department / Scope Pill in Topbar (Option 1: Department on left, User on right) */
+.topbar-dept-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: var(--cfes-radius-md, 6px);
+  font-size: var(--cfes-font-xs, 0.78rem);
+  font-weight: 600;
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+
+.topbar-dept-pill--dept {
+  background: #eef2ff;
+  color: #3730a3;
+  border-color: #c7d2fe;
+}
+
+.topbar-dept-pill--admin {
+  background: #f8fafc;
+  color: #334155;
+  border-color: #e2e8f0;
+}
+
+.topbar-dept-pill--unassigned {
+  background: #f8fafc;
+  color: var(--cfes-slate-500, #64748b);
+  border-color: #e2e8f0;
+  font-style: italic;
+  font-weight: 500;
+}
+
 .topbar-user {
   display: flex;
   align-items: center;
@@ -92,7 +125,7 @@
   font-size: var(--cfes-font-sm);
   font-weight: 600;
   color: var(--cfes-slate-800);
-  max-width: 160px;
+  max-width: 180px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -101,7 +134,8 @@
 .topbar-role {
   font-size: var(--cfes-font-xs);
   color: var(--cfes-slate-500);
-  text-transform: capitalize;
+  font-weight: 500;
+  white-space: nowrap;
 }
 
 /* ── Responsive Topbar ───────────────────────────────────────── */
@@ -116,6 +150,12 @@
 
   .topbar-title {
     font-size: var(--cfes-font-sm);
+  }
+}
+
+@media (max-width: 768px) {
+  .topbar-dept-pill {
+    display: none;
   }
 }
 

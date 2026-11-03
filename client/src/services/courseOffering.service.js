@@ -3,8 +3,15 @@
  */
 import api from '../api/axios';
 
-export const createOffering = async (facultyId, courseId, semesterId, section = 'A') => {
-  const { data } = await api.post('/offerings', { facultyId, courseId, semesterId, section });
+export const createOffering = async (facultyId, courseId, semesterId, section = 'A', departmentId = null) => {
+  const payload = {
+    facultyId: facultyId === 'UNASSIGNED' ? null : (facultyId || null),
+    courseId,
+    semesterId,
+    section,
+  };
+  if (departmentId) payload.departmentId = departmentId;
+  const { data } = await api.post('/offerings', payload);
   return data.data; // { offering }
 };
 
@@ -21,8 +28,11 @@ export const getOfferingsBySemester = async (semesterId, includeProgress = false
   return data.data; // { offerings }
 };
 
-export const getMyOfferings = async (semesterId) => {
-  const { data } = await api.get(`/offerings/my-courses?semester=${semesterId}`);
+export const getMyOfferings = async (semesterId, includeProgress = true) => {
+  const url = includeProgress
+    ? `/offerings/my-courses?semester=${semesterId}&includeProgress=true`
+    : `/offerings/my-courses?semester=${semesterId}`;
+  const { data } = await api.get(url);
   return data.data; // { offerings }
 };
 

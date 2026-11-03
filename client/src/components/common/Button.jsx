@@ -13,22 +13,25 @@ const Button = ({
   icon,
   iconPosition = 'left',
   isLoading = false,
+  loading = false,
   disabled = false,
   children,
   className = '',
   type = 'button',
   ...props
 }) => {
+  const isBusy = Boolean(isLoading || loading);
+
   return (
     <button
       type={type}
-      disabled={disabled || isLoading}
+      disabled={disabled || isBusy}
       className={`cfes-btn cfes-btn--${variant} cfes-btn--${size} ${
-        isLoading ? 'cfes-btn--loading' : ''
+        isBusy ? 'cfes-btn--loading' : ''
       } ${className}`}
       {...props}
     >
-      {isLoading ? (
+      {isBusy ? (
         <>
           <span className="cfes-btn-spinner">
             <Icon name="spinner" size={size === 'sm' ? 14 : 16} />

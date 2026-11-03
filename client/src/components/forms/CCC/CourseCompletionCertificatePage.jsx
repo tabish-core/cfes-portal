@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import api from '../../../api/axios';
 import useToast from '../../../hooks/useToast';
-import { AuthContext } from '../../../context/AuthContext';
+import { AuthContext } from '../../../context/authContextDef';
 import FormActionBar from '../FormActionBar';
 import Icon from '../../common/Icon';
 import { syncCCCDocument, getOfferingFiles } from '../../../services/courseFile.service';
