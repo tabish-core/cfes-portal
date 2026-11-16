@@ -299,17 +299,34 @@ exports.getHodDashboardStats = async (req, res, next) => {
           totalCourses: departmentCoursesCount,
           totalOfferings: 0,
           unassignedOfferings: 0,
+          visibleDepartmentIds: null,
           offerings: [],
         }
       });
     }
 
     // 3. Active semester exists — fetch department offerings with progress and drive sync
-    // Reuses courseOfferingService.listOfferingsBySemester with strict department isolation
+    // Reuses courseOfferingService.listOfferingsBySemester.
+    //
+    // Visibility: an HoD may view their own department plus any departments listed
+    // in the cross-department visibility matrix. This is READ-ONLY — write paths
+    // are unaffected because they use the strict getOfferingById(), not this helper.
+    //
+    // Cross-department offerings have their per-document Google Drive links
+    // stripped (folderUrl at the offering level is preserved).
+    const visibleDepartmentIds = await courseOfferingService.getVisibleDepartmentIds(req.user);
+    const isUniversal = visibleDepartmentIds === null;
+    const visibleIds = isUniversal ? null : visibleDepartmentIds;
+
     const offerings = await courseOfferingService.listOfferingsBySemester(
       activeSemester._id.toString(),
       { department: deptId },
-      true // includeProgress
+      true, // includeProgress
+      {
+        visibleDepartmentIds: visibleIds,
+        stripDriveLinks: !isUniversal,
+        ownDepartmentId: deptId.toString(),
+      }
     );
 
     const totalOfferings = offerings.length;
@@ -351,39 +368,51 @@ exports.getHodDashboardStats = async (req, res, next) => {
       : 0;
 
     // Format active offering summaries
-    const offeringSummaries = offerings.map((o) => ({
-      _id: o._id,
-      section: o.section || 'A',
-      course: o.course ? {
-        _id: o.course._id,
-        courseCode: o.course.courseCode,
-        courseName: o.course.courseName,
-        creditHours: o.course.creditHours,
-        type: o.course.type,
-      } : null,
-      instructor: o.faculty ? {
-        _id: o.faculty._id,
-        name: o.faculty.name,
-        email: o.faculty.email,
-      } : null,
-      faculty: o.faculty ? {
-        _id: o.faculty._id,
-        name: o.faculty.name,
-        email: o.faculty.email,
-      } : null,
-      checklistProgress: {
-        completedCount: o.progress?.completedCount ?? 0,
-        totalCount: o.progress?.totalCount ?? 19,
-        completionPercentage: o.progress?.completionPercentage ?? 0,
-        status: o.progress?.status || 'Not Started',
-      },
-      driveStatus: {
-        syncedFilesCount: o.drive?.syncedFilesCount ?? 0,
-        folderId: o.drive?.folderId || null,
-        folderUrl: o.drive?.folderUrl || null,
-        status: o.drive?.status || 'Not Synced',
-      },
-    }));
+    const offeringSummaries = offerings.map((o) => {
+      const offeringDeptId =
+        (o.department?._id || o.department || o.course?.department?._id || o.course?.department)?.toString?.() || null;
+      const isCrossDepartment = Boolean(
+        !isUniversal
+        && offeringDeptId
+        && offeringDeptId !== deptId.toString()
+      );
+
+      return {
+        _id: o._id,
+        section: o.section || 'A',
+        course: o.course ? {
+          _id: o.course._id,
+          courseCode: o.course.courseCode,
+          courseName: o.course.courseName,
+          creditHours: o.course.creditHours,
+          type: o.course.type,
+        } : null,
+        instructor: o.faculty ? {
+          _id: o.faculty._id,
+          name: o.faculty.name,
+          email: o.faculty.email,
+        } : null,
+        faculty: o.faculty ? {
+          _id: o.faculty._id,
+          name: o.faculty.name,
+          email: o.faculty.email,
+        } : null,
+        checklistProgress: {
+          completedCount: o.progress?.completedCount ?? 0,
+          totalCount: o.progress?.totalCount ?? 19,
+          completionPercentage: o.progress?.completionPercentage ?? 0,
+          status: o.progress?.status || 'Not Started',
+        },
+        driveStatus: {
+          syncedFilesCount: o.drive?.syncedFilesCount ?? 0,
+          folderId: o.drive?.folderId || null,
+          folderUrl: o.drive?.folderUrl || null,
+          status: o.drive?.status || 'Not Synced',
+        },
+        isCrossDepartmentView: isCrossDepartment,
+        canModify: !isCrossDepartment,
+      };
+    });
 
     res.status(200).json({
       success: true,
@@ -414,6 +443,7 @@ exports.getHodDashboardStats = async (req, res, next) => {
         totalCourses: departmentCoursesCount,
         totalOfferings,
         unassignedOfferings,
+        visibleDepartmentIds: isUniversal ? null : visibleIds,
         offerings: offeringSummaries,
       }
     });

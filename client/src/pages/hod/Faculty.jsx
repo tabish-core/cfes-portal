@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useCallback } from 'react';
+import { Fragment, useEffect, useState, useMemo, useCallback } from 'react';
 import useAuth from '../../hooks/useAuth';
 import useToast from '../../hooks/useToast';
 import api from '../../api/axios';
@@ -12,6 +12,9 @@ const HodFaculty = () => {
   const toast = useToast();
 
   const [faculties, setFaculties] = useState([]);
+  const [departments, setDepartments] = useState([]);
+  const [visibleDepartmentIds, setVisibleDepartmentIds] = useState(null);
+  const [departmentFilter, setDepartmentFilter] = useState('ALL'); // 'ALL' | 'OWN' | deptId
   const [activeSemester, setActiveSemester] = useState(null);
   const [offeringsCountMap, setOfferingsCountMap] = useState({});
   const [loading, setLoading] = useState(true);
@@ -26,14 +29,20 @@ const HodFaculty = () => {
   const userDept = user?.department;
   const userDeptId = userDept?._id || userDept;
   const deptName = userDept?.name || 'Department';
+  const isHoD = user?.designation === 'hod';
 
   // ── Fetch Master Faculty & Active Semester Offerings ──
   const fetchData = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      // 1. Fetch department faculty (scoped automatically by requireDepartmentScope)
-      const facultyPromise = api.get('/users/faculty');
+      // 1. Fetch department faculty.
+      //    For HoDs, opt-in to cross-department visibility via ?visible=true.
+      //    The backend enforces the visibility matrix server-side; the response
+      //    also returns visibleDepartmentIds for client-side filtering.
+      const facultyPromise = isHoD
+        ? api.get('/users/faculty?visible=true')
+        : api.get('/users/faculty');
 
       // 2. Fetch semesters to identify active semester
       const semesterPromise = api.get('/semesters').catch(() => ({ data: { data: { semesters: [] } } }));
@@ -41,9 +50,13 @@ const HodFaculty = () => {
       const [facultyRes, semesterRes] = await Promise.all([facultyPromise, semesterPromise]);
 
       const fetchedFaculties = facultyRes.data?.data?.faculties || [];
+      const fetchedVisibleIds = facultyRes.data?.data?.visibleDepartmentIds || null;
+      const fetchedDepartments = facultyRes.data?.data?.departments || [];
       const semesters = semesterRes.data?.data?.semesters || [];
       const activeSem = semesters.find((s) => s.status === 'active') || semesters[0] || null;
       setActiveSemester(activeSem);
+      setVisibleDepartmentIds(fetchedVisibleIds);
+      setDepartments(fetchedDepartments);
 
       // 3. Compute assigned offering counts in active semester if available
       const countMap = {};
@@ -72,7 +85,7 @@ const HodFaculty = () => {
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  }, [toast, isHoD]);
 
   useEffect(() => {
     fetchData();
@@ -81,12 +94,32 @@ const HodFaculty = () => {
   // ── Filtered Faculty List ──
   const filteredFaculties = useMemo(() => {
     return faculties.filter((faculty) => {
-      // 1. Strict Department Safeguard: Ensure record matches HoD's assigned department
-      if (userDeptId && faculty.department) {
-        const facDeptId = faculty.department._id || faculty.department;
-        if (facDeptId.toString() !== userDeptId.toString()) {
+      // Resolve the faculty's department id once (handles populated object or raw id).
+      const facDept = faculty.department;
+      const facDeptId = facDept ? (facDept._id || facDept) : null;
+      const facDeptIdStr = facDeptId ? facDeptId.toString() : null;
+
+      // 1. Department Safeguard:
+      //    - Dean: no restriction (visibleDepartmentIds is null).
+      //    - HoD with visibleDepartmentIds: allow faculty in the visible set.
+      //    - HoD without visible set (fallback): own department only.
+      //    - Faculty: own department only.
+      if (userDeptId && facDeptIdStr) {
+        const isOwnDepartment = facDeptIdStr === userDeptId.toString();
+        const isVisible = Array.isArray(visibleDepartmentIds)
+          ? visibleDepartmentIds.includes(facDeptIdStr)
+          : false;
+
+        if (!isOwnDepartment && !isVisible) {
           return false;
         }
+      }
+
+      // 6. Department filter (tabs)
+      if (departmentFilter === 'OWN') {
+        if (!facDeptIdStr || facDeptIdStr !== userDeptId.toString()) return false;
+      } else if (departmentFilter !== 'ALL') {
+        if (!facDeptIdStr || facDeptIdStr !== departmentFilter) return false;
       }
 
       // 2. Designation Filter
@@ -120,19 +153,158 @@ const HodFaculty = () => {
 
       return true;
     });
-  }, [faculties, userDeptId, designationFilter, statusFilter, allocationFilter, searchQuery, offeringsCountMap]);
+  }, [faculties, userDeptId, visibleDepartmentIds, departmentFilter, designationFilter, statusFilter, allocationFilter, searchQuery, offeringsCountMap]);
 
   const hasActiveFilters =
     searchQuery.trim() !== '' ||
     designationFilter !== 'ALL' ||
     statusFilter !== 'ALL' ||
-    allocationFilter !== 'ALL';
+    allocationFilter !== 'ALL' ||
+    departmentFilter !== 'ALL';
 
   const handleResetFilters = () => {
     setSearchQuery('');
     setDesignationFilter('ALL');
     setStatusFilter('ALL');
     setAllocationFilter('ALL');
+    setDepartmentFilter('ALL');
+  };
+
+  // Build the department filter tabs from the backend-supplied visible
+  // departments (never hardcoded, never outside the visibility matrix).
+  const departmentTabs = useMemo(() => {
+    const tabs = [{ id: 'ALL', label: 'All Visible Departments' }];
+    const ownId = userDeptId ? userDeptId.toString() : null;
+    const ownDept = departments.find((d) => d._id?.toString() === ownId);
+    const ownName = ownDept?.name || (userDept?.name || 'Department');
+
+    tabs.push({
+      id: 'OWN',
+      label: `My Department${ownName ? ` (${ownName})` : ''}`,
+    });
+
+    departments.forEach((dept) => {
+      const id = dept._id?.toString();
+      if (!id || id === ownId) return;
+      tabs.push({ id, label: dept.name });
+    });
+
+    return tabs;
+  }, [departments, userDeptId, userDept?.name]);
+
+  // Group faculties by department when "All Visible Departments" is selected.
+  const groupedFaculties = useMemo(() => {
+    if (departmentFilter !== 'ALL') return null;
+
+    const map = new Map();
+    departments.forEach((dept) => {
+      const id = dept._id?.toString();
+      if (id) map.set(id, { _id: dept._id, name: dept.name, code: dept.code, faculties: [] });
+    });
+
+    // Ensure the HoD's own department always appears as a group.
+    const ownId = userDeptId ? userDeptId.toString() : null;
+    if (ownId && !map.has(ownId)) {
+      map.set(ownId, {
+        _id: ownId,
+        name: (departments.find((d) => d._id?.toString() === ownId)?.name) || (userDept?.name || 'Department'),
+        code: '',
+        faculties: [],
+      });
+    }
+
+    filteredFaculties.forEach((faculty) => {
+      const facDept = faculty.department;
+      const facDeptId = facDept ? (facDept._id || facDept) : null;
+      const key = facDeptId ? facDeptId.toString() : null;
+      if (key && map.has(key)) {
+        map.get(key).faculties.push(faculty);
+      } else if (key && !map.has(key)) {
+        // Faculty whose department is visible but not in the master list.
+        map.set(key, {
+          _id: key,
+          name: (facDept && facDept.name) || 'Department',
+          code: '',
+          faculties: [faculty],
+        });
+      }
+    });
+
+    return Array.from(map.values());
+  }, [departmentFilter, departments, userDeptId, userDept?.name, filteredFaculties]);
+
+  // Whether a given faculty row is outside the HoD's own department
+  const isCrossDepartmentRow = (faculty) => {
+    if (!isHoD || !userDeptId || !faculty.department) return false;
+    const facDeptId = (faculty.department._id || faculty.department).toString();
+    return facDeptId !== userDeptId.toString();
+  };
+
+  // Render a single faculty row, showing its department name and ownership.
+  const renderFacultyRow = (faculty) => {
+    const offeringCount = offeringsCountMap[faculty._id] || 0;
+    const isHod = faculty.designation === 'hod';
+    const crossDept = isCrossDepartmentRow(faculty);
+
+    const facDept = faculty.department;
+    const facDeptId = facDept ? (facDept._id || facDept) : null;
+    const facDeptIdStr = facDeptId ? facDeptId.toString() : null;
+    const deptName = (facDept && facDept.name) || '—';
+    const deptCode = facDept && facDept.code ? `(${facDept.code})` : '';
+    const isOwnDept = facDeptIdStr ? facDeptIdStr === userDeptId.toString() : false;
+
+    return (
+      <tr key={faculty._id} className={crossDept ? 'hod-faculty-row--cross-dept' : ''}>
+        <td>
+          <div className="hod-faculty-cell-user">
+            <span className="hod-faculty-user-name">{faculty.name}</span>
+            <span className="hod-faculty-user-email">{faculty.email}</span>
+            {crossDept && (
+              <span className="hod-faculty-cross-dept-tag">
+                View only — outside your department
+              </span>
+            )}
+          </div>
+        </td>
+        <td>
+          <span className="hod-faculty-row-dept">
+            {deptName} {deptCode}
+            {isOwnDept && <span className="hod-faculty-row-dept-own">Your department</span>}
+          </span>
+        </td>
+        <td>
+          <span
+            className={`hod-faculty-desig-badge ${
+              isHod
+                ? 'hod-faculty-desig-badge--hod'
+                : 'hod-faculty-desig-badge--faculty'
+            }`}
+          >
+            {isHod ? 'Head of Department' : 'Faculty'}
+          </span>
+        </td>
+        <td>
+          <StatusBadge
+            status={faculty.isActive ? 'active' : 'inactive'}
+            label={faculty.isActive ? 'Active' : 'Inactive'}
+            size="sm"
+          />
+        </td>
+        <td>
+          <span
+            className={`hod-faculty-count-badge ${
+              offeringCount > 0
+                ? 'hod-faculty-count-badge--assigned'
+                : 'hod-faculty-count-badge--zero'
+            }`}
+          >
+            {offeringCount > 0
+              ? `${offeringCount} ${offeringCount === 1 ? 'Offering' : 'Offerings'}`
+              : 'Unallocated'}
+          </span>
+        </td>
+      </tr>
+    );
   };
 
   return (
@@ -250,6 +422,24 @@ const HodFaculty = () => {
               </button>
             )}
           </div>
+
+          {/* Department Filter Tabs */}
+          <div className="hod-faculty-department-tabs">
+            <label className="hod-faculty-department-tabs-label">View by Department</label>
+            <div className="hod-faculty-department-tabs-list">
+              {departmentTabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  className={`hod-faculty-dept-tab${departmentFilter === tab.id ? ' hod-faculty-dept-tab--active' : ''}`}
+                  onClick={() => setDepartmentFilter(tab.id)}
+                  disabled={loading}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
 
         {/* ── Table & State Handling ── */}
@@ -290,61 +480,46 @@ const HodFaculty = () => {
             <table className="hod-faculty-table">
               <thead>
                 <tr>
-                  <th style={{ width: '38%' }}>Faculty Member</th>
-                  <th style={{ width: '22%' }}>Designation</th>
-                  <th style={{ width: '18%' }}>Account Status</th>
-                  <th style={{ width: '22%' }}>
+                  <th style={{ width: '30%' }}>Faculty Member</th>
+                  <th style={{ width: '18%' }}>Department</th>
+                  <th style={{ width: '20%' }}>Designation</th>
+                  <th style={{ width: '16%' }}>Account Status</th>
+                  <th style={{ width: '16%' }}>
                     Active Offerings {activeSemester ? `(${activeSemester.name})` : ''}
                   </th>
                 </tr>
               </thead>
               <tbody>
-                {filteredFaculties.map((faculty) => {
-                  const offeringCount = offeringsCountMap[faculty._id] || 0;
-                  const isHod = faculty.designation === 'hod';
-
-                  return (
-                    <tr key={faculty._id}>
-                      <td>
-                        <div className="hod-faculty-cell-user">
-                          <span className="hod-faculty-user-name">{faculty.name}</span>
-                          <span className="hod-faculty-user-email">{faculty.email}</span>
-                        </div>
-                      </td>
-                      <td>
-                        <span
-                          className={`hod-faculty-desig-badge ${
-                            isHod
-                              ? 'hod-faculty-desig-badge--hod'
-                              : 'hod-faculty-desig-badge--faculty'
-                          }`}
-                        >
-                          {isHod ? 'Head of Department' : 'Faculty'}
-                        </span>
-                      </td>
-                      <td>
-                        <StatusBadge
-                          status={faculty.isActive ? 'active' : 'inactive'}
-                          label={faculty.isActive ? 'Active' : 'Inactive'}
-                          size="sm"
-                        />
-                      </td>
-                      <td>
-                        <span
-                          className={`hod-faculty-count-badge ${
-                            offeringCount > 0
-                              ? 'hod-faculty-count-badge--assigned'
-                              : 'hod-faculty-count-badge--zero'
-                          }`}
-                        >
-                          {offeringCount > 0
-                            ? `${offeringCount} ${offeringCount === 1 ? 'Offering' : 'Offerings'}`
-                            : 'Unallocated'}
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
+                {departmentFilter === 'ALL' && groupedFaculties ? (
+                  groupedFaculties.map((group) => (
+                    <Fragment key={group._id}>
+                      <tr>
+                        <td colSpan={5} className="hod-faculty-dept-group-heading">
+                          <span className="hod-faculty-dept-group-name">
+                            {group.name}{group.code ? ` (${group.code})` : ''}
+                          </span>
+                          {group._id?.toString() === userDeptId?.toString() && (
+                            <span className="hod-faculty-dept-group-own">— Your department</span>
+                          )}
+                          <span className="hod-faculty-dept-group-count">
+                            ({group.faculties.length} faculty member{group.faculties.length !== 1 ? 's' : ''})
+                          </span>
+                        </td>
+                      </tr>
+                      {group.faculties.length === 0 ? (
+                        <tr>
+                          <td colSpan={5} className="hod-faculty-dept-empty">
+                            No faculty members in this department.
+                          </td>
+                        </tr>
+                      ) : (
+                        group.faculties.map((faculty) => renderFacultyRow(faculty))
+                      )}
+                    </Fragment>
+                  ))
+                ) : (
+                  filteredFaculties.map((faculty) => renderFacultyRow(faculty))
+                )}
               </tbody>
             </table>
           </div>

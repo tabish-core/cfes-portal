@@ -5,6 +5,52 @@ const courseOfferingService = require('../services/courseOffering.service');
 const { sendSuccess, sendError } = require('../utils/response');
 
 /**
+ * Determines whether a GET handler is permitted to persist a legacy-record
+ * migration (re-homing an unlinked CourseChecklist onto the current offering).
+ *
+ * This is a WRITE operation disguised inside a GET. It must only run when the
+ * caller has a legitimate ownership interest in the offering:
+ *  - The assigned instructor (their own offering), OR
+ *  - An HoD viewing their OWN department.
+ *
+ * Cross-department HoD views must NOT trigger this mutation, because it would
+ * silently re-home another department's checklist record.
+ *
+ * @param {Object} offering - Populated CourseOffering
+ * @param {Object|null} user - Authenticated user
+ * @returns {Promise<boolean>}
+ */
+const mayMutateLegacyChecklist = async (offering, user) => {
+  if (!offering || !user) return false;
+
+  // Assigned instructor always owns their offering
+  const offeringFacultyId = offering.faculty?._id
+    ? offering.faculty._id.toString()
+    : (offering.faculty ? offering.faculty.toString() : null);
+  if (offeringFacultyId && offeringFacultyId === user._id.toString()) {
+    return true;
+  }
+
+  // Dean has universal access — allow migration
+  if (user.designation === 'dean') return true;
+
+  // HoD: only for their OWN department (not cross-department visible)
+  if (user.designation === 'hod') {
+    const userDeptId = (user.department?._id || user.department)?.toString();
+    if (!userDeptId) return false;
+    const offeringDept =
+      offering.department?._id ||
+      offering.department ||
+      offering.course?.department?._id ||
+      offering.course?.department;
+    if (!offeringDept) return false;
+    return offeringDept.toString() === userDeptId;
+  }
+
+  return false;
+};
+
+/**
  * @route   GET /api/checklist/offering/:offeringId
  * @access  Private (Faculty/HoD/Dean)
  */
@@ -48,12 +94,18 @@ const getChecklistByOffering = async (req, res, next) => {
       }
     }
 
-    // If an existing record was found without courseOffering reference, associate it safely
+    // If an existing record was found without courseOffering reference, associate it safely.
+    // GUARD: this is a WRITE inside a GET. Only run it when the caller has an ownership
+    // interest (assigned instructor, or HoD viewing their OWN department). Cross-department
+    // HoD viewers see the record as-is without triggering a mutation.
     if (checklist && !checklist.courseOffering) {
-      checklist.courseOffering = offering._id;
-      if (!checklist.section) checklist.section = offering.section || 'A';
-      if (!checklist.semester) checklist.semester = offering.semester._id || offering.semester;
-      await checklist.save();
+      const canMutate = await mayMutateLegacyChecklist(offering, req.user);
+      if (canMutate) {
+        checklist.courseOffering = offering._id;
+        if (!checklist.section) checklist.section = offering.section || 'A';
+        if (!checklist.semester) checklist.semester = offering.semester._id || offering.semester;
+        await checklist.save();
+      }
     }
 
     return sendSuccess(res, { checklist: checklist || null, offering }, 'Checklist fetched successfully');

@@ -19,6 +19,48 @@ const { generateCCPPDF } = require('../services/documentService/generateCCPPDF')
 const checkCourseAccess = (user, courseId) => courseOfferingService.checkCourseAccess(user, courseId);
 
 /**
+ * Determines whether the CCP GET handler is permitted to persist a legacy-CCP
+ * migration (re-homing an unlinked CCP record onto the current offering).
+ *
+ * This is a WRITE operation disguised inside a GET. It must only run when the
+ * caller has a legitimate ownership interest in the offering:
+ *  - The assigned instructor (their own offering), OR
+ *  - An HoD viewing their OWN department.
+ *
+ * Cross-department HoD views must NOT trigger this mutation.
+ *
+ * @param {Object} offering - Populated CourseOffering
+ * @param {Object|null} user - Authenticated user
+ * @returns {Promise<boolean>}
+ */
+const mayMutateLegacyCCPForm = async (offering, user) => {
+  if (!offering || !user) return false;
+
+  const offeringFacultyId = offering.faculty?._id
+    ? offering.faculty._id.toString()
+    : (offering.faculty ? offering.faculty.toString() : null);
+  if (offeringFacultyId && offeringFacultyId === user._id.toString()) {
+    return true;
+  }
+
+  if (user.designation === 'dean') return true;
+
+  if (user.designation === 'hod') {
+    const userDeptId = (user.department?._id || user.department)?.toString();
+    if (!userDeptId) return false;
+    const offeringDept =
+      offering.department?._id ||
+      offering.department ||
+      offering.course?.department?._id ||
+      offering.course?.department;
+    if (!offeringDept) return false;
+    return offeringDept.toString() === userDeptId;
+  }
+
+  return false;
+};
+
+/**
  * Resolves the semester ObjectId for a course/faculty CCP document.
  *
  * Resolution order:
@@ -75,9 +117,11 @@ const getCCPForm = async (req, res, next) => {
     const { semester: requestedSemesterId, faculty: queryFacultyId, offeringId } = req.query;
 
     let offering = null;
+    let allowMutation = true;
     if (offeringId) {
       try {
-        offering = await courseOfferingService.getOfferingById(offeringId, req.user);
+        offering = await courseOfferingService.getOfferingByIdForView(offeringId, req.user);
+        allowMutation = await mayMutateLegacyCCPForm(offering, req.user);
       } catch (err) {
         return sendError(res, err.message, err.statusCode || 500);
       }
@@ -114,6 +158,7 @@ const getCCPForm = async (req, res, next) => {
       }
       if (offeringRes.offering) {
         offering = offeringRes.offering;
+        allowMutation = await mayMutateLegacyCCPForm(offering, req.user);
       }
     }
 
@@ -150,8 +195,11 @@ const getCCPForm = async (req, res, next) => {
         }
       }
 
-      // Safely link unlinked legacy record
-      if (form && !form.courseOffering) {
+      // Safely link unlinked legacy record.
+      // GUARD: this is a WRITE inside a GET. Only run it when the caller has an
+      // ownership interest (assigned instructor, or HoD viewing their OWN
+      // department). Cross-department HoD viewers see the record as-is.
+      if (form && !form.courseOffering && allowMutation) {
         form.courseOffering = offering._id;
         if (!form.section) form.section = offering.section || 'A';
         if (!form.semester) form.semester = offering.semester._id || offering.semester;

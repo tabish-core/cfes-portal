@@ -58,10 +58,23 @@ const listBySemester = async (req, res, next) => {
       return sendError(res, 'semester query parameter is required', 400);
     }
 
+    // Visibility: HoD may view their own department plus cross-department peers
+    // per the approved matrix (read-only). Dean retains universal access.
+    const visibleDepartmentIds = await offeringService.getVisibleDepartmentIds(req.user);
+    const isUniversal = visibleDepartmentIds === null;
+    const visibleIds = isUniversal ? null : visibleDepartmentIds;
+
     const offerings = await offeringService.listOfferingsBySemester(
       semester,
       req.departmentFilter || {},
-      includeProgress === 'true'
+      includeProgress === 'true',
+      {
+        visibleDepartmentIds: visibleIds,
+        stripDriveLinks: !isUniversal,
+        ownDepartmentId: req.user?.department?._id
+          ? (req.user.department._id || req.user.department).toString()
+          : null,
+      }
     );
     return sendSuccess(res, { offerings }, 'Offerings fetched');
   } catch (err) {
@@ -119,7 +132,7 @@ const getMyDashboardStats = async (req, res, next) => {
  */
 const getOffering = async (req, res, next) => {
   try {
-    const offering = await offeringService.getOfferingById(req.params.id, req.user);
+    const offering = await offeringService.getOfferingByIdForView(req.params.id, req.user);
     return sendSuccess(res, { offering }, 'Course offering details fetched');
   } catch (err) {
     if (err.statusCode) {

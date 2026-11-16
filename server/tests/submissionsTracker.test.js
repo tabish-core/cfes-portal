@@ -539,7 +539,12 @@ describe('Submissions & Audit Tracker Backend Test Suite', () => {
       expect(courseOfferingService.listOfferingsBySemester).toHaveBeenCalledWith(
         semesterId.toString(),
         {},
-        true
+        true,
+        expect.objectContaining({
+          visibleDepartmentIds: null,
+          stripDriveLinks: false,
+          ownDepartmentId: null,
+        })
       );
       expect(res.status).toHaveBeenCalledWith(200);
       expect(res.json).toHaveBeenCalledWith(
@@ -570,7 +575,12 @@ describe('Submissions & Audit Tracker Backend Test Suite', () => {
       expect(courseOfferingService.listOfferingsBySemester).toHaveBeenCalledWith(
         semesterId.toString(),
         { department: deptId },
-        true
+        true,
+        expect.objectContaining({
+          visibleDepartmentIds: expect.any(Array),
+          stripDriveLinks: true,
+          ownDepartmentId: deptId.toString(),
+        })
       );
       expect(res.status).toHaveBeenCalledWith(200);
     });

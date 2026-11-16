@@ -585,7 +585,7 @@ const deleteCourseFile = async (req, res, next) => {
  */
 const viewCourseFile = async (req, res, next) => {
   try {
-    const courseFile = await courseFileService.getCourseFileById(req.params.id, req.user);
+    const courseFile = await courseFileService.getCourseFileById(req.params.id, req.user, { forView: true });
 
     if (req.query.redirect === 'true' && courseFile.googleDriveWebViewLink) {
       return res.redirect(courseFile.googleDriveWebViewLink);

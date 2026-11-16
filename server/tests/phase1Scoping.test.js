@@ -504,6 +504,7 @@ describe('Phase 1: CourseOffering & Section Scoping Test Suite', () => {
     test('6.1 Ambiguous legacy forms remain unlinked when multiple offerings exist', async () => {
       // Multiple offerings exist for course + faculty
       jest.spyOn(courseOfferingService, 'getOfferingById').mockResolvedValue(mockOfferingA);
+      jest.spyOn(courseOfferingService, 'getOfferingByIdForView').mockResolvedValue(mockOfferingA);
       jest.spyOn(CourseOffering, 'countDocuments').mockResolvedValue(2);
 
       // findOne returns null for offering-linked and exact-semester queries
@@ -537,6 +538,7 @@ describe('Phase 1: CourseOffering & Section Scoping Test Suite', () => {
 
     test('6.2 Section A cannot retrieve or claim Section B form record', async () => {
       jest.spyOn(courseOfferingService, 'getOfferingById').mockResolvedValue(mockOfferingA);
+      jest.spyOn(courseOfferingService, 'getOfferingByIdForView').mockResolvedValue(mockOfferingA);
       jest.spyOn(CourseOffering, 'countDocuments').mockResolvedValue(2);
 
       // Section B already has a saved form linked to offeringBId
@@ -592,6 +594,7 @@ describe('Phase 1: CourseOffering & Section Scoping Test Suite', () => {
       };
 
       jest.spyOn(courseOfferingService, 'getOfferingById').mockResolvedValue(newOffering);
+      jest.spyOn(courseOfferingService, 'getOfferingByIdForView').mockResolvedValue(newOffering);
       jest.spyOn(CourseOffering, 'countDocuments').mockResolvedValue(2); // previous + current offering
 
       // Previous semester form exists (semester1Id)
@@ -984,6 +987,7 @@ describe('Phase 1: CourseOffering & Section Scoping Test Suite', () => {
       test('7.2.5 Existing correctly linked records continue to load and save', async () => {
         const savedDoc = { _id: new mongoose.Types.ObjectId(), courseOffering: offAId, section: 'A' };
         jest.spyOn(courseOfferingService, 'getOfferingById').mockResolvedValue(offeringSecA);
+        jest.spyOn(courseOfferingService, 'getOfferingByIdForView').mockResolvedValue(offeringSecA);
         jest.spyOn(CIS, 'findOne').mockResolvedValue(savedDoc);
 
         const req = {

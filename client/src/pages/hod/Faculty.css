@@ -330,3 +330,142 @@
   }
 }
 
+/* ── Cross-department visibility indicators ──────────────────────────── */
+
+.hod-faculty-row--cross-dept {
+  background: var(--cfes-slate-50, #f8fafc);
+}
+
+.hod-faculty-cross-dept-tag {
+  display: block;
+  margin-top: 0.2rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--cfes-amber-700, #b45309);
+}
+
+/* ── Department Filter Tabs ── */
+.hod-faculty-department-tabs {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.hod-faculty-department-tabs-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--cfes-slate-600, #475569);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.hod-faculty-department-tabs-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.hod-faculty-dept-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  height: 2.2rem;
+  padding: 0 0.85rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--cfes-slate-700, #334155);
+  background: #ffffff;
+  border: 1px solid var(--cfes-slate-300, #cbd5e1);
+  border-radius: var(--cfes-radius-md, 6px);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.hod-faculty-dept-tab:hover {
+  border-color: var(--cfes-primary, #4338ca);
+  color: var(--cfes-primary, #4338ca);
+}
+
+.hod-faculty-dept-tab--active {
+  background: var(--cfes-primary, #4338ca);
+  border-color: var(--cfes-primary, #4338ca);
+  color: #ffffff;
+}
+
+.hod-faculty-dept-tab--active:hover {
+  background: var(--cfes-primary, #4338ca);
+  border-color: var(--cfes-primary, #4338ca);
+  color: #ffffff;
+}
+
+.hod-faculty-dept-tab:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ── Department Group Headings (All Visible Departments view) ── */
+.hod-faculty-dept-group-heading {
+  background: var(--cfes-slate-100, #f1f5f9);
+  font-weight: 700;
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.6rem 1rem;
+  border-bottom: 1px solid var(--cfes-slate-200, #e2e8f0);
+  color: var(--cfes-slate-700, #334155);
+}
+
+.hod-faculty-dept-group-name {
+  color: var(--cfes-slate-900, #0f172a);
+}
+
+.hod-faculty-dept-group-own {
+  margin-left: 0.5rem;
+  padding: 0.1rem 0.45rem;
+  border-radius: 4px;
+  background: var(--cfes-primary, #4338ca);
+  color: #ffffff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.hod-faculty-dept-group-count {
+  float: right;
+  font-weight: 500;
+  color: var(--cfes-slate-500, #64748b);
+  text-transform: none;
+}
+
+.hod-faculty-dept-empty {
+  text-align: center;
+  font-size: 0.82rem;
+  color: var(--cfes-slate-500, #64748b);
+  font-style: italic;
+  padding: 1rem;
+}
+
+/* ── Row-level department label ── */
+.hod-faculty-row-dept {
+  display: block;
+  margin-top: 0.2rem;
+  font-size: 0.72rem;
+  color: var(--cfes-slate-500, #64748b);
+}
+
+.hod-faculty-row-dept-own {
+  margin-left: 0.4rem;
+  padding: 0.08rem 0.4rem;
+  border-radius: 4px;
+  background: var(--cfes-primary, #4338ca);
+  color: #ffffff;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+

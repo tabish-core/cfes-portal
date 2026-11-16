@@ -205,10 +205,16 @@ const HodDashboard = () => {
                 {offerings.map((rawOffering) => {
                   const offering = formatOfferingProgress(rawOffering);
                   return (
-                    <tr key={offering.id || Math.random()}>
+                    <tr
+                      key={offering.id || Math.random()}
+                      className={offering.isCrossDepartmentView ? 'dashboard-row--cross-dept' : ''}
+                    >
                       <td>
                         <span className="dept-code">{offering.courseCode}</span>
                         <span className="dept-name">{offering.courseName}</span>
+                        {offering.isCrossDepartmentView && (
+                          <span className="dashboard-cross-dept-tag">View only</span>
+                        )}
                       </td>
                       <td style={{ textAlign: 'center' }}>
                         <span className="section-badge">{offering.section}</span>

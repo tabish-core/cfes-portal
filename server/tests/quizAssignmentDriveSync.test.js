@@ -930,6 +930,7 @@ describe('Phase 1: Quiz & Assignment Google Drive Backend Integration Suite', ()
 
       jest.spyOn(Quiz, 'findById').mockResolvedValue(mockQuiz);
       jest.spyOn(courseOfferingService, 'getOfferingById').mockResolvedValue(mockOffering);
+      jest.spyOn(courseOfferingService, 'getOfferingByIdForView').mockResolvedValue(mockOffering);
       jest.spyOn(courseFileService, 'deleteAssessmentFile').mockRejectedValue(
         new Error('Google Drive API timeout')
       );
@@ -961,6 +962,7 @@ describe('Phase 1: Quiz & Assignment Google Drive Backend Integration Suite', ()
 
       jest.spyOn(Assignment, 'findById').mockResolvedValue(mockAssignment);
       jest.spyOn(courseOfferingService, 'getOfferingById').mockResolvedValue(mockOffering);
+      jest.spyOn(courseOfferingService, 'getOfferingByIdForView').mockResolvedValue(mockOffering);
       jest.spyOn(courseFileService, 'deleteAssessmentFile').mockRejectedValue(
         new Error('Google Drive API connection reset')
       );
@@ -992,6 +994,7 @@ describe('Phase 1: Quiz & Assignment Google Drive Backend Integration Suite', ()
 
       jest.spyOn(Quiz, 'findById').mockResolvedValue(mockQuiz);
       jest.spyOn(courseOfferingService, 'getOfferingById').mockResolvedValue(mockOffering);
+      jest.spyOn(courseOfferingService, 'getOfferingByIdForView').mockResolvedValue(mockOffering);
       jest.spyOn(courseFileService, 'deleteAssessmentFile').mockResolvedValue({ deleted: true });
       jest.spyOn(Quiz, 'countDocuments').mockResolvedValue(0);
 

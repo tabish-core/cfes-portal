@@ -159,7 +159,12 @@ describe('HoD Dashboard Backend Test Suite', () => {
       expect(courseOfferingService.listOfferingsBySemester).toHaveBeenCalledWith(
         activeSemesterId.toString(),
         { department: dept1Id },
-        true
+        true,
+        expect.objectContaining({
+          visibleDepartmentIds: expect.any(Array),
+          stripDriveLinks: true,
+          ownDepartmentId: dept1Id.toString(),
+        })
       );
 
       expect(res.status).toHaveBeenCalledWith(200);

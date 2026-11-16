@@ -80,6 +80,7 @@ const INITIAL_CHECKLIST = [
 const CourseFileChecklist = () => {
   const { courseId: paramCourseId, offeringId } = useParams();
   const [offering, setOffering] = useState(null);
+  const [crossDepartmentView, setCrossDepartmentView] = useState(false);
 
   const [courseInfo, setCourseInfo] = useState({
     courseTitle: '',
@@ -250,6 +251,7 @@ const CourseFileChecklist = () => {
           const offRes = await api.get(`/offerings/${validOfferingId}`);
           const currentOffering = offRes.data?.data?.offering || offRes.data?.offering;
           setOffering(currentOffering);
+          setCrossDepartmentView(Boolean(currentOffering?.__meta?.isCrossDepartmentView));
 
           const defaultBatch = currentOffering?.semester?.name
             ? `${currentOffering.semester.name} - Section ${currentOffering.section || 'A'}`
@@ -364,7 +366,19 @@ const CourseFileChecklist = () => {
     );
   };
 
+  // Cross-department HoD viewers have READ-ONLY access. This guard blocks all
+  // write actions (save, sync, upload) at the UI level; the backend enforces
+  // the same rule independently via getOfferingById().
+  const requireWriteAccess = () => {
+    if (crossDepartmentView) {
+      toast.error('View-only access. You cannot modify another department\'s course files.');
+      return false;
+    }
+    return true;
+  };
+
   const handleSave = async () => {
+    if (!requireWriteAccess()) return;
     try {
       setLoading(true);
       // Build checklistItems array for the backend (only checkable items)
@@ -400,6 +414,7 @@ const CourseFileChecklist = () => {
       toast.error('Google Drive synchronization requires an offering-scoped course view.');
       return;
     }
+    if (!requireWriteAccess()) return;
     try {
       setSyncingCIS(true);
       setRowErrors((prev) => ({ ...prev, CIS: null }));
@@ -426,6 +441,7 @@ const CourseFileChecklist = () => {
       toast.error('Google Drive synchronization requires an offering-scoped course view.');
       return;
     }
+    if (!requireWriteAccess()) return;
     try {
       setSyncingCCR(true);
       setRowErrors((prev) => ({ ...prev, CCR: null }));
@@ -452,6 +468,7 @@ const CourseFileChecklist = () => {
       toast.error('Google Drive synchronization requires an offering-scoped course view.');
       return;
     }
+    if (!requireWriteAccess()) return;
     try {
       setSyncingTimetable(true);
       setRowErrors((prev) => ({ ...prev, TIMETABLE: null }));
@@ -478,6 +495,7 @@ const CourseFileChecklist = () => {
       toast.error('Google Drive synchronization requires an offering-scoped course view.');
       return;
     }
+    if (!requireWriteAccess()) return;
     try {
       setSyncingProject(true);
       setRowErrors((prev) => ({ ...prev, ASSESS_PROJECT: null }));
@@ -504,6 +522,7 @@ const CourseFileChecklist = () => {
       toast.error('Google Drive synchronization requires an offering-scoped course view.');
       return;
     }
+    if (!requireWriteAccess()) return;
     try {
       setSyncingCCC(true);
       setRowErrors((prev) => ({ ...prev, CCC: null }));
@@ -530,6 +549,7 @@ const CourseFileChecklist = () => {
       toast.error('Google Drive synchronization requires an offering-scoped course view.');
       return;
     }
+    if (!requireWriteAccess()) return;
     try {
       setSyncingCRR(true);
       setRowErrors((prev) => ({ ...prev, CRR: null }));
@@ -557,6 +577,7 @@ const CourseFileChecklist = () => {
       toast.error('Google Drive synchronization requires an offering-scoped course view.');
       return;
     }
+    if (!requireWriteAccess()) return;
     try {
       setSyncingQuizId(quizId);
       setRowErrors((prev) => ({ ...prev, ASSESS_QUIZ: null }));
@@ -584,6 +605,7 @@ const CourseFileChecklist = () => {
       toast.error('Google Drive synchronization requires an offering-scoped course view.');
       return;
     }
+    if (!requireWriteAccess()) return;
     try {
       setSyncingAssignmentId(assignmentId);
       setRowErrors((prev) => ({ ...prev, ASSESS_ASSIGN: null }));

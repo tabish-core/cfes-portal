@@ -1748,16 +1748,37 @@ const deleteCourseFile = async (fileId, user) => {
  * @returns {Promise<Array<Object>>}
  */
 const listOfferingFiles = async (offeringId, user, documentType = null) => {
-  await courseOfferingService.getOfferingById(offeringId, user);
+  const offering = await courseOfferingService.getOfferingByIdForView(offeringId, user);
 
   const query = { courseOffering: offeringId };
   if (documentType) {
     query.documentType = documentType;
   }
 
-  return CourseFile.find(query)
+  const files = await CourseFile.find(query)
     .populate('uploadedBy', 'name email designation')
     .sort({ documentType: 1, createdAt: -1 });
+
+  // Cross-department Drive-link stripping:
+  // An HoD may view another department's course files (read-only) but must NOT
+  // receive individual Google Drive document links (googleDriveWebViewLink /
+  // googleDriveWebContentLink) for documents belonging to that other department.
+  const userDeptId = (user && (user.department?._id || user.department))?.toString?.() || null;
+  const offeringDeptId =
+    (offering.department?._id || offering.department || offering.course?.department?._id || offering.course?.department)?.toString?.() || null;
+  const isCrossDepartmentView = Boolean(
+    user && user.designation === 'hod' && userDeptId && offeringDeptId && offeringDeptId !== userDeptId
+  );
+
+  if (isCrossDepartmentView) {
+    return files.map((f) => ({
+      ...f,
+      googleDriveWebViewLink: null,
+      googleDriveWebContentLink: null,
+    }));
+  }
+
+  return files;
 };
 
 /**
@@ -1765,9 +1786,15 @@ const listOfferingFiles = async (offeringId, user, documentType = null) => {
  *
  * @param {string} fileId - CourseFile ObjectId string
  * @param {Object} user - Authenticated user
+ * @param {object} [opts]
+ * @param {boolean} [opts.forView=false] - When true, uses the read-only offering
+ *   visibility variant (getOfferingByIdForView) so cross-department HoDs can view
+ *   file metadata, and strips individual Google Drive document links for
+ *   cross-department offerings. When false (default), uses the strict
+ *   getOfferingById() used by download/streaming paths.
  * @returns {Promise<Object>}
  */
-const getCourseFileById = async (fileId, user) => {
+const getCourseFileById = async (fileId, user, { forView = false } = {}) => {
   if (!fileId || !mongoose.Types.ObjectId.isValid(fileId)) {
     const error = new Error('Invalid CourseFile ID.');
     error.statusCode = 400;
@@ -1788,6 +1815,27 @@ const getCourseFileById = async (fileId, user) => {
     error.statusCode = 404;
     throw error;
   }
+
+  if (forView) {
+    const offering = await courseOfferingService.getOfferingByIdForView(offeringId, user);
+
+    // Cross-department Drive-link stripping for read-only views
+    const userDeptId = (user && (user.department?._id || user.department))?.toString?.() || null;
+    const offeringDeptId =
+      (offering.department?._id || offering.department || offering.course?.department?._id || offering.course?.department)?.toString?.() || null;
+    const isCrossDepartmentView = Boolean(
+      user && user.designation === 'hod' && userDeptId && offeringDeptId && offeringDeptId !== userDeptId
+    );
+
+    if (isCrossDepartmentView) {
+      courseFile.googleDriveWebViewLink = null;
+      courseFile.googleDriveWebContentLink = null;
+    }
+
+    return courseFile;
+  }
+
+  // Strict authorization for download/streaming paths
   await courseOfferingService.getOfferingById(offeringId, user);
 
   return courseFile;

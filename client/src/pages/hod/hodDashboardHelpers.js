@@ -58,6 +58,8 @@ export const formatOfferingProgress = (offering) => {
       completionPercentage: 0,
       driveStatusText: 'Not Synced',
       driveVariant: 'danger',
+      isCrossDepartmentView: false,
+      canModify: true,
     };
   }
 
@@ -88,6 +90,8 @@ export const formatOfferingProgress = (offering) => {
     completionPercentage,
     driveStatusText,
     driveVariant,
+    isCrossDepartmentView: Boolean(offering.isCrossDepartmentView),
+    canModify: offering.canModify !== false,
   };
 };
 

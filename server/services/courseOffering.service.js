@@ -34,6 +34,152 @@ const fail = (message, statusCode = 400) => {
   throw err;
 };
 
+/* ── Department visibility matrix ──────────────────────────────────────────
+ *
+ * Cross-department visibility for HoDs is a READ-ONLY arrangement. It does NOT
+ * change department ownership, HoD responsibilities, or any write permission.
+ *
+ * Keys are canonical department codes (as stored on Department.code). Values
+ * are the set of department codes the HoD of that department may view.
+ *
+ * Admin/Dean ('dean' designation) has universal access and is handled
+ * separately — it never consults this map.
+ */
+const DEPARTMENT_VISIBILITY_MATRIX = {
+  AI:   ['AI'],
+  CS:   ['CS', 'AI', 'CYS'],
+  CYS:  ['CYS'],
+  BSSE: ['BSSE', 'AC', 'BSE'],
+  AC:   ['AC'],
+  BSE:  ['BSE'],
+  BEEE: ['BEEE'],
+};
+
+/**
+ * Resolve the department code from a user document, tolerating both populated
+ * objects and raw ObjectId strings.
+ *
+ * @param {Object|null} user
+ * @returns {string|null}
+ */
+const resolveUserDepartmentCode = (user) => {
+  if (!user) return null;
+  const dept = user.department;
+  if (!dept) return null;
+  if (typeof dept === 'string') return dept;
+  if (typeof dept.code === 'string') return dept.code.toUpperCase();
+  if (dept._id && typeof dept._id.toString === 'function') return dept._id.toString();
+  return null;
+};
+
+/**
+ * Compute the set of department ObjectIds a user is permitted to view.
+ *
+ * Rules:
+ *  - Dean/Admin: universal access -> null (no filter; all departments).
+ *  - HoD: own department + any departments listed in the visibility matrix.
+ *  - Faculty: own department only.
+ *  - User with no department: empty set (blocked).
+ *
+ * @param {Object|null} user - Authenticated user (req.user)
+ * @returns {Promise<Array<string>>} Array of department ObjectId strings.
+ *   Returns null to signal "universal access" (Dean).
+ */
+const getVisibleDepartmentIds = async (user) => {
+  if (!user) return [];
+
+  // Dean has universal access across all departments
+  if (user.designation === 'dean') {
+    return null;
+  }
+
+  const userDeptId = (user.department?._id || user.department)?.toString();
+  if (!userDeptId) {
+    return [];
+  }
+
+  // Faculty can only see their own department
+  if (user.designation === 'faculty') {
+    return [userDeptId];
+  }
+
+  // HoD: own department + matrix-visible departments
+  if (user.designation === 'hod') {
+    const ownCode = resolveUserDepartmentCode(user);
+    const visibleCodes = ownCode ? DEPARTMENT_VISIBILITY_MATRIX[ownCode] : null;
+
+    // If we cannot resolve a code, fall back to own-department only
+    if (!visibleCodes || visibleCodes.length === 0) {
+      return [userDeptId];
+    }
+
+    // Resolve each visible code to its department ObjectId
+    const Department = mongoose.model('Department');
+    const departments = await Department.find({
+      code: { $in: visibleCodes },
+      isActive: { $ne: false },
+    })
+      .select('_id code name')
+      .lean();
+
+    const ids = departments.map((d) => d._id.toString());
+
+    // Always include the HoD's own department (matrix may omit it if it is
+    // the only entry, but we must never lose ownership scope).
+    if (!ids.includes(userDeptId)) {
+      ids.push(userDeptId);
+    }
+
+    return ids;
+  }
+
+  return [userDeptId];
+};
+
+/**
+ * Determine whether a user may READ a given CourseOffering.
+ *
+ * This is a READ-ONLY visibility check. It does NOT grant write rights.
+ *
+ * Rules:
+ *  - Dean: always allowed.
+ *  - Assigned instructor: always allowed (their own offering).
+ *  - HoD: allowed if the offering's department is in the HoD's visible set.
+ *  - Faculty (non-instructor): not allowed.
+ *
+ * @param {Object} offering - Populated or plain CourseOffering object
+ * @param {Object|null} user - Authenticated user
+ * @returns {Promise<boolean>}
+ */
+const canViewOffering = async (offering, user) => {
+  if (!offering) return false;
+  if (!user) return false;
+
+  if (user.designation === 'dean') return true;
+
+  // Assigned instructor always has access to their own offering
+  const offeringFacultyId = offering.faculty?._id
+    ? offering.faculty._id.toString()
+    : (offering.faculty ? offering.faculty.toString() : null);
+  if (offeringFacultyId && offeringFacultyId === user._id.toString()) {
+    return true;
+  }
+
+  if (user.designation !== 'hod') return false;
+
+  const offeringDept =
+    offering.department?._id ||
+    offering.department ||
+    offering.course?.department?._id ||
+    offering.course?.department;
+  if (!offeringDept) return false;
+
+  const offeringDeptId = offeringDept.toString();
+  const visibleIds = await getVisibleDepartmentIds(user);
+  if (visibleIds === null) return true; // Dean (defensive; handled above)
+  return visibleIds.includes(offeringDeptId);
+};
+
 /* ── Service functions ─────────────────────────────────────────────────── */
 
 /**
@@ -237,9 +383,22 @@ const resolveOfferingParentFolder = (offering) => {
  *
  * @param {Array<Object>} offerings - Raw offering plain objects
  * @param {string} semesterId - Academic semester ObjectId string
+ * @param {object} [opts]
+ * @param {boolean} [opts.stripDriveLinks=false] - When true, removes per-document
+ *   googleDriveWebViewLink / googleDriveWebContentLink from enriched CourseFile data
+ *   for offerings outside the caller's own department. Used for cross-department
+ *   HoD views where individual document links must not be exposed.
+ * @param {string} [opts.ownDepartmentId] - The caller's own department ObjectId string.
+ *   Used together with stripDriveLinks to decide which offerings keep their links.
+ * @param {Array<string>|null} [opts.visibleDepartmentIds] - Used with ownDepartmentId to
+ *   determine which offerings are "own department" vs "cross-department visible".
  * @returns {Promise<Array<Object>>} Enriched offerings with .progress and .drive
  */
-const enrichOfferingsWithProgress = async (offerings, semesterId) => {
+const enrichOfferingsWithProgress = async (
+  offerings,
+  semesterId,
+  { stripDriveLinks = false, ownDepartmentId = null, visibleDepartmentIds = null } = {}
+) => {
   if (!offerings || offerings.length === 0) {
     return [];
   }
@@ -257,7 +416,7 @@ const enrichOfferingsWithProgress = async (offerings, semesterId) => {
       courseOffering: { $in: offeringIds },
       status: 'synced',
     })
-      .select('courseOffering documentType googleDriveFolderId googleDriveWebViewLink')
+      .select('courseOffering documentType googleDriveFolderId googleDriveWebViewLink googleDriveWebContentLink')
       .lean(),
   ]);
 
@@ -325,13 +484,34 @@ const enrichOfferingsWithProgress = async (offerings, semesterId) => {
     // 'Lectures', 'Quizzes'), which must NEVER be used to construct the parent CourseOffering folder URL.
     const files = filesByOfferingId.get(offIdStr) || [];
     const syncedFilesCount = files.length;
+
+    // Cross-department Drive-link stripping:
+    // An HoD may view another department's offering (read-only) but must NOT receive
+    // individual Google Drive document links (googleDriveWebViewLink /
+    // googleDriveWebContentLink) for documents belonging to that other department.
+    // The offering-level parent folderUrl is preserved (it is metadata on the
+    // CourseOffering, not a per-document link).
+    const offeringDeptId =
+      (offering.department?._id || offering.department || offering.course?.department?._id || offering.course?.department)?.toString?.() || null;
+    const isOwnDepartment = !stripDriveLinks || !ownDepartmentId
+      ? true
+      : (offeringDeptId ? offeringDeptId === ownDepartmentId : (Array.isArray(visibleDepartmentIds) ? false : true));
+
+    const sanitizedFiles = isOwnDepartment
+      ? files
+      : files.map((f) => ({
+          ...f,
+          googleDriveWebViewLink: null,
+          googleDriveWebContentLink: null,
+        }));
+    const sanitizedSyncedFilesCount = sanitizedFiles.length;
     const { folderId: parentFolderId, folderUrl } = resolveOfferingParentFolder(offering);
 
     // 3. Determine Google Drive Synchronization Status
     let driveStatus = 'Not Synced';
-    if (syncedFilesCount > 0) {
+    if (sanitizedSyncedFilesCount > 0) {
       if (checklistStatus === 'Complete') {
-        const syncedDocTypes = new Set(files.map((f) => f.documentType));
+        const syncedDocTypes = new Set(sanitizedFiles.map((f) => f.documentType));
         const synchableCompletedItems = (cl?.checklistItems || []).filter(
           (item) => item.completed && SYNCHABLE_ITEM_DOC_TYPES[item.type]
         );
@@ -359,11 +539,12 @@ const enrichOfferingsWithProgress = async (offerings, semesterId) => {
         status: checklistStatus,
       },
       drive: {
-        syncedFilesCount,
+        syncedFilesCount: sanitizedSyncedFilesCount,
         folderId: parentFolderId,
         folderUrl,
         status: driveStatus,
       },
+      _driveFiles: sanitizedFiles,
     };
   });
 };
@@ -372,21 +553,47 @@ const enrichOfferingsWithProgress = async (offerings, semesterId) => {
  * List all offerings for a given semester, populated with faculty + course info.
  * If includeProgress is true, enriches each offering with CourseChecklist completion
  * and CourseFile Google Drive sync metadata.
+ *
+ * @param {string} semesterId
+ * @param {object} [departmentFilter={}] - Legacy single-department filter ({ department: id }).
+ *   Ignored when visibleDepartmentIds is supplied.
+ * @param {boolean} [includeProgress=false]
+ * @param {object} [opts]
+ * @param {Array<string>|null} [opts.visibleDepartmentIds] - Array of department ObjectId
+ *   strings the caller may view. null = universal (Dean). When supplied, the query
+ *   uses { $in: visibleDepartmentIds } instead of the single-department filter.
+ *   When omitted (undefined), the legacy departmentFilter is applied unchanged.
+ * @param {boolean} [opts.stripDriveLinks=false] - When true, removes per-document
+ *   googleDriveWebViewLink / googleDriveWebContentLink from enriched CourseFile data
+ *   for offerings outside the caller's own department. Used for cross-department
+ *   HoD views where individual document links must not be exposed.
+ * @param {string} [opts.ownDepartmentId] - The caller's own department ObjectId string.
+ *   Used together with stripDriveLinks to decide which offerings keep their links.
  */
-const listOfferingsBySemester = async (semesterId, departmentFilter = {}, includeProgress = false) => {
+const listOfferingsBySemester = async (
+  semesterId,
+  departmentFilter = {},
+  includeProgress = false,
+  { visibleDepartmentIds = undefined, stripDriveLinks = false, ownDepartmentId = null } = {}
+) => {
   if (!mongoose.Types.ObjectId.isValid(semesterId)) fail('Invalid semester ID', 400);
 
   const query = { semester: semesterId };
-  if (departmentFilter.department) {
+
+  if (visibleDepartmentIds === null) {
+    // Dean / universal access — no department restriction
+  } else if (Array.isArray(visibleDepartmentIds) && visibleDepartmentIds.length > 0) {
+    query.department = { $in: visibleDepartmentIds };
+  } else if (departmentFilter && departmentFilter.department) {
     query.department = departmentFilter.department;
-  } else if (departmentFilter._id === null) {
+  } else if (departmentFilter && departmentFilter._id === null) {
     // If blocked
     return [];
   }
 
   const queryObj = CourseOffering.find(query)
     .populate([
-      { path: 'faculty', select: 'name email department' },
+      { path: 'faculty', select: 'name email department designation' },
       { path: 'department', select: 'name code' },
     ])
     .populate({
@@ -402,7 +609,11 @@ const listOfferingsBySemester = async (semesterId, departmentFilter = {}, includ
   }
 
   const offerings = await queryObj.lean();
-  return enrichOfferingsWithProgress(offerings, semesterId);
+  return enrichOfferingsWithProgress(offerings, semesterId, {
+    stripDriveLinks,
+    ownDepartmentId,
+    visibleDepartmentIds,
+  });
 };
 
 /**
@@ -572,6 +783,73 @@ const getOfferingById = async (offeringId, user) => {
 };
 
 /**
+ * Retrieve a single CourseOffering by ID for READ-ONLY viewing, applying the
+ * expanded cross-department visibility matrix.
+ *
+ * IMPORTANT: This variant exists ONLY for read operations. It must NOT be used
+ * by any write path (create/update/delete/upload/sync/export). All write paths
+ * continue to use the strict getOfferingById(), which is unchanged.
+ *
+ * Rules:
+ *  - Dean: universal access.
+ *  - Assigned instructor: always allowed (their own offering).
+ *  - HoD: allowed if the offering's department is in the HoD's visible set
+ *    (own department + matrix-visible departments).
+ *  - Faculty (non-instructor): not allowed.
+ *
+ * The returned object carries a `__meta.isCrossDepartmentView` flag so callers
+ * can apply read-only safeguards (e.g. hiding sync/upload controls).
+ *
+ * @param {string} offeringId
+ * @param {Object|null} user - Authenticated user
+ * @returns {Promise<Object>} The offering, or throws 403/404.
+ */
+const getOfferingByIdForView = async (offeringId, user) => {
+  if (!mongoose.Types.ObjectId.isValid(offeringId)) fail('Invalid offering ID', 400);
+
+  const offering = await CourseOffering.findById(offeringId)
+    .populate({
+      path: 'course',
+      select: 'courseCode courseName type creditHours isLab department',
+      populate: { path: 'department', select: 'name code' }
+    })
+    .populate('faculty', 'name email department designation')
+    .populate('semester', 'name status')
+    .lean();
+
+  if (!offering) fail('Course offering not found', 404);
+
+  const allowed = await canViewOffering(offering, user);
+  if (!allowed) {
+    // Preserve the original strict error semantics for non-dean users
+    if (user && user.designation === 'hod') {
+      fail('You are only authorized to access course offerings belonging to your department.', 403);
+    }
+    fail('You are not authorized to access this course offering.', 403);
+  }
+
+  // Determine whether this is a cross-department view (for read-only flagging)
+  let isCrossDepartmentView = false;
+  if (user && user.designation === 'hod') {
+    const userDeptId = (user.department?._id || user.department)?.toString();
+    const offeringDept =
+      offering.department?._id ||
+      offering.department ||
+      offering.course?.department?._id ||
+      offering.course?.department;
+    isCrossDepartmentView = Boolean(
+      userDeptId && offeringDept && offeringDept.toString() !== userDeptId
+    );
+  }
+
+  offering.__meta = {
+    isCrossDepartmentView,
+    canModify: !isCrossDepartmentView,
+  };
+  return offering;
+};
+
+/**
  * Verifies if the requesting user is authorized to access the given course.
  *
  * Authorization rules:
@@ -676,9 +954,14 @@ module.exports = {
   getMyOfferings,
   getMyDashboardStats,
   getOfferingById,
+  getOfferingByIdForView,
   checkCourseAccess,
   resolveOfferingForLegacyContext,
   resolveOfferingParentFolder,
+  getVisibleDepartmentIds,
+  canViewOffering,
+  DEPARTMENT_VISIBILITY_MATRIX,
+  resolveUserDepartmentCode,
 };
 
 

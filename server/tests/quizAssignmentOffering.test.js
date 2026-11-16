@@ -220,6 +220,7 @@ describe('ASSESS_QUIZ & ASSESS_ASSIGN CourseOffering Integration Suite', () => {
   describe('2. Listing records for the correct offering', () => {
     it('returns quizzes scoped to courseOffering', async () => {
       jest.spyOn(courseOfferingService, 'getOfferingById').mockResolvedValue(mockOffering);
+      jest.spyOn(courseOfferingService, 'getOfferingByIdForView').mockResolvedValue(mockOffering);
 
       const mockQuizzes = [
         { _id: new mongoose.Types.ObjectId(), courseOffering: mockOffering._id, quizInfo: { quizNumber: '1' } },
@@ -241,7 +242,7 @@ describe('ASSESS_QUIZ & ASSESS_ASSIGN CourseOffering Integration Suite', () => {
 
       await quizController.getQuizzesForCourse(req, res, () => {});
 
-      expect(courseOfferingService.getOfferingById).toHaveBeenCalledWith(mockOfferingId, mockUser);
+      expect(courseOfferingService.getOfferingByIdForView).toHaveBeenCalledWith(mockOfferingId, mockUser);
       expect(Quiz.find).toHaveBeenCalledWith({ courseOffering: mockOffering._id });
       expect(res.statusCode).toBe(200);
       expect(res.body.data.quizzes).toHaveLength(2);
@@ -249,6 +250,7 @@ describe('ASSESS_QUIZ & ASSESS_ASSIGN CourseOffering Integration Suite', () => {
 
     it('returns assignments scoped to courseOffering', async () => {
       jest.spyOn(courseOfferingService, 'getOfferingById').mockResolvedValue(mockOffering);
+      jest.spyOn(courseOfferingService, 'getOfferingByIdForView').mockResolvedValue(mockOffering);
 
       const mockAssignments = [
         { _id: new mongoose.Types.ObjectId(), courseOffering: mockOffering._id, assignmentInfo: { assignmentNumber: '1' } },
@@ -269,7 +271,7 @@ describe('ASSESS_QUIZ & ASSESS_ASSIGN CourseOffering Integration Suite', () => {
 
       await assignmentController.getAssignmentsForCourse(req, res, () => {});
 
-      expect(courseOfferingService.getOfferingById).toHaveBeenCalledWith(mockOfferingId, mockUser);
+      expect(courseOfferingService.getOfferingByIdForView).toHaveBeenCalledWith(mockOfferingId, mockUser);
       expect(Assignment.find).toHaveBeenCalledWith({ courseOffering: mockOffering._id });
       expect(res.statusCode).toBe(200);
       expect(res.body.data.assignments).toHaveLength(1);
@@ -277,6 +279,7 @@ describe('ASSESS_QUIZ & ASSESS_ASSIGN CourseOffering Integration Suite', () => {
 
     it('supports direct offering route GET /api/quizzes/offering/:offeringId', async () => {
       jest.spyOn(courseOfferingService, 'getOfferingById').mockResolvedValue(mockOffering);
+      jest.spyOn(courseOfferingService, 'getOfferingByIdForView').mockResolvedValue(mockOffering);
 
       jest.spyOn(Quiz, 'find').mockReturnValue({
         sort: jest.fn().mockReturnValue({
@@ -303,6 +306,7 @@ describe('ASSESS_QUIZ & ASSESS_ASSIGN CourseOffering Integration Suite', () => {
       const err = new Error('You are not authorized to access this course offering.');
       err.statusCode = 403;
       jest.spyOn(courseOfferingService, 'getOfferingById').mockRejectedValue(err);
+      jest.spyOn(courseOfferingService, 'getOfferingByIdForView').mockRejectedValue(err);
 
       const req = {
         user: otherUser,
@@ -425,6 +429,7 @@ describe('ASSESS_QUIZ & ASSESS_ASSIGN CourseOffering Integration Suite', () => {
       };
       jest.spyOn(Quiz, 'findById').mockResolvedValue(quizDoc);
       jest.spyOn(courseOfferingService, 'getOfferingById').mockResolvedValue(mockOffering);
+      jest.spyOn(courseOfferingService, 'getOfferingByIdForView').mockResolvedValue(mockOffering);
 
       // Remaining count after deletion is 0
       jest.spyOn(Quiz, 'countDocuments').mockResolvedValue(0);
@@ -459,6 +464,7 @@ describe('ASSESS_QUIZ & ASSESS_ASSIGN CourseOffering Integration Suite', () => {
       };
       jest.spyOn(Quiz, 'findById').mockResolvedValue(quizDoc);
       jest.spyOn(courseOfferingService, 'getOfferingById').mockResolvedValue(mockOffering);
+      jest.spyOn(courseOfferingService, 'getOfferingByIdForView').mockResolvedValue(mockOffering);
 
       // Remaining count after deletion is 1
       jest.spyOn(Quiz, 'countDocuments').mockResolvedValue(1);
@@ -492,6 +498,7 @@ describe('ASSESS_QUIZ & ASSESS_ASSIGN CourseOffering Integration Suite', () => {
       };
       jest.spyOn(Assignment, 'findById').mockResolvedValue(assignDoc);
       jest.spyOn(courseOfferingService, 'getOfferingById').mockResolvedValue(mockOffering);
+      jest.spyOn(courseOfferingService, 'getOfferingByIdForView').mockResolvedValue(mockOffering);
 
       // Remaining count after deletion is 0
       jest.spyOn(Assignment, 'countDocuments').mockResolvedValue(0);

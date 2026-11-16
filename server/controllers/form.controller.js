@@ -6,6 +6,7 @@ const CourseOffering = require('../models/CourseOffering.model');
 const { sendSuccess, sendError } = require('../utils/response');
 const courseOfferingService = require('../services/courseOffering.service');
 const getOfferingById = (id, user) => courseOfferingService.getOfferingById(id, user);
+const getOfferingByIdForView = (id, user) => courseOfferingService.getOfferingByIdForView(id, user);
 const { generateCISWord } = require('../services/documentService/generateCISWord');
 const { generateCISPDF } = require('../services/documentService/generateCISPDF');
 const { generateCCRWord } = require('../services/documentService/generateCCRWord');
@@ -14,12 +15,73 @@ const { generateCCCPDF } = require('../services/documentService/generateCCCPDF')
 const { generateCRRPDF } = require('../services/documentService/generateCRRPDF');
 const courseFileService = require('../services/courseFile.service');
 
+/**
+ * Determines whether a GET handler is permitted to persist a legacy-form
+ * migration (re-homing an unlinked CIS/CCR/CCC/CRR record onto the current
+ * offering).
+ *
+ * This is a WRITE operation disguised inside a GET. It must only run when the
+ * caller has a legitimate ownership interest in the offering:
+ *  - The assigned instructor (their own offering), OR
+ *  - An HoD viewing their OWN department.
+ *
+ * Cross-department HoD views must NOT trigger this mutation, because it would
+ * silently re-home another department's form record.
+ *
+ * @param {Object} offering - Populated CourseOffering
+ * @param {Object|null} user - Authenticated user
+ * @returns {Promise<boolean>}
+ */
+const mayMutateLegacyForm = async (offering, user) => {
+  if (!offering || !user) return false;
+
+  const offeringFacultyId = offering.faculty?._id
+    ? offering.faculty._id.toString()
+    : (offering.faculty ? offering.faculty.toString() : null);
+  if (offeringFacultyId && offeringFacultyId === user._id.toString()) {
+    return true;
+  }
+
+  if (user.designation === 'dean') return true;
+
+  if (user.designation === 'hod') {
+    const userDeptId = (user.department?._id || user.department)?.toString();
+    if (!userDeptId) return false;
+    const offeringDept =
+      offering.department?._id ||
+      offering.department ||
+      offering.course?.department?._id ||
+      offering.course?.department;
+    if (!offeringDept) return false;
+    return offeringDept.toString() === userDeptId;
+  }
+
+  return false;
+};
+
 /* ── Offering & Form Scoping Helpers ────────────────────────────────────── */
 
 /**
  * Finds form by offering or legacy query with auto-linking of legacy records.
+ *
+ * The legacy auto-link block is a WRITE inside a GET. It is now guarded by
+ * `allowMutation` so cross-department HoD viewers do not trigger it.
+ *
+ * @param {Model} Model
+ * @param {Object|null} offering - Resolved CourseOffering (or null for legacy path)
+ * @param {Object} legacyQuery
+ * @param {string} formType
+ * @param {object} [opts]
+ * @param {boolean} [opts.allowMutation=true] - Whether the legacy auto-link
+ *   mutation may run. Set false for cross-department read-only views.
  */
-const findFormByOfferingOrQuery = async (Model, offering, legacyQuery, formType) => {
+const findFormByOfferingOrQuery = async (
+  Model,
+  offering,
+  legacyQuery,
+  formType,
+  { allowMutation = true } = {}
+) => {
   if (offering) {
     // 1. Explicitly linked to this offering
     const offeringQuery = { courseOffering: offering._id };
@@ -57,8 +119,11 @@ const findFormByOfferingOrQuery = async (Model, offering, legacyQuery, formType)
       }
     }
 
-    // Safely link unlinked legacy record
-    if (form && !form.courseOffering) {
+    // Safely link unlinked legacy record.
+    // GUARD: this is a WRITE inside a GET. Only run it when `allowMutation` is
+    // true (assigned instructor, or HoD viewing their OWN department). Cross-department
+    // HoD viewers see the record as-is without triggering a mutation.
+    if (form && !form.courseOffering && allowMutation) {
       form.courseOffering = offering._id;
       if (!form.section) form.section = offering.section || 'A';
       if (!form.semester) form.semester = offering.semester._id || offering.semester;
@@ -173,9 +238,11 @@ const getCCRForm = async (req, res, next) => {
     const { semester: semesterId, offeringId } = req.query;
 
     let offering = null;
+    let allowMutation = true;
     if (offeringId) {
       try {
-        offering = await getOfferingById(offeringId, req.user);
+        offering = await getOfferingByIdForView(offeringId, req.user);
+        allowMutation = await mayMutateLegacyForm(offering, req.user);
       } catch (err) {
         return sendError(res, err.message, err.statusCode || 500);
       }
@@ -195,6 +262,7 @@ const getCCRForm = async (req, res, next) => {
       }
       if (resolution.offering) {
         offering = resolution.offering;
+        allowMutation = await mayMutateLegacyForm(offering, req.user);
       }
     }
 
@@ -205,7 +273,7 @@ const getCCRForm = async (req, res, next) => {
     };
     if (semesterId) legacyQuery.semester = semesterId;
 
-    const form = await findFormByOfferingOrQuery(CCR, offering, legacyQuery, 'CCR');
+    const form = await findFormByOfferingOrQuery(CCR, offering, legacyQuery, 'CCR', { allowMutation });
 
     return sendSuccess(res, { form: form || null }, 'CCR form fetched successfully');
   } catch (err) {
@@ -416,9 +484,11 @@ const getCISForm = async (req, res, next) => {
     const { semester: semesterId, offeringId } = req.query;
 
     let offering = null;
+    let allowMutation = true;
     if (offeringId) {
       try {
-        offering = await getOfferingById(offeringId, req.user);
+        offering = await getOfferingByIdForView(offeringId, req.user);
+        allowMutation = await mayMutateLegacyForm(offering, req.user);
       } catch (err) {
         return sendError(res, err.message, err.statusCode || 500);
       }
@@ -438,6 +508,7 @@ const getCISForm = async (req, res, next) => {
       }
       if (resolution.offering) {
         offering = resolution.offering;
+        allowMutation = await mayMutateLegacyForm(offering, req.user);
       }
     }
 
@@ -448,7 +519,7 @@ const getCISForm = async (req, res, next) => {
     };
     if (semesterId) legacyQuery.semester = semesterId;
 
-    const form = await findFormByOfferingOrQuery(CIS, offering, legacyQuery, 'CIS');
+    const form = await findFormByOfferingOrQuery(CIS, offering, legacyQuery, 'CIS', { allowMutation });
 
     return sendSuccess(res, { form: form || null }, 'CIS form fetched successfully');
   } catch (err) {
@@ -740,9 +811,11 @@ const getCCCForm = async (req, res, next) => {
     const { semester: semesterId, offeringId } = req.query;
 
     let offering = null;
+    let allowMutation = true;
     if (offeringId) {
       try {
-        offering = await getOfferingById(offeringId, req.user);
+        offering = await getOfferingByIdForView(offeringId, req.user);
+        allowMutation = await mayMutateLegacyForm(offering, req.user);
       } catch (err) {
         return sendError(res, err.message, err.statusCode || 500);
       }
@@ -762,6 +835,7 @@ const getCCCForm = async (req, res, next) => {
       }
       if (resolution.offering) {
         offering = resolution.offering;
+        allowMutation = await mayMutateLegacyForm(offering, req.user);
       }
     }
 
@@ -772,7 +846,7 @@ const getCCCForm = async (req, res, next) => {
     };
     if (semesterId) legacyQuery.semester = semesterId;
 
-    const form = await findFormByOfferingOrQuery(CCC, offering, legacyQuery, 'CCC');
+    const form = await findFormByOfferingOrQuery(CCC, offering, legacyQuery, 'CCC', { allowMutation });
 
     return sendSuccess(res, { form: form || null }, 'CCC form fetched successfully');
   } catch (err) {
@@ -991,9 +1065,11 @@ const getCourseReviewForm = async (req, res, next) => {
     const { semester: semesterId, offeringId } = req.query;
 
     let offering = null;
+    let allowMutation = true;
     if (offeringId) {
       try {
-        offering = await getOfferingById(offeringId, req.user);
+        offering = await getOfferingByIdForView(offeringId, req.user);
+        allowMutation = await mayMutateLegacyForm(offering, req.user);
       } catch (err) {
         return sendError(res, err.message, err.statusCode || 500);
       }
@@ -1013,6 +1089,7 @@ const getCourseReviewForm = async (req, res, next) => {
       }
       if (resolution.offering) {
         offering = resolution.offering;
+        allowMutation = await mayMutateLegacyForm(offering, req.user);
       }
     }
 
@@ -1023,7 +1100,7 @@ const getCourseReviewForm = async (req, res, next) => {
     };
     if (semesterId) legacyQuery.semester = semesterId;
 
-    const form = await findFormByOfferingOrQuery(CourseReviewReport, offering, legacyQuery, 'CRR');
+    const form = await findFormByOfferingOrQuery(CourseReviewReport, offering, legacyQuery, 'CRR', { allowMutation });
 
     return sendSuccess(res, { form: form || null }, 'Course Review Report fetched successfully');
   } catch (err) {

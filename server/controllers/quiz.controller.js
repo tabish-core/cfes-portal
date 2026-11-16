@@ -80,7 +80,7 @@ const getQuizzesForCourse = async (req, res, next) => {
 
       let offering;
       try {
-        offering = await courseOfferingService.getOfferingById(offeringId, req.user);
+        offering = await courseOfferingService.getOfferingByIdForView(offeringId, req.user);
       } catch (err) {
         return sendError(res, err.message, err.statusCode || 403);
       }
@@ -162,7 +162,7 @@ const getQuizzesForOffering = async (req, res, next) => {
 
     let offering;
     try {
-      offering = await courseOfferingService.getOfferingById(offeringId, req.user);
+      offering = await courseOfferingService.getOfferingByIdForView(offeringId, req.user);
     } catch (err) {
       return sendError(res, err.message, err.statusCode || 403);
     }
