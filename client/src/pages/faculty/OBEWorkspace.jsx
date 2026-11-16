@@ -271,7 +271,7 @@ const OBEWorkspace = () => {
           courseName: config.course.courseName || 'Unknown Course',
           courseCode: config.course.courseCode || 'UNKNOWN',
           creditHours: config.course.creditHours || '',
-          type: config.course.type || 'Unclassified'
+          type: config.course.type || ''
         });
       }
 
@@ -626,7 +626,7 @@ const OBEWorkspace = () => {
           </div>
           <div className="obe-info-item">
             <span className="obe-info-label">Course Type</span>
-            <span className="obe-info-value">{courseInfo.type || 'Unclassified'}</span>
+            <span className="obe-info-value">{courseInfo.type || '—'}</span>
           </div>
         </div>
       </section>

@@ -374,14 +374,14 @@ const Submissions = () => {
             <table className="submissions-table">
               <thead>
                 <tr>
-                  <th style={{ width: '22%' }}>Course</th>
-                  <th style={{ width: '7%', textAlign: 'center' }}>Section</th>
-                  <th style={{ width: '18%' }}>Faculty</th>
+                  <th style={{ width: '15%' }}>Course</th>
+                  <th style={{ width: '6%', textAlign: 'center' }}>Section</th>
+                  <th style={{ width: '16%' }}>Faculty</th>
                   <th style={{ width: '12%' }}>Department</th>
-                  <th style={{ width: '12%', textAlign: 'center' }}>Checklist</th>
-                  <th style={{ width: '15%' }}>Progress</th>
+                  <th style={{ width: '10%', textAlign: 'center' }}>Checklist</th>
+                  <th style={{ width: '12%' }}>Progress</th>
                   <th style={{ width: '14%' }}>Google Drive</th>
-                  <th style={{ width: '18%', textAlign: 'right' }}>Actions</th>
+                  <th style={{ width: '15%', textAlign: 'right' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>

@@ -443,7 +443,7 @@ const Courses = () => {
                   <option value="">-- Choose Course ({filteredCourseOptions.length} available) --</option>
                   {filteredCourseOptions.map((course) => (
                     <option key={course._id} value={course._id}>
-                      {course.courseCode} — {course.courseName} ({course.type || 'Unclassified'})
+                      {course.courseCode} — {course.courseName}{course.type ? ` (${course.type})` : ''}
                     </option>
                   ))}
                 </select>

@@ -5,6 +5,9 @@
 
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 describe('Submissions Tracker Frontend Filter & Presentation Logic', () => {
   const sampleOfferings = [
@@ -320,5 +323,31 @@ describe('Submissions Tracker Frontend Filter & Presentation Logic', () => {
     const unassignedBadges = computeSubmissionsBadges(unassignedHod, null);
     assert.equal(unassignedBadges.roleBadge, 'Head of Department');
     assert.equal(unassignedBadges.scopeBadge || 'Department not assigned', 'Department not assigned');
+  });
+
+  // ── 12. Responsive table layout (no horizontal cut-off at 100% zoom) ──
+  test('12. Keeps the submissions table within the viewport with wrapping actions', () => {
+    const here = path.dirname(fileURLToPath(import.meta.url));
+    const jsx = fs.readFileSync(path.resolve(here, '../pages/dean/Submissions.jsx'), 'utf8');
+    const css = fs.readFileSync(path.resolve(here, '../pages/dean/Submissions.css'), 'utf8');
+
+    // Only inspect the main tracker table, not the audit modal table.
+    const tableStart = jsx.indexOf('submissions-table-container');
+    const tableEnd = jsx.indexOf('</table>', tableStart);
+    const mainTable = jsx.slice(tableStart, tableEnd);
+
+    const widths = [...mainTable.matchAll(/<th style=\{\{ width: '(\d+)%'/g)].map((m) => Number(m[1]));
+    assert.equal(widths.length, 8, 'main table must declare 8 column widths');
+    assert.equal(
+      widths.reduce((sum, w) => sum + w, 0),
+      100,
+      'column widths must total 100% so the table cannot exceed its container'
+    );
+
+    assert.doesNotMatch(css, /min-width:\s*860px/, 'the old forced 860px width must be gone');
+    assert.match(css, /\.submissions-table\s*\{[^}]*width:\s*100%/s, 'table must stay at 100% of its container');
+    assert.match(css, /@media\s*\(max-width:\s*900px\)[\s\S]*?\.submissions-table\s*\{[^}]*min-width:\s*820px/s, 'horizontal scroll is only a narrow-screen fallback');
+    assert.match(css, /\.actions-cell\s*\{[^}]*flex-wrap:\s*wrap/s, 'actions must wrap instead of widening the table');
+    assert.match(css, /\.submissions-table td\s*\{[^}]*overflow-wrap:\s*anywhere/s, 'long cell text must wrap inside the cell');
   });
 });
