@@ -2,9 +2,9 @@
  * Course.model.js — Mongoose schema for university courses.
  *
  * Fields:
- *  courseCode      – Unique identifier (e.g. "CS-301"), uppercase-normalised
+ *  courseCode      – Unique identifier (e.g. "CSC101"), uppercase-normalised
  *  courseName      – Human-readable name
- *  type            – 'Core' | 'Elective'
+ *  type            – 'Core' | 'Elective' | null (unclassified)
  *  isLab           – Whether the course has a lab component
  *  assignedFaculty – Optional ref to User (faculty member)
  *  creditHours     – Standard credit-hour value (scalable addition)
@@ -23,10 +23,8 @@ const courseSchema = new mongoose.Schema(
       trim: true,
       uppercase: true,
       match: [
-        // /^[A-Z]{2,10}-\d{3,4}$/,
-        // 'Course code must follow the pattern XX-000 (e.g. CS-301)',
-        /^(CSC|HUM|HMT|BUS|SSC|CS|CE|SE|TE|MT|MS)\d{3}(-L)?$/,
-        'Course code must follow the pattern (CSC|HUM|HMT|BUS|SSC|CS|CE|SE|TE|MT|MS)000(-L)? (e.g. CSC101 or CSC101-L)',
+        /^[A-Z]{2,6}\d{3}(-L)?$/,
+        'Course code must follow the pattern AA000 or AA000-L (e.g. CSC101 or CSC101-L)',
       ],
     },
 
@@ -40,11 +38,12 @@ const courseSchema = new mongoose.Schema(
 
     type: {
       type: String,
-      required: [true, 'Course type is required'],
+      required: false,
       enum: {
-        values: ['Core', 'Elective'],
-        message: "Type must be 'Core' or 'Elective'",
+        values: ['Core', 'Elective', null],
+        message: "Type must be 'Core', 'Elective', or null",
       },
+      default: null,
     },
 
     isLab: {

@@ -427,3 +427,25 @@ describe('Department Cross-Visibility Service Tests', () => {
     });
   });
 });
+describe('Multi-department faculty visibility (unchanged)', () => {
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  test('faculty still sees only their primary department', async () => {
+    const primaryId = new mongoose.Types.ObjectId();
+    const secondaryId = new mongoose.Types.ObjectId();
+
+    const result = await courseOfferingService.getVisibleDepartmentIds({
+      designation: 'faculty',
+      _id: new mongoose.Types.ObjectId(),
+      department: { _id: primaryId, code: 'CS' },
+      departments: [
+        { _id: primaryId, code: 'CS' },
+        { _id: secondaryId, code: 'AI' },
+      ],
+    });
+
+    expect(result).toEqual([primaryId.toString()]);
+  });
+});

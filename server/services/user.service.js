@@ -9,6 +9,7 @@ const User = require('../models/User.model');
 const listFaculties = async (departmentFilter = {}) => {
   return User.find({ designation: { $in: ['faculty', 'hod'] }, ...departmentFilter })
     .populate('department', 'name code')
+    .populate('departments', 'name code')
     .select('-__v')
     .sort({ createdAt: -1 });
 };
@@ -45,6 +46,7 @@ const listFacultiesByVisibleDepartments = async (departmentIds, { includeOwnDepa
 
   return User.find(query)
     .populate('department', 'name code')
+    .populate('departments', 'name code')
     .select('-__v')
     .sort({ createdAt: -1 });
 };

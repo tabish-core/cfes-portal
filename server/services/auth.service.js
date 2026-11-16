@@ -69,10 +69,12 @@ const login = async ({ email, password }) => {
     throw err;
   }
 
-  // Explicitly select password (it has select:false on schema) and populate department
+  // Explicitly select password (it has select:false on schema) and populate
+  // both the primary department and supplementary departments.
   const user = await User.findOne({ email: normalizedEmail })
     .select('+password')
-    .populate('department', 'name code');
+    .populate('department', 'name code')
+    .populate('departments', 'name code');
 
   if (!user) {
     const err = new Error('Invalid email or password');
