@@ -43,6 +43,7 @@ describe('Department Cross-Visibility Service Tests', () => {
         AC:   ['AC'],
         BSE:  ['BSE'],
         BEEE: ['BEEE'],
+        BSTEL: ['BSTEL'],
       });
     });
   });

@@ -53,6 +53,7 @@ const DEPARTMENT_VISIBILITY_MATRIX = {
   AC:   ['AC'],
   BSE:  ['BSE'],
   BEEE: ['BEEE'],
+  BSTEL: ['BSTEL'],
 };
 
 /**
